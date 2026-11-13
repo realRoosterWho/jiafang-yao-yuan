@@ -861,7 +861,7 @@ cv.addEventListener('pointerdown', e => {
   if (tryGrab()) { grabId = e.pointerId; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
 });
 cv.addEventListener('pointermove', e => {
-  if (e.pointerId === rotId) { const b = G.body; if (b && b.held) b.userRot += (e.clientX - rotX) * .012; rotX = e.clientX; return; }
+  if (e.pointerId === rotId) { const b = G.body; if (b && b.held) b.userRot -= (e.clientX - rotX) * .012;   // 往右滑 = 逆时针，跟手感一致 rotX = e.clientX; return; }
   if (grabId !== null && e.pointerId !== grabId) return;
   setPointer(e); const b = G.body;
   cv.style.cursor = b && b.held ? 'grabbing' : (b && !b.dead && G.state === 'play' && toLocal(b, P.x, P.y).inside ? 'grab' : 'default');
@@ -1316,8 +1316,20 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: press ↺ ↻ or slide a second finger to turn' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
-  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时按 ↺ ↻，或另一根手指左右滑，微调角度' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: press ↺ ↻ or slide a second finger (right = counter-clockwise)' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
+  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时按 ↺ ↻，或另一根手指左右滑（往右 = 逆时针）' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+/* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
+function drawRotHint() {
+  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held) return;
+  const on = rotId !== null, x = PORT ? midX() : 440, y = 30, fs = PORT ? 18 : 15;
+  const txt = on ? L('← 顺时针 · 逆时针 →', '← clockwise · counter →') : L('另一根手指 ← 左右滑 → 转', 'Second finger: ← slide → to turn');
+  ctx.font = `${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(txt).width + 30, h = fs * 2;
+  ctx.globalAlpha = on ? 1 : .55 + .25 * Math.sin(G.time * 4);
+  rr(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fillStyle = on ? C.coin : 'rgba(17,13,43,.75)'; ctx.fill();
+  ctx.strokeStyle = C.coin; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = on ? C.space : C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
+}
 function drawHints() {
   if (G.state !== 'play') return;
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
@@ -1381,7 +1393,7 @@ function draw() {
   drawBg(t); if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) drawBody(G.body, t);
   if (G.doom) drawDoom(G.doom);
-  drawFx(); ctx.restore();
+  drawFx(); drawRotHint(); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
 }
