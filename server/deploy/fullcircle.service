@@ -1,0 +1,23 @@
+[Unit]
+Description=Full Circle (甲方要圆) static page + anonymous event collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=roosterwho
+Group=roosterwho
+WorkingDirectory=/home/roosterwho/services/fullcircle
+Environment=FC_HOST=127.0.0.1 FC_PORT=2504
+# 后台密码：FC_ADMIN_PASSWORD=...（chmod 600，不进 git）
+EnvironmentFile=/home/roosterwho/services/fullcircle/admin.env
+ExecStart=/usr/bin/python3 /home/roosterwho/services/fullcircle/collector.py serve
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/roosterwho/services/fullcircle/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Cloudflare Tunnel for Full Circle (甲方要圆)
+After=network-online.target fullcircle.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=roosterwho
+Group=roosterwho
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate --config /etc/cloudflared/fullcircle.yml tunnel run
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

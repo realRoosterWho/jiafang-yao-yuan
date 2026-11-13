@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>甲方要圆 · 数据后台</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f3f0; --surface: #fcfcfb; --line: #e2e1dc; --grid: #ecebe7;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #7a7973;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --tip-bg: #0b0b0b; --tip-ink: #f0efec; --seg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --line: #383835; --grid: #2a2a28;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --tip-bg: #f0efec; --tip-ink: #0b0b0b; --seg: #2a2a28;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --line: #383835; --grid: #2a2a28;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --tip-bg: #f0efec; --tip-ink: #0b0b0b; --seg: #2a2a28;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 16px; }
+h1 { font-size: 22px; margin: 0; }
+.sub { color: var(--ink-3); font-size: 13px; }
+.spacer { flex: 1; }
+a.btn, button.btn { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; text-decoration: none; }
+a.btn:hover, button.btn:hover { border-color: var(--ink-3); }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 16px; }
+.seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: none; color: var(--ink-2); padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--seg); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.flabel { color: var(--ink-3); font-size: 12px; margin-right: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.kpi .k { color: var(--ink-2); font-size: 13px; }
+.kpi .v { font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 2px; }
+.kpi .n { color: var(--ink-3); font-size: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0; }
+.card .desc { color: var(--ink-3); font-size: 12px; margin: 2px 0 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.grid2 > .card { margin-bottom: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .gl { stroke: var(--grid); stroke-width: 1; }
+.chart .base { stroke: var(--line); stroke-width: 1; }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover + g rect, .chart g.on rect { filter: brightness(1.08); }
+.chart .shiftlbl { fill: var(--ink-2); font-size: 11px; }
+.tip { position: fixed; pointer-events: none; background: var(--tip-bg); color: var(--tip-ink); font-size: 12px; line-height: 1.5; padding: 8px 10px; border-radius: 8px; max-width: 260px; z-index: 10; opacity: 0; transition: opacity .08s; }
+.tip b { display: block; font-size: 13px; margin-bottom: 2px; }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.tip .row { display: flex; gap: 12px; justify-content: space-between; }
+.tip .row span:last-child { font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--surface); }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+tr.shift td { color: var(--ink-2); font-weight: 600; font-size: 12px; background: var(--bg); text-align: left; }
+td .bar { display: inline-block; height: 8px; border-radius: 2px; background: var(--s1); vertical-align: 0; margin-left: 6px; }
+.muted { color: var(--ink-3); }
+.splits { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
+.splits h3 { font-size: 13px; margin: 0 0 6px; color: var(--ink-2); font-weight: 600; }
+.split-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; font-size: 13px; margin-bottom: 6px; }
+.split-row .track { grid-column: 1 / -1; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.split-row .track span { display: block; height: 100%; background: var(--s1); border-radius: 3px; }
+.split-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { color: var(--ink-3); padding: 24px 0; text-align: center; }
+details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-top: 8px; }
+.ev { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-2); }
+@media (max-width: 600px) { .kpi .v { font-size: 22px; } h1 { font-size: 18px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>甲方要圆 · 数据后台</h1>
+    <span class="sub" id="updated">加载中…</span>
+    <span class="spacer"></span>
+    <button class="btn" type="button" id="refresh">刷新</button>
+    <a class="btn" id="csv" href="/admin/api/events.csv">导出 CSV</a>
+    <form method="post" action="/admin/logout" style="margin:0"><button class="btn" type="submit">退出</button></form>
+  </header>
+
+  <div class="filters">
+    <div><span class="flabel">时间</span><span class="seg" id="f-days" role="group" aria-label="时间范围">
+      <button type="button" data-v="1">24 小时</button><button type="button" data-v="7">7 天</button><button type="button" data-v="30">30 天</button><button type="button" data-v="0">全部</button>
+    </span></div>
+    <div><span class="flabel">轮次</span><span class="seg" id="f-loops" role="group" aria-label="轮次">
+      <button type="button" data-v="first">只看首轮</button><button type="button" data-v="all">含加班轮</button>
+    </span></div>
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="card">
+    <h2>每一单有多少玩家走到</h2>
+    <p class="desc">接过这一单的不重复玩家数。断崖在哪，玩家就是在哪放弃的。</p>
+    <div class="chart" id="c-reach"></div>
+  </section>
+
+  <section class="card">
+    <h2>每一单的结局</h2>
+    <p class="desc">每次接单的最后结果占比。柱子上方是这一单一共接了几次。</p>
+    <div class="legend" id="lg-outcome"></div>
+    <div class="chart" id="c-outcome"></div>
+  </section>
+
+  <section class="card">
+    <h2>每单明细</h2>
+    <p class="desc">通过率 = 交付 ÷（交付 + 碎 + 超时 + 中途走）。用时、圆度只算交付成功的。</p>
+    <div class="scroll"><table id="t-orders"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>每天的玩家</h2>
+      <p class="desc">当天出现过的不重复玩家（按服务器所在时区）。</p>
+      <div class="chart" id="c-daily"></div>
+      <details><summary>看表格</summary><div class="scroll"><table id="t-daily"></table></div></details>
+    </section>
+    <section class="card">
+      <h2>最远打到第几单</h2>
+      <p class="desc">每个玩家交付过的最远一单。</p>
+      <div class="chart" id="c-far"></div>
+    </section>
+  </div>
+  <div style="height:16px"></div>
+
+  <section class="card">
+    <h2>玩家从哪来、用什么玩</h2>
+    <p class="desc">按不重复玩家计。国家来自 Cloudflare，只有两位代码。</p>
+    <div class="splits" id="splits"></div>
+  </section>
+
+  <section class="card">
+    <h2>最近 40 条事件</h2>
+    <p class="desc">玩家 ID 只显示前 6 位。</p>
+    <div class="scroll"><table id="t-recent"></table></div>
+  </section>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+const fmt = n => n == null ? '–' : Number(n).toLocaleString('zh-CN');
+const OUT = [
+  { key: 'deliver', label: '交付', v: '--s1' },
+  { key: 'shatter', label: '砸碎了', v: '--s2' },
+  { key: 'time', label: '超时', v: '--s3' },
+  { key: 'quit', label: '中途关掉', v: '--s4' },
+];
+const EVN = { open: '打开', start: '接单', deliver: '交付', fail: '失败', quit: '中途走', win: '全通' };
+const PER = 6;
+
+let state = { days: '0', loops: 'first' };
+try { const s = JSON.parse(localStorage.getItem('fc.admin.filters') || 'null'); if (s) state = Object.assign(state, s); } catch (e) {}
+let DATA = null;
+
+/* ---------- 过滤器 ---------- */
+function syncSeg(id, v) { for (const b of document.querySelectorAll(`#${id} button`)) b.setAttribute('aria-pressed', String(b.dataset.v === v)); }
+function bindSeg(id, key) {
+  $('#' + id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state[key] = b.dataset.v; syncSeg(id, b.dataset.v);
+    try { localStorage.setItem('fc.admin.filters', JSON.stringify(state)); } catch (e) {}
+    load();
+  });
+  syncSeg(id, state[key]);
+}
+bindSeg('f-days', 'days'); bindSeg('f-loops', 'loops');
+$('#refresh').addEventListener('click', load);
+
+/* ---------- tooltip ---------- */
+const tip = $('#tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect(), pad = 12;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.style.opacity = 0; }
+const sw = v => `<i style="background:var(${v})"></i>`;
+
+/* ---------- SVG 工具 ---------- */
+function el(tag, attrs, parent) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+function niceMax(v) { if (v <= 4) return Math.max(1, Math.ceil(v)); const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+// 只在底部做圆角：顶部 4px 圆角、底部贴着基线
+function topRounded(x, y, w, h, r) {
+  if (h <= 0) return '';
+  r = Math.min(r, w / 2, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function frame(host, H, opts) {
+  host.innerHTML = '';
+  const W = Math.max(300, host.clientWidth || 600);
+  const m = Object.assign({ t: 8, r: 8, b: 26, l: 36 }, opts || {});
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img' }, host);
+  return { svg, W, H, m, iw: W - m.l - m.r, ih: H - m.t - m.b };
+}
+function yAxis(f, max, fmtv) {
+  const ticks = 4;
+  for (let k = 0; k <= ticks; k++) {
+    const v = max * k / ticks, y = f.m.t + f.ih - f.ih * k / ticks;
+    el('line', { x1: f.m.l, x2: f.W - f.m.r, y1: y, y2: y, class: k ? 'gl' : 'base' }, f.svg);
+    const t = el('text', { x: f.m.l - 6, y: y + 4, 'text-anchor': 'end' }, f.svg); t.textContent = fmtv ? fmtv(v) : fmt(Math.round(v * 10) / 10);
+  }
+}
+function emptyChart(host, msg) { host.innerHTML = `<div class="empty">${msg || '这段时间还没有数据'}</div>`; }
+
+/* 按单号排的柱状图（单系列） */
+function barsByOrder(host, orders, val, tipf, H) {
+  const max = niceMax(Math.max(0, ...orders.map(val)));
+  if (!orders.length || max <= 0 || !orders.some(o => val(o) > 0)) return emptyChart(host);
+  const f = frame(host, H || 220, { b: 40 });
+  yAxis(f, max);
+  const n = orders.length, step = f.iw / n, bw = Math.max(3, Math.min(28, step - 2));
+  shiftMarks(f, n, step);
+  orders.forEach((o, i) => {
+    const v = val(o), h = v / max * f.ih, x = f.m.l + i * step + (step - bw) / 2, y = f.m.t + f.ih - h;
+    const g = el('g', {}, f.svg);
+    if (h > 0) el('path', { d: topRounded(x, y, bw, h, 4), fill: 'var(--s1)' }, g);
+    if (n <= 40 && i % (step < 16 ? 2 : 1) === 0) { const t = el('text', { x: x + bw / 2, y: f.m.t + f.ih + 14, 'text-anchor': 'middle' }, f.svg); t.textContent = i + 1; }
+    const hit = el('rect', { x: f.m.l + i * step, y: f.m.t, width: step, height: f.ih, class: 'hit' }, f.svg);
+    hit.addEventListener('mousemove', e => showTip(e, tipf(o, i))); hit.addEventListener('mouseleave', hideTip);
+  });
+}
+// 每 6 单一班：在底部标出班次
+function shiftMarks(f, n, step) {
+  for (let s = 0; s * PER < n; s++) {
+    const x0 = f.m.l + s * PER * step, x1 = f.m.l + Math.min(n, (s + 1) * PER) * step;
+    if (s) el('line', { x1: x0, x2: x0, y1: f.m.t, y2: f.m.t + f.ih + 30, class: 'gl', 'stroke-dasharray': '3 3' }, f.svg);
+    const t = el('text', { x: (x0 + x1) / 2, y: f.m.t + f.ih + 32, 'text-anchor': 'middle', class: 'shiftlbl' }, f.svg); t.textContent = `第 ${s + 1} 班`;
+  }
+}
+
+/* 每一单的结局：100% 堆叠 */
+function outcomeChart(host, orders) {
+  $('#lg-outcome').innerHTML = OUT.map(o => `<span>${sw(o.v)}${o.label}</span>`).join('');
+  const tot = o => OUT.reduce((s, k) => s + (o[k.key] || 0), 0);
+  if (!orders.some(o => tot(o) > 0)) return emptyChart(host);
+  const f = frame(host, 260, { t: 18, b: 40 });
+  yAxis(f, 1, v => Math.round(v * 100) + '%');
+  const n = orders.length, step = f.iw / n, bw = Math.max(3, Math.min(28, step - 2));
+  shiftMarks(f, n, step);
+  orders.forEach((o, i) => {
+    const T = tot(o), x = f.m.l + i * step + (step - bw) / 2;
+    if (n <= 40 && i % (step < 16 ? 2 : 1) === 0) { const t = el('text', { x: x + bw / 2, y: f.m.t + f.ih + 14, 'text-anchor': 'middle' }, f.svg); t.textContent = i + 1; }
+    if (T) {
+      let y = f.m.t + f.ih; const segs = OUT.filter(k => o[k.key] > 0);
+      segs.forEach((k, j) => {
+        const h = o[k.key] / T * f.ih, top = j === segs.length - 1;
+        const gap = j ? 2 : 0;  // 段与段之间 2px 空隙
+        const hh = Math.max(0, h - gap);
+        if (hh > 0) el('path', { d: top ? topRounded(x, y - h, bw, hh, 4) : `M${x},${y - h}h${bw}v${hh}h${-bw}Z`, fill: `var(${k.v})` }, f.svg);
+        y -= h;
+      });
+      if (step >= 14) { const t = el('text', { x: x + bw / 2, y: f.m.t - 5, 'text-anchor': 'middle' }, f.svg); t.textContent = T; }
+    }
+    const hit = el('rect', { x: f.m.l + i * step, y: f.m.t - 16, width: step, height: f.ih + 16, class: 'hit' }, f.svg);
+    hit.addEventListener('mousemove', e => showTip(e, `<b>第 ${i + 1} 单 · ${esc(o.name)}</b>` +
+      OUT.map(k => `<div class="row"><span>${sw(k.v)}${k.label}</span><span>${o[k.key] || 0}（${pct(o[k.key] || 0, T)}）</span></div>`).join('') +
+      `<div class="row"><span>一共结束</span><span>${T} 次</span></div>`));
+    hit.addEventListener('mouseleave', hideTip);
+  });
+}
+
+/* 每天的玩家 */
+function dailyChart(host, daily) {
+  if (!daily.length) return emptyChart(host);
+  const max = niceMax(Math.max(...daily.map(d => d.players)));
+  const f = frame(host, 200, { b: 24 });
+  yAxis(f, max);
+  const n = daily.length, step = f.iw / n, bw = Math.max(2, Math.min(28, step - 2));
+  const every = Math.ceil(n / Math.max(1, Math.floor(f.iw / 56)));
+  daily.forEach((d, i) => {
+    const h = d.players / max * f.ih, x = f.m.l + i * step + (step - bw) / 2;
+    if (h > 0) el('path', { d: topRounded(x, f.m.t + f.ih - h, bw, h, 4), fill: 'var(--s1)' }, f.svg);
+    if (i % every === 0) { const t = el('text', { x: x + bw / 2, y: f.m.t + f.ih + 16, 'text-anchor': 'middle' }, f.svg); t.textContent = d.day.slice(5); }
+    const hit = el('rect', { x: f.m.l + i * step, y: f.m.t, width: step, height: f.ih, class: 'hit' }, f.svg);
+    hit.addEventListener('mousemove', e => showTip(e, `<b>${d.day}</b><div class="row"><span>玩家</span><span>${d.players}</span></div><div class="row"><span>打开次数</span><span>${d.sessions}</span></div>`));
+    hit.addEventListener('mouseleave', hideTip);
+  });
+  $('#t-daily').innerHTML = '<tr><th>日期</th><th>玩家</th><th>打开次数</th></tr>' + daily.slice().reverse().map(d => `<tr><td>${d.day}</td><td>${d.players}</td><td>${d.sessions}</td></tr>`).join('');
+}
+
+/* ---------- 渲染 ---------- */
+function render() {
+  const d = DATA; if (!d) return;
+  const k = d.kpi, ends = k.delivers + k.fails + k.quits;
+  const ms = k.median_session;
+  const tiles = [
+    ['玩家', fmt(k.players), '不重复的匿名玩家'],
+    ['打开次数', fmt(k.sessions), k.players ? `人均 ${(k.sessions / k.players).toFixed(1)} 次` : ''],
+    ['接单', fmt(k.starts), `交付 ${fmt(k.delivers)} 单`],
+    ['通过率', pct(k.delivers, ends), `失败 ${fmt(k.fails)} · 中途走 ${fmt(k.quits)}`],
+    ['全部打通', fmt(k.winners), `${d.total_orders} 单全交付的玩家`],
+    ['单次游玩', ms == null ? '–' : ms >= 60 ? (ms / 60).toFixed(1) + ' 分' : Math.round(ms) + ' 秒', '中位数'],
+  ];
+  $('#kpis').innerHTML = tiles.map(([a, b, c]) => `<div class="kpi"><div class="k">${a}</div><div class="v">${b}</div><div class="n">${c}</div></div>`).join('');
+
+  barsByOrder($('#c-reach'), d.orders, o => o.players, (o, i) =>
+    `<b>第 ${i + 1} 单 · ${esc(o.name)}</b><div class="row"><span>接过的玩家</span><span>${o.players}</span></div><div class="row"><span>交付过的玩家</span><span>${o.deliver_players}</span></div>`);
+  outcomeChart($('#c-outcome'), d.orders);
+  dailyChart($('#c-daily'), d.daily);
+
+  const farOrders = d.orders.map((o, i) => Object.assign({}, o, { far: (d.furthest.find(f => f.k === i) || {}).n || 0 }));
+  barsByOrder($('#c-far'), farOrders, o => o.far, (o, i) => `<b>停在第 ${i + 1} 单 · ${esc(o.name)}</b><div class="row"><span>玩家</span><span>${o.far}</span></div>`, 200);
+
+  // 明细表
+  const maxS = Math.max(1, ...d.orders.map(o => o.starts));
+  let rows = '<tr><th>单</th><th class="l">材料</th><th>接单</th><th>玩家</th><th>交付</th><th>碎</th><th>超时</th><th>中途走</th><th>通过率</th><th>平均用时</th><th>交付圆度</th><th>达标线</th><th>失败时圆度</th><th>有效/过头</th><th>平均酬劳</th></tr>';
+  d.orders.forEach((o, i) => {
+    if (i % PER === 0) rows += `<tr class="shift"><td colspan="15">第 ${i / PER + 1} 班</td></tr>`;
+    const end = o.deliver + o.shatter + o.time + o.quit, f2 = v => v == null ? '<span class="muted">–</span>' : (v * 100).toFixed(1) + '%';
+    rows += `<tr><td>${i + 1}</td><td class="l">${esc(o.name)}</td><td>${o.starts}<span class="bar" style="width:${Math.round(o.starts / maxS * 40)}px"></span></td><td>${o.players}</td><td>${o.deliver}</td><td>${o.shatter}</td><td>${o.time}</td><td>${o.quit}</td>`
+      + `<td>${pct(o.deliver, end)}</td><td>${o.avg_used == null ? '<span class="muted">–</span>' : o.avg_used.toFixed(1) + ' 秒'}</td><td>${f2(o.avg_round)}</td><td>${f2(o.avg_target)}</td><td>${f2(o.fail_round)}</td>`
+      + `<td>${o.avg_good == null ? '<span class="muted">–</span>' : o.avg_good.toFixed(1) + ' / ' + o.avg_over.toFixed(1)}</td><td>${o.avg_pay == null ? '<span class="muted">–</span>' : '◎ ' + Math.round(o.avg_pay)}</td></tr>`;
+  });
+  $('#t-orders').innerHTML = rows;
+
+  // 来源与设备
+  const S = d.devices, groups = [['输入方式', S.input], ['屏幕方向', S.orient], ['语言', S.lang], ['国家/地区', S.country], ['来源网站', S.ref]];
+  $('#splits').innerHTML = groups.map(([t, arr]) => {
+    const tot = arr.reduce((s, r) => s + r.n, 0);
+    return `<div><h3>${t}</h3>${arr.length ? arr.map(r => `<div class="split-row"><span class="name">${esc(r.k)}</span><span>${r.n} · ${pct(r.n, tot)}</span><div class="track"><span style="width:${tot ? r.n / tot * 100 : 0}%"></span></div></div>`).join('') : '<div class="muted">–</div>'}</div>`;
+  }).join('');
+
+  // 最近事件
+  const evDesc = e => {
+    const x = e.data || {}, nm = x.order ? (d.orders.find(o => o.order === x.order) || {}).name || x.order : '';
+    if (e.ev === 'open') return [x.touch ? '触屏' : '鼠标', x.port ? '竖屏' : '横屏', x.lang, x.ref ? '来自 ' + x.ref : ''].filter(Boolean).join(' · ');
+    if (e.ev === 'win') return `酬劳 ◎ ${x.score ?? '–'}${x.loop ? ' · 加班第 ' + x.loop + ' 轮' : ''}`;
+    const parts = [`第 ${(x.idx ?? 0) + 1} 单 ${nm}`];
+    if (x.round != null && e.ev !== 'start') parts.push(`圆度 ${(x.round * 100).toFixed(1)}%`);
+    if (x.used) parts.push(`${x.used} 秒`);
+    if (e.ev === 'fail') parts.push(x.reason === 'shatter' ? '砸碎' : '超时');
+    if (e.ev === 'deliver') parts.push('◎ ' + x.pay);
+    if (x.loop) parts.push('加班第 ' + x.loop + ' 轮');
+    return parts.join(' · ');
+  };
+  $('#t-recent').innerHTML = '<tr><th class="l">时间</th><th class="l">玩家</th><th class="l">事件</th><th class="l">内容</th><th class="l">地区</th></tr>' +
+    (d.recent.length ? d.recent.map(e => `<tr><td class="l">${new Date(e.ts * 1000).toLocaleString('zh-CN', { hour12: false })}</td><td class="l muted">${esc(e.pid)}</td><td class="l"><span class="ev">${esc(EVN[e.ev] || e.ev)}</span></td><td class="l">${esc(evDesc(e))}</td><td class="l">${esc(e.country || '')}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="empty">还没有事件</td></tr>');
+
+  $('#updated').textContent = '更新于 ' + new Date(d.generated * 1000).toLocaleTimeString('zh-CN', { hour12: false });
+}
+
+async function load() {
+  const qs = `?days=${state.days}&loops=${state.loops}`;
+  $('#csv').href = '/admin/api/events.csv' + qs;
+  $('#updated').textContent = '加载中…';
+  try {
+    const r = await fetch('/admin/api/stats' + qs, { credentials: 'same-origin' });
+    if (r.status === 401) { location.reload(); return; }
+    DATA = await r.json(); render();
+  } catch (e) { $('#updated').textContent = '加载失败：' + e.message; }
+}
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+load();
+setInterval(() => { if (!document.hidden) load(); }, 60000);
+})();
+</script>
+</body>
+</html>
