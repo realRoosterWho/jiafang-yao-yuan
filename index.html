@@ -45,6 +45,7 @@ body {
 }
 #app { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 #wrap { flex: 1 1 0; min-height: 0; width: 100%; display: grid; place-items: center; }
+* { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #stage {
   --u: 1px;
   position: relative;
@@ -150,8 +151,8 @@ body {
 #stage.held #rot button { opacity: 1; }
 #rot button.on { background: var(--rim); }
 /* 竖屏手机：舞台换成竖版，按钮跟着放大 */
-#stage.port #deliver { right: 17%; bottom: calc(var(--u) * 8); font-size: max(15px, calc(var(--u) * 30)); }
-#stage.port #mute { bottom: calc(var(--u) * 10); font-size: max(11px, calc(var(--u) * 17)); }
+#stage.port #deliver { right: 17%; bottom: calc(var(--u) * (var(--bot) + 8)); font-size: max(15px, calc(var(--u) * 30)); }
+#stage.port #mute { bottom: calc(var(--u) * (var(--bot) + 10)); font-size: max(11px, calc(var(--u) * 17)); }
 .touch #deliver kbd { display: none; }
 @media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
 @media (prefers-reduced-motion: reduce) { #deliver { animation: none; } }
@@ -179,9 +180,11 @@ body {
 /* ---------- 常量 ---------- */
 const W = 960, H = 600, FLOOR = 520, WALL_R = 880;
 // 竖屏时只看世界的右半边（房间变窄、力度表还在右侧），顶上多出 TOP 高的一条放甲方和圆度条
-let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0;
+let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0, BOT = 0;   // BOT：竖屏底部放圆度条的一条，拎材料的手不会挡住
 const midX = () => (WALL_L + WALL_R) / 2;
-const TOUCH = !!(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches);
+// 触屏判断：有的手机浏览器不报 hover:none，所以再看触点数，只要没有精确指针（鼠标）就当触屏
+const mq = q => !!(window.matchMedia && matchMedia(q).matches);
+const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' ? n : n.toLowerCase();
@@ -872,6 +875,9 @@ for (const [id, k] of [['rotL', 'left'], ['rotR', 'right']]) {
   el.addEventListener('contextmenu', e => e.preventDefault());
 }
 cv.addEventListener('contextmenu', e => e.preventDefault());
+// 手机上长按/双击别选中文字、别弹放大镜
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
 cv.addEventListener('wheel', e => { const b = G.body; if (b && b.held) { e.preventDefault(); b.userRot += clamp(e.deltaY, -120, 120) * .004; } }, { passive: false });
 window.addEventListener('keydown', e => {
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
@@ -1320,7 +1326,7 @@ function drawHints() {
 /* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
 function drawHudPort(t) {
   ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
-  const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
+  const x0 = 22, w = 384, y = TOP + H + 30, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
@@ -1332,6 +1338,7 @@ function drawHudPort(t) {
   let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
   ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
+  ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
   ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
@@ -1362,11 +1369,11 @@ let scale = 1;
 function fit() {
   const aw = wrap.clientWidth, ah = wrap.clientHeight;
   PORT = ah > aw * 1.15;
-  if (PORT) { VW = 540; TOP = clamp(Math.round(VW * ah / aw) - H, 110, 300); VH = H + TOP; CAMX = W - VW; } else { VW = W; VH = H; TOP = 0; CAMX = 0; }
+  if (PORT) { VW = 540; BOT = 104; TOP = clamp(Math.round(VW * ah / aw) - H - BOT, 132, 300); VH = H + TOP + BOT; CAMX = W - VW; } else { VW = W; VH = H; TOP = 0; BOT = 0; CAMX = 0; }
   WALL_L = CAMX; stage.classList.toggle('port', PORT);
   let w = Math.floor(Math.min(aw, ah > 40 ? ah * VW / VH : aw, 1280)); if (!(w > 0)) w = 320;
   const h = Math.floor(w * VH / VW), dpr = Math.min(window.devicePixelRatio || 1, 2);
-  stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / VW) + 'px');
+  stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / VW) + 'px'); stage.style.setProperty('--bot', BOT);
   cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); scale = cv.width / VW;
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
