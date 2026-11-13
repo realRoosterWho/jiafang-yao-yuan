@@ -154,6 +154,7 @@ body {
 #stage.port #deliver { right: 17%; bottom: calc(var(--u) * (var(--bot) + 8)); font-size: max(15px, calc(var(--u) * 30)); }
 #stage.port #mute { bottom: calc(var(--u) * (var(--bot) + 10)); font-size: max(11px, calc(var(--u) * 17)); }
 .touch #deliver kbd { display: none; }
+#stage.cover #rot { display: none; }
 @media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
 @media (prefers-reduced-motion: reduce) { #deliver { animation: none; } }
 </style>
@@ -223,9 +224,9 @@ const MATS = {
     base: '#c8423a', outline: '#6e1a16', rim: '#f6dcc6', chips: ['#d9534a', '#f6dcc6', '#a62f29'], over: '砸成肉泥了！', dead: '这块肉已经是一摊肉酱了。', blurb: '一碰就变形，挤到哪鼓到哪。举太高松手会直接变肉泥。' },
   can: { name: '易拉罐', unit: '个', hard: 14, brittle: 56, loose: 1.3, plastic: .85, smooth: .5, passes: 2, value: 1.8, hp: 3, rest: .22, fric: .5, accel: 34000, jig: .12, target: .84, time: 85,
     base: '#d9372c', outline: '#5e0f0b', chips: ['#e8e8ee', '#d9372c', '#b9bcc6'], over: '压扁了！', dead: '易拉罐被拍成了一张铁皮。', blurb: '软金属，不会少料，砸扁的地方会往两边鼓。' },
-  pc: { name: '电脑', unit: '台', hard: 30, brittle: 54, loose: .9, plastic: 0, smooth: 0, passes: 0, value: 2.5, hp: 2, rest: .12, fric: .7, accel: 22000, jig: .03, target: .82, time: 95,
+  pc: { name: '电脑', unit: '台', hard: 30, brittle: 58, loose: .9, plastic: 0, smooth: 0, passes: 0, value: 2.2, hp: 2, rest: .12, fric: .7, accel: 22000, jig: .03, target: .82, time: 95,
     base: '#d8d1bb', outline: '#5f5a49', chips: ['#d8d1bb', '#2b3a33', '#8f8a78', '#7dff9a'], over: '零件飞出来了！', dead: '电脑散成了一地零件。', blurb: '又硬又脆，力度窗口很窄。显示器底座也得磨掉。' },
-  gem: { name: '宝石', unit: '颗', hard: 54, brittle: 70, loose: .7, plastic: 0, smooth: 0, passes: 0, value: 4, hp: 2, rest: .3, fric: .4, accel: 30000, jig: 0, target: .85, time: 110,
+  gem: { name: '宝石', unit: '颗', hard: 54, brittle: 70, loose: .7, plastic: 0, smooth: 0, passes: 0, value: 5, hp: 2, rest: .3, fric: .4, accel: 30000, jig: 0, target: .85, time: 110,
     base: '#35c3e0', outline: '#e9fdff', chips: ['#9ff3ff', '#35c3e0', '#ffffff'], over: '崩口了！', dead: '宝石碎成了一把亮晶晶的粉。', blurb: '极硬极脆，力度差一点都不行。一颗顶其他材料好几单。' },
 
   /* 第二班：厨房 */
@@ -243,7 +244,7 @@ const MATS = {
     base: '#f6ead2', outline: '#9a7d55', chips: ['#fffaf0', '#f6ead2', '#ffcf40'], over: '蛋碎了！', dead: '蛋黄流了一地。甲方说这个形状最不圆。', blurb: '轻拿轻放。力度稍微一大就碎，而且<strong>一次都碎不起</strong>。离地一拃高松手就够了。' },
 
   /* 第三班：仓库 */
-  brick: { name: '砖头', unit: '块', hard: 44, brittle: 80, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 2.2, hp: 3, rest: .15, fric: .85, accel: 16000, jig: 0, target: .76, time: 110, snd: 'stone', rough: 1,
+  brick: { name: '砖头', unit: '块', hard: 44, brittle: 80, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 1.7, hp: 3, rest: .15, fric: .85, accel: 16000, jig: 0, target: .76, time: 110, snd: 'stone', rough: 1,
     base: '#b5482f', outline: '#4e1a0e', chips: ['#c85a3c', '#8f351f', '#e08a6a'], over: '崩掉一角！', dead: '砖头碎成了一堆渣土。', blurb: '又长又硬的一块红砖。两头先砸短。力气小了它只会掉灰。' },
   cone: { name: '路锥', unit: '个', hard: 14, brittle: 64, loose: 1.2, plastic: .8, smooth: .5, passes: 3, value: 2.4, hp: 3, rest: .62, bounce: .8, fric: .8, accel: 30000, jig: .3, target: .84, time: 90, snd: 'rubber',
     base: '#ff7a1a', outline: '#7a2d00', chips: ['#ff7a1a', '#ffffff', '#2a2a36'], over: '压瘪了！', dead: '路锥被拍成了一张橡胶垫。', blurb: '橡胶做的，砸不掉料，还特别弹：松手之后它会自己再蹦两下，每一下都算数。' },
@@ -270,7 +271,7 @@ const MATS = {
   ufo: { name: '飞碟', unit: '架', hard: 44, brittle: 64, loose: .8, plastic: .5, smooth: .4, passes: 2, value: 8, hp: 2, rest: .15, fric: .6, accel: 14000, jig: .03, target: .9, time: 130,
     base: '#b9bfcc', outline: '#2e3340', chips: ['#e3e7ee', '#8a90a0', '#7de8ff', '#ffd35c'], over: '警报响了！', dead: '飞碟炸了。这下你和甲方都回不去了。', blurb: '最后一单：甲方的座驾。又大又扁又沉，司机还在里面。别管他。' },
 };
-const ORDER = ['wood', 'stone', 'meat', 'can', 'pc', 'gem', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'brick', 'cone', 'gear', 'bottle', 'gold', 'ingot', 'cube', 'phone', 'record', 'crown', 'star', 'ufo'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo'];
 const PER = 6;   // 每班六单
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -474,7 +475,7 @@ const G = { state: 'menu', idx: 0, loop: 0, score: 0, startScore: 0, done: 0, bo
   doom: null, bubble: null, mood: 'calm', moodT: 0, needle: 0, warned: false, wasReady: false, pay: null };
 const P = { x: W / 2, y: 200 };
 const keys = { left: false, right: false };
-let parts = [], frags = [], floats = [];
+let parts = [], frags = [], floats = [], stains = [];
 
 /* ---------- 声音（全部现场合成） ---------- */
 let AC = null, master = null, noiseBuf = null, muted = false;
@@ -633,6 +634,7 @@ function impact(b, F, cx) {
   G.lastHit = { F, t: G.time, kind: res.over ? 'over' : 'good' };
   const n = res.over ? 26 : Math.round(6 + 12 * res.t);
   burst(cx, m.plastic ? Math.round(n * .5) : n, m.chips, power, m.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
+  if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b);
   HIT[m.snd || b.id](.45 + .55 * power);
   const before = G.round; updateRoundness(); const gain = G.round - before;
   if (res.over) {
@@ -664,6 +666,7 @@ function shatter(b) {
     i0 = i1;
   }
   burst(b.x, 30, b.mat.chips, 1, 'chip', b.y);
+  if (b.id === 'egg') { stain(b.x, 120, 'rgba(255,251,240,.92)', 5); stain(b.x + rand(-20, 20), 30, '#ffc21f', 11); fxp(b.x, FLOOR - 8, 16, 'drop', ['#ffcf40', '#fffaf0'], { v0: 120, v1: 420, s0: 4, s1: 9 }); }
   fail('shatter');
 }
 
@@ -677,19 +680,68 @@ function burst(x, n, colors, power, kind, y) {
 function dust(x, n) {
   for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-14, 14), y: FLOOR - 2, vx: rand(-90, 90), vy: rand(-40, -6), life: rand(.35, .6), t: 0, s: rand(5, 12), c: '#cfc8f0', rot: 0, vr: 0, kind: 'dust' });
 }
+function fxp(x, y, n, kind, colors, o) {
+  o = o || {};
+  for (let k = 0; k < n && parts.length < 320; k++) {
+    const a = rand(-Math.PI, 0), sp = rand(o.v0 || 60, o.v1 || 280);
+    parts.push({ x: x + rand(-10, 10), y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up === undefined ? 70 : o.up), life: rand(.45, .95) * (o.life || 1), t: 0, s: rand(o.s0 || 2.5, o.s1 || 6.5), c: pick(colors), rot: rand(0, TAU), vr: rand(-12, 12), kind, g: o.g, ch: o.ch && pick(o.ch) });
+  }
+}
+function puff(x, n, c) { for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-22, 22), y: FLOOR - rand(2, 16), vx: rand(-130, 130), vy: rand(-70, -10), life: rand(.5, .9), t: 0, s: rand(8, 17), c, rot: 0, vr: 0, kind: 'dust', a: .5 }); }
+function stain(x, w, c, h) { if (stains.length > 40) stains.shift(); stains.push({ x: clamp(x, WALL_L + w, WALL_R - w), w, c, h: h || 4, t: 0 }); }
+const sparks = (x, n, cols, p) => fxp(x, FLOOR - 4, n, 'spark', cols, { v0: 200, v1: 380 + 420 * p, life: .5 });
+const twinkle = (x, y, n, cols, g) => fxp(x, y, n, 'twinkle', cols, { v0: 60, v1: 260, s0: 6, s1: 12, g: g === undefined ? 500 : g, life: 1.1 });
+const shards = (x, n, cols) => fxp(x, FLOOR - 4, n, 'shard', cols, { v0: 120, v1: 420, s0: 5, s1: 10 });
+const ring = (x, w, c) => parts.push({ x, y: FLOOR - 1, vx: 0, vy: 0, g: 0, life: .45, t: 0, s: w, c, rot: 0, vr: 0, kind: 'ring' });
+/* 每种材料自己的敲击特效：(落点 x, 力度 0..1, 是否过头, 材料) */
+const MATFX = {
+  wood: (x, p) => puff(x, 3 + 3 * p, '#e3ba82'),
+  stone: (x, p) => sparks(x, 3 + 6 * p, ['#fff3b0', '#ffd35c'], p),
+  meat: (x, p, over) => stain(x, 18 + 40 * p + (over ? 40 : 0), 'rgba(166,47,41,.55)'),
+  can: (x, p, over, b) => {
+    fxp(b.x, b.y - b.meanR * .4, 5 + 8 * p, 'bubble', ['#ffffff', '#ffd0c8'], { g: -260, v0: 10, v1: 70, up: 20, s0: 2, s1: 5, life: 1.5 });
+    if (over) { fxp(x, FLOOR - 4, 20, 'drop', ['#ffffff', '#f3d9b8', '#b9773a'], { v0: 200, v1: 520, up: 160 }); stain(x, 80, 'rgba(150,90,40,.5)'); }
+  },
+  pc: (x, p, over) => fxp(x, FLOOR - 12, over ? 9 : 2 + 3 * p, 'glyph', ['#7dff9a'], { ch: over ? ['ERR', '?!', '404'] : ['0', '1'], s0: 13, s1: 19, g: 420, v0: 80, v1: 240, up: 170, life: 1.4 }),
+  gem: (x, p, over) => { twinkle(x, FLOOR - 10, 3 + 4 * p, ['#ffffff', '#9ff3ff']); if (over) shards(x, 10, ['#9ff3ff', '#ffffff']); },
+  dough: (x, p) => puff(x, 5 + 8 * p, '#fffaf0'),
+  cheese: (x, p) => puff(x, 2 + 3 * p, '#ffe28a'),
+  melon: (x, p, over) => stain(x, 22 + 46 * p + (over ? 50 : 0), 'rgba(240,72,78,.5)'),
+  carrot: (x, p) => fxp(x, FLOOR - 6, 2 + 3 * p, 'slice', ['#f08a24', '#ffa544'], { s0: 6, s1: 10, v0: 100, v1: 320 }),
+  ice: (x, p, over, b) => { shards(x, 3 + 5 * p, ['#eaffff', '#bfe9fb']); puff(x, 3, '#dff6ff'); stain(b.x, 26 + 30 * p, 'rgba(160,220,250,.32)'); },
+  egg: (x, p, over, b) => {
+    shards(x, 3, ['#fffaf0', '#f6ead2']);
+    const al = Math.PI / 2 - b.a + rand(-.25, .25), i = ((Math.round(al / DPHI) % N) + N) % N;
+    let cx = Math.cos(al) * b.r[i], cy = Math.sin(al) * b.r[i]; const line = [[cx, cy]];
+    for (let k = 0; k < 3; k++) { const a = Math.atan2(-cy, -cx) + rand(-1.3, 1.3), len = b.meanR * rand(.08, .15); cx += Math.cos(a) * len; cy += Math.sin(a) * len; line.push([cx, cy]); }
+    if (b.cracks.length < 16) b.cracks.push(line);
+  },
+  brick: (x, p) => puff(x, 4 + 6 * p, '#c85a3c'),
+  cone: (x, p) => ring(x, 60 + 70 * p, '#ffb070'),
+  gear: (x, p) => sparks(x, 6 + 12 * p, ['#ffffff', '#ffd35c', '#ffb347'], p),
+  bottle: (x, p, over) => shards(x, over ? 14 : 3 + 5 * p, ['#58b56f', '#bff0c8']),
+  gold: (x, p) => twinkle(x, FLOOR - 10, 3 + 4 * p, ['#fff6cf', '#ffe37a']),
+  ingot: (x, p) => { sparks(x, 10 + 16 * p, ['#fff3b0', '#ffb347', '#ff7a1a'], p); ring(x, 80 + 90 * p, '#ffb347'); },
+  cube: (x, p, over) => fxp(x, FLOOR - 6, over ? 9 : 2 + 3 * p, 'chip', ['#ff4d4d', '#ffd35c', '#3fa7ff', '#3ddc84', '#ffffff'], { s0: 9, s1: 13, v0: 120, v1: 360 }),
+  phone: (x, p, over) => fxp(x, FLOOR - 12, over ? 8 : 2, 'glyph', ['#7fd4ff', '#ff5683', '#ffffff'], { ch: ['!', '♥', '@', '99+'], s0: 13, s1: 19, g: 300, v0: 60, v1: 200, up: 190, life: 1.4 }),
+  record: (x, p) => fxp(x, FLOOR - 12, 4, 'glyph', ['#e23d4f', '#fff3d6'], { ch: ['♪', '♫'], s0: 16, s1: 24, g: 120, v0: 40, v1: 160, up: 160, life: 1.6 }),
+  crown: (x, p, over) => { twinkle(x, FLOOR - 10, 3 + 3 * p, ['#fff6cf', '#ffe37a']); if (over) shards(x, 6, ['#e23d4f', '#3fa7ff']); },
+  star: (x, p) => twinkle(x, FLOOR - 10, 6 + 8 * p, ['#fffde0', '#ffd83c', '#ff9d2e'], 160),
+  ufo: (x, p, over) => { sparks(x, 4 + 6 * p, ['#7de8ff', '#ffffff'], p); ring(x, 90 + 60 * p, '#7de8ff'); if (over) fxp(x, FLOOR - 12, 6, 'glyph', ['#ff5683'], { ch: ['!'], s0: 18, s1: 26, g: 200, up: 220, life: 1.3 }); },
+};
 function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute');
-function setCard(html) { card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
+function setCard(html) { stage.classList.remove('cover'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
 function pips(v) { const k = clamp(Math.round(v), 1, 5); return '●'.repeat(k) + '○'.repeat(5 - k); }
 function setupRound() {
   const id = ORDER[G.idx], m = MATS[id];
   G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = m.time; G.hp = m.hp;
   G.stats = { good: 0, over: 0, light: 0 }; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
   G.warned = false; G.wasReady = false; G.startScore = G.score; G.bubble = null; G.mood = 'calm'; G.moodT = 0;
-  parts = []; frags = []; floats = [];
+  parts = []; frags = []; floats = []; stains = [];
 }
 /* 存档只记每一单拿过的最高酬劳。不锁关：订单簿里哪一单都能直接开工 */
 const SAVE = { best: {} };
@@ -729,6 +781,40 @@ function showChapter() {
     <p>${ch.intro}</p>
     <p class="note">${L('这一班六单：', 'Six orders this shift: ')}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button></div>`);
+}
+/* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
+function showCover() { G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }
+function leaveCover() { audioInit(); sfx.ui(); showMenu(); }
+function drawCover(t) {
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#0c0922'); g.addColorStop(1, '#261b5c'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  ctx.fillStyle = '#fff';
+  for (const st of STARS) { ctx.globalAlpha = .25 + .45 * Math.abs(Math.sin(t * st.sp + st.ph)); ctx.beginPath(); ctx.arc(st.x % VW, st.y * VH / FLOOR, st.r, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  const cx = VW / 2, R = Math.min(VW, VH) * (PORT ? .2 : .16), floorY = VH * (PORT ? .5 : .56);
+  // 一个周期 3 次弹跳：每落一次就圆一点，圆满了停一拍再变回方的
+  const per = 4.2, ph = REDUCED ? 3.5 : t % per, hop = Math.min(ph, 3) % 1, bounces = Math.min(3, Math.floor(ph));
+  const k = ph < 3 ? (bounces + Math.min(1, hop * 6)) / 3 * .85 : .85 + .15 * Math.min(1, (ph - 3) * 3);
+  const lift = ph < 3 ? Math.sin(hop * Math.PI) * R * .9 : 0, squash = ph < 3 && hop < .12 ? 1 - (.12 - hop) * 1.2 : 1;
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(cx, floorY + 4, R * (1 - lift / R * .35), R * .14, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = C.rim; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - R * 2.2, floorY + 4); ctx.lineTo(cx + R * 2.2, floorY + 4); ctx.stroke();
+  ctx.save(); ctx.translate(cx, floorY - R * squash - lift); ctx.scale(2 - squash, squash); ctx.rotate(REDUCED ? 0 : Math.sin(t * .9) * .12);
+  ctx.beginPath();
+  for (let i = 0; i <= 72; i++) { const a = i / 72 * TAU, c = Math.abs(Math.cos(a)), sn = Math.abs(Math.sin(a)), rs = R * .86 / Math.max(c, sn), rad = rs + (R - rs) * k; ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); }
+  ctx.closePath(); const wg = ctx.createLinearGradient(0, -R, 0, R); wg.addColorStop(0, '#d9a066'); wg.addColorStop(1, '#a8703c'); ctx.fillStyle = wg; ctx.fill();
+  ctx.strokeStyle = '#7a4d26'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = 'rgba(122,77,38,.5)'; ctx.lineWidth = 2; for (const yy of [-.4, -.05, .3]) { ctx.beginPath(); ctx.moveTo(-R * .6, yy * R); ctx.quadraticCurveTo(0, yy * R + R * .12, R * .6, yy * R); ctx.stroke(); }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(244,240,255,.45)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(cx, floorY - R - lift, R * 1.04, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `${PORT ? 20 : 17}px ${BODY}`; ctx.fillStyle = C.coin; ctx.fillText(L('地球工匠 · 外星订单', 'Earth artisan · Alien orders'), cx, floorY + R * .75);
+  const ts = EN ? (PORT ? 50 : 62) : (PORT ? 84 : 96);
+  ctx.font = `${ts}px ${DISPLAY}`; ctx.fillStyle = C.alien; ctx.fillText(L('甲方要圆', EN && PORT ? 'The Client' : 'The Client Wants It Round'), cx, floorY + R * .75 + ts * 1.05);
+  if (EN && PORT) ctx.fillText('Wants It Round', cx, floorY + R * .75 + ts * 2.1);
+  ctx.globalAlpha = REDUCED ? 1 : .45 + .55 * Math.abs(Math.sin(t * 2.2));
+  ctx.font = `${PORT ? 22 : 18}px ${BODY}`; ctx.fillStyle = C.ink;
+  ctx.fillText(TOUCH ? L('点一下屏幕开始', 'Tap to start') : L('点击或按任意键开始', 'Click or press any key'), cx, VH * (PORT ? .88 : .9));
+  ctx.globalAlpha = 1;
 }
 function showMenu() {
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; setupRound(); G.state = 'menu';
@@ -855,6 +941,7 @@ function release() { const b = G.body; if (b && b.held) { b.held = false; b.prim
 // 第一根手指拎材料；拎着的时候第二根手指落在画面上，左右滑就是微调角度
 let grabId = null, rotId = null, rotX = 0;
 cv.addEventListener('pointerdown', e => {
+  if (G.state === 'cover') { e.preventDefault(); leaveCover(); return; }
   audioInit();
   if (G.body && G.body.held && grabId !== null && e.pointerId !== grabId) { rotId = e.pointerId; rotX = e.clientX; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} return; }
   setPointer(e);
@@ -880,6 +967,7 @@ document.addEventListener('selectstart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault());
 cv.addEventListener('wheel', e => { const b = G.body; if (b && b.held) { e.preventDefault(); b.userRot += clamp(e.deltaY, -120, 120) * .004; } }, { passive: false });
 window.addEventListener('keydown', e => {
+  if (G.state === 'cover' && !e.metaKey && !e.ctrlKey && !e.altKey && document.activeElement !== muteBtn) { e.preventDefault(); leaveCover(); return; }
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
   else if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
   else if (e.code === 'Space' || e.code === 'Enter') {
@@ -914,9 +1002,10 @@ function update(dt) {
   let live = 0; if (b && !b.dead && (b.held || !b.sleeping)) live = clamp(b.vy / VMAX * 100, 0, 100);
   G.needle += (live - G.needle) * Math.min(1, dt * 30);
   G.shake *= Math.exp(-10 * dt);
-  for (const p of parts) { p.t += dt; if (p.kind === 'dust') { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 3 * dt; } else { p.vy += 1500 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > FLOOR - 2 && p.vy > 0) { p.y = FLOOR - 2; p.vy *= -.3; p.vx *= .6; } } }
+  for (const p of parts) { p.t += dt; if (p.kind === 'dust') { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 3 * dt; } else { p.vy += (p.g === undefined ? 1500 : p.g) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > FLOOR - 2 && p.vy > 0) { p.y = FLOOR - 2; p.vy *= -.3; p.vx *= .6; } } }
   parts = parts.filter(p => p.t < p.life);
   for (const f of frags) { f.vy += GRAV * .6 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.a += f.w * dt; if (f.y > FLOOR - 14 && f.vy > 0) { f.y = FLOOR - 14; f.vy *= -.3; f.vx *= .7; f.w *= .6; } if (f.x < 20 || f.x > WALL_R - 20) f.vx *= -.5; }
+  for (const st of stains) st.t += dt;
   for (const f of floats) { f.t += dt; f.y -= 42 * dt; }
   floats = floats.filter(f => f.t < 1.2);
   const d = G.doom;
@@ -963,7 +1052,7 @@ const ART = {
     c.fillStyle = g; c.fillRect(-140, -140, 280, 280);
     c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.moveTo(-140, 8); c.bezierCurveTo(-30, -30, 30, 46, 140, 4); c.lineTo(140, 28); c.bezierCurveTo(30, 66, -30, -8, -140, 32); c.closePath(); c.fill();
     c.beginPath(); c.arc(0, -40, 21, 0, TAU); c.fillStyle = '#fff'; c.fill();
-    c.fillStyle = '#b3241b'; c.font = `26px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('汽', 0, -39);
+    c.fillStyle = '#b3241b'; c.font = `${EN ? 15 : 26}px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('汽', 'POP'), 0, -39);
     const s = c.createLinearGradient(-58, 0, 58, 0); s.addColorStop(0, '#7c808c'); s.addColorStop(.4, '#f2f3f7'); s.addColorStop(1, '#8a8e9a');
     c.fillStyle = s; c.fillRect(-140, -140, 280, 58); c.fillRect(-140, 82, 280, 60);
     c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-140, -84, 280, 3); c.fillRect(-140, 80, 280, 3);
@@ -1062,7 +1151,7 @@ const ART = {
     const g = c.createLinearGradient(-50, 0, 50, 0); g.addColorStop(0, '#1b5e32'); g.addColorStop(.3, '#3fa55f'); g.addColorStop(.5, '#2f8a4d'); g.addColorStop(1, '#17512b'); c.fillStyle = g; c.fillRect(-200, -220, 400, 440);
     c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(-38, -4, 7, 104); c.fillRect(-10, -96, 4, 50);
     c.fillStyle = '#f4ecd4'; c.fillRect(-200, 18, 400, 58); c.fillStyle = '#c0392b'; c.fillRect(-200, 18, 400, 4); c.fillRect(-200, 72, 400, 4);
-    c.beginPath(); c.arc(0, 47, 19, 0, TAU); c.fill(); c.fillStyle = '#f4ecd4'; c.font = `24px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('圆', 0, 48);
+    c.beginPath(); c.arc(0, 47, 19, 0, TAU); c.fill(); c.fillStyle = '#f4ecd4'; c.font = `24px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('圆', 'O'), 0, 48);
     c.fillStyle = '#e0b84a'; c.fillRect(-200, -220, 400, 122); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-200, -100, 400, 3);
   },
   gold(c) {
@@ -1070,7 +1159,7 @@ const ART = {
     c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(-220, -40, 440, 8);
     c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.moveTo(-64, -40); c.lineTo(-40, -40); c.lineTo(-68, 40); c.lineTo(-92, 40); c.closePath(); c.fill();
     rr(c, -40, -18, 80, 40, 6); c.strokeStyle = 'rgba(122,82,0,.55)'; c.lineWidth = 2.5; c.stroke();
-    c.fillStyle = 'rgba(122,82,0,.75)'; c.font = `24px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('足金', 0, 3);
+    c.fillStyle = 'rgba(122,82,0,.75)'; c.font = `24px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('足金', '24K'), 0, 3);
   },
   ingot(c) {
     const g = c.createLinearGradient(0, -56, 0, 56); g.addColorStop(0, '#a4abb6'); g.addColorStop(.5, '#727984'); g.addColorStop(1, '#4a505a'); c.fillStyle = g; c.fillRect(-220, -220, 440, 440);
@@ -1103,7 +1192,7 @@ const ART = {
     c.lineWidth = 1; c.strokeStyle = 'rgba(255,255,255,.1)'; for (let q = 40; q <= 90; q += 4) { c.beginPath(); c.arc(0, 0, q, 0, TAU); c.stroke(); }
     c.fillStyle = 'rgba(255,255,255,.1)'; for (const a of [-.9, 2.24]) { c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 92, a - .22, a + .22); c.closePath(); c.fill(); }
     c.beginPath(); c.arc(0, 0, 33, 0, TAU); c.fillStyle = '#e23d4f'; c.fill(); c.lineWidth = 2; c.strokeStyle = '#ffd35c'; c.beginPath(); c.arc(0, 0, 28, 0, TAU); c.stroke();
-    c.fillStyle = '#fff3d6'; c.font = `13px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('圆舞曲', 0, -13);
+    c.fillStyle = '#fff3d6'; c.font = `${EN ? 9 : 13}px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('圆舞曲', 'WALTZ'), 0, -13);
     c.beginPath(); c.arc(0, 0, 4.5, 0, TAU); c.fillStyle = '#14141b'; c.fill();
   },
   crown(c, b, t) {
@@ -1202,7 +1291,14 @@ function drawFx() {
   }
   for (const p of parts) {
     const k = 1 - p.t / p.life;
-    if (p.kind === 'dust') { ctx.globalAlpha = .28 * k; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (1.6 - k * .6), 0, TAU); ctx.fill(); }
+    if (p.kind === 'dust') { ctx.globalAlpha = (p.a || .28) * k; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (1.6 - k * .6), 0, TAU); ctx.fill(); }
+    else if (p.kind === 'spark') { ctx.globalAlpha = Math.min(1, k * 2); ctx.strokeStyle = p.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .03, p.y - p.vy * .03); ctx.stroke(); }
+    else if (p.kind === 'twinkle') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; spark(ctx, p.x, p.y, p.s * (.4 + .6 * Math.abs(Math.sin(p.t * 9 + p.rot)))); }
+    else if (p.kind === 'shard') { ctx.globalAlpha = Math.min(1, k * 2); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.beginPath(); ctx.moveTo(0, -p.s); ctx.lineTo(p.s * .6, p.s * .7); ctx.lineTo(-p.s * .5, p.s * .4); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else if (p.kind === 'glyph') { ctx.globalAlpha = Math.min(1, k * 2.5); ctx.fillStyle = p.c; ctx.font = `700 ${p.s | 0}px ${NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.ch, p.x, p.y); }
+    else if (p.kind === 'bubble') { ctx.globalAlpha = Math.min(.9, k * 2); ctx.strokeStyle = p.c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x + Math.sin(p.t * 8 + p.rot) * 3, p.y, p.s, 0, TAU); ctx.stroke(); }
+    else if (p.kind === 'ring') { ctx.globalAlpha = k * .8; ctx.strokeStyle = p.c; ctx.lineWidth = 3; const w = p.s * (1.05 - k); ctx.beginPath(); ctx.ellipse(p.x, p.y, w, w * .16, 0, 0, TAU); ctx.stroke(); }
+    else if (p.kind === 'slice') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, TAU); ctx.fill(); ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .5, 0, TAU); ctx.stroke(); }
     else if (p.kind === 'drop') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .6, 0, TAU); ctx.fill(); }
     else { ctx.globalAlpha = Math.min(1, k * 2); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .35, p.s, p.s * .7); ctx.restore(); }
   }
@@ -1388,9 +1484,12 @@ function drawHudPort(t) {
   }
 }
 function draw() {
-  const t = G.time; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, VW, VH); ctx.translate(-CAMX, TOP);
+  const t = G.time; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, VW, VH);
+  if (G.state === 'cover') { drawCover(t); return; }
+  ctx.translate(-CAMX, TOP);
   ctx.save(); if (!REDUCED && G.shake > .4) ctx.translate(rand(-1, 1) * G.shake, rand(-1, 1) * G.shake);
-  drawBg(t); if (!PORT) drawAlien(t);
+  drawBg(t); for (const st of stains) { ctx.fillStyle = st.c; ctx.beginPath(); ctx.ellipse(st.x, FLOOR + 2, st.w * Math.min(1, .3 + st.t * 3), st.h, 0, st.h > 6 ? Math.PI : 0, st.h > 6 ? TAU : TAU); ctx.fill(); }
+  if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) drawBody(G.body, t);
   if (G.doom) drawDoom(G.doom);
   drawFx(); drawRotHint(); ctx.restore();
@@ -1415,6 +1514,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
+  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 24-order whacking game.';
   document.getElementById('help').textContent = TOUCH
     ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
     : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
@@ -1441,11 +1541,12 @@ window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ctx, makeBody, deform, sim, act
 
 function boot(data) {
   if (data && typeof data.score === 'number' && data.idx >= 0 && data.idx < ORDER.length) { G.idx = data.idx; G.loop = data.loop || 0; G.score = data.score; G.done = data.done || 0; showOrder(); }
-  else showMenu();
+  else if (new URLSearchParams(location.search).get('lang')) showMenu();   // 刚切完语言就别再看一遍封面
+  else showCover();
   requestAnimationFrame(now => { last = now; frame(now); });
 }
 const hot = window.claude && window.claude.hot;
-try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' ? {} : { idx: G.idx, loop: G.loop, score: G.startScore, done: G.done })); } catch (e) {}
+try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state === 'cover' ? {} : { idx: G.idx, loop: G.loop, score: G.startScore, done: G.done })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
 })();
 </script>
