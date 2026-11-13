@@ -323,14 +323,14 @@ const MATS = {
     fill: .6, flow: 1.2, core: { label: ['沙子', 'Sand'], hard: 12, brittle: 100, loose: 1.1, plastic: .5, base: '#d9b56a', outline: '#8a6a2a', chips: ['#e8cc8a', '#d9b56a', '#a8864a'], snd: 'crumb', over: ['', ''] },
     base: '#b8925a', outline: '#5e4420', chips: ['#c9a66b', '#b8925a'], over: '袋子破了！', dead: '沙袋破了，沙子撒了一地。甲方说正好铺个沙滩。', blurb: '半袋沙子，沙会往下流。砸空着的布那面，软塌塌的没反应；砸有沙子垫着的那面才会变形。翻过来要等沙子流到底，力度表上会显示朝下的是沙子还是空的。' },
   choco: { name: '巧克力', unit: '块', hard: 44, brittle: 62, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 3, rest: .1, fric: .7, accel: 22000, jig: 0, target: .88, time: 140, snd: 'snap', stab: .9,
-    warm: { rate: .3, cool: .1, hard: 12, brittle: 46, loose: 1.2, plastic: .7, sag: .08, glow: '#9a5428' },
-    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '崩了一块！', dead: '巧克力碎成了渣。甲方说正好撒在冰淇淋上。', blurb: '凉的巧克力脆：窗口窄，一下只崩一小块，适合精修。拎在手里焐软了，窗口变宽，一下砸得多，但放下就会化着往下塌。先焐软了粗砸，再凉下来细修。' },
+    warm: { rate: .3, cool: .12, hard: 14, brittle: 50, loose: 1.1, plastic: .6, sag: .08, glow: '#9a5428', peak: .65, hot: { hard: 6, brittle: 22, loose: 1.4, plastic: .9 } },
+    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '崩了一块！', dead: '巧克力碎成了渣。甲方说正好撒在冰淇淋上。', blurb: '凉的巧克力脆：窗口窄，一下只崩一小块，适合精修。拎在手里焐软了，窗口变宽，一下砸得多，但放下就会化着往下塌。可别焐过头：太热就化了，一碰就坏，得放下等它凉。' },
   piggy: { name: '存钱罐', unit: '只', hard: 18, brittle: 42, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 3, rest: .15, fric: .6, accel: 22000, jig: 0, target: .86, time: 140, snd: 'glass',
     fill: .45, flow: 1.4, core: { label: ['硬币', 'Coins'], hard: 32, brittle: 92, loose: .85, base: '#f2c230', outline: '#8a6a00', chips: ['#ffe37a', '#f2c230', '#c99a10'], snd: 'can', over: ['硬币撞裂了！', 'The coins cracked it!'] },
     base: '#ff9db5', outline: '#9a3c58', chips: ['#ffc4d2', '#ff9db5', '#ffffff'], over: '陶瓷裂了！', dead: '存钱罐碎了，硬币滚了一地。甲方一枚一枚捡起来，说这算你赔的。', blurb: '陶瓷小猪，肚子里半罐硬币。空着的那面薄，一碰就裂，但一下能砸掉不少；有硬币垫着的那面扛得住重砸，只是变得慢。翻过来，硬币要一会儿才滑到底。' },
-  candle: { name: '蜡烛', unit: '根', hard: 34, brittle: 74, loose: .6, plastic: .2, smooth: .2, passes: 1, value: 11, hp: 2, rest: .1, fric: .7, accel: 20000, jig: 0, target: .86, time: 150, snd: 'crumb', stab: .85,
-    warm: { rate: .25, cool: .08, hard: 8, brittle: 50, loose: 1.3, plastic: .9, sag: .1, glow: '#ffe2a0' },
-    base: '#f4e6c8', outline: '#9a7a4a', chips: ['#fff6e0', '#f4e6c8', '#e8d2a8'], over: '断了一截！', dead: '蜡烛断成了好几截。甲方说正好停电的时候用。', blurb: '一根又细又高的蜡烛。凉的时候硬，焐软了好砸，焐软了竖着放下还会自己往下塌。高的东西，让它塌。' },
+  candle: { name: '蜡烛', unit: '根', hard: 34, brittle: 74, loose: .6, plastic: .2, smooth: .2, passes: 1, value: 11, hp: 3, rest: .1, fric: .7, accel: 20000, jig: 0, target: .86, time: 150, snd: 'crumb', stab: .85,
+    warm: { rate: .22, cool: .12, hard: 10, brittle: 54, loose: 1.2, plastic: .8, sag: .1, glow: '#ffe2a0', peak: .6, hot: { hard: 4, brittle: 20, loose: 1.5, plastic: 1 } },
+    base: '#f4e6c8', outline: '#9a7a4a', chips: ['#fff6e0', '#f4e6c8', '#e8d2a8'], over: '断了一截！', dead: '蜡烛断成了好几截。甲方说正好停电的时候用。', blurb: '一根又细又高的蜡烛。凉的时候硬，焐到一半最好砸，竖着放下还会自己往下塌。可别一直攥着：焐过头蜡就软成一摊，一碰就断，还往下滴。' },
   honey: { name: '蜂蜜罐', unit: '罐', hard: 16, brittle: 36, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .1, fric: .6, accel: 20000, jig: 0, target: .86, time: 160, snd: 'glass',
     fill: .5, flow: .4, core: { label: ['蜂蜜', 'Honey'], hard: 24, brittle: 82, loose: .95, plastic: .3, wet: 1, base: '#f2a81d', outline: '#a8650a', chips: ['#ffd36a', '#f2a81d', '#c87a0a'], snd: 'rubber', over: ['罐子裂了，蜂蜜往外渗！', 'Cracked! Honey seeping out!'] },
     base: '#cfe6f2', outline: '#4a6a7e', chips: ['#ffffff', '#cfe6f2'], over: '玻璃裂了！', dead: '蜂蜜罐碎了，地板粘了一下午。甲方的脚到现在还粘着。', blurb: '半罐蜂蜜，流得非常非常慢。空着的玻璃那面一碰就碎；有蜂蜜垫着的那面扛得住。翻过来得等好几秒蜂蜜才流下去，要提前想好下一下砸哪儿。' },
@@ -387,9 +387,9 @@ const MATS_EN = {
   weight: ['Steelyard Weight', 'Chipped!', 'The weight chipped. The Client says they will weigh things by feel from now on.', 'A cast-iron weight with a knob on top and a wide flat base. Iron hardens as you hit it, so plan ahead: the knob sticks out most, but the two bottom corners need work too.'],
   clay: ['Modelling Clay', 'Squashed!', 'The clay is now a thin sheet stuck to the floor.', 'Straight out of the fridge and too stiff to dent. Hold it in your hand for a while: the longer you hold it, the softer it gets, and each hit takes off a big chunk. It cannot break, so experiment.'],
   sandbag: ['Sandbag', 'Bag torn!', 'The sandbag split and sand went everywhere. The Client says it makes a nice beach.', 'A half-full bag of sand, and the sand flows downward. Hit the empty cloth side and it just flops; only the side with sand behind it changes shape. After flipping it, wait for the sand to settle. The gauge shows whether sand or nothing is facing down.'],
-  choco: ['Chocolate', 'Chipped!', 'The chocolate is now crumbs. The Client says they are perfect on ice cream.', 'Cold chocolate is brittle: narrow window, small chips, good for fine work. Warm it in your hand and the window widens and each hit does more, but once you put it down it melts and slumps. Warm it for rough work, let it cool for the finish.'],
+  choco: ['Chocolate', 'Chipped!', 'The chocolate is now crumbs. The Client says they are perfect on ice cream.', 'Cold chocolate is brittle: narrow window, small chips, good for fine work. Warm it in your hand and the window widens and each hit does more, but once you put it down it melts and slumps. Just do not overheat it: too hot and it melts, breaking at a touch, and you must put it down to cool.'],
   piggy: ['Piggy Bank', 'Cracked!', 'The piggy bank broke and coins rolled everywhere. The Client picked them up one by one and called it compensation.', 'A ceramic pig, half full of coins. The hollow side is thin and cracks at a touch, but each hit takes off a lot. The side with coins behind it takes heavy hits, just changes slowly. After a flip, the coins take a moment to slide down.'],
-  candle: ['Candle', 'Snapped!', 'The candle broke into several pieces. The Client says they will come in handy in a power cut.', 'A tall, thin candle. Hard when cold, easy to shape once warm, and if you stand it up warm it slumps on its own. Tall things: let them slump.'],
+  candle: ['Candle', 'Snapped!', 'The candle broke into several pieces. The Client says they will come in handy in a power cut.', 'A tall, thin candle. Hard when cold, best worked half warm, and if you stand it up warm it slumps on its own. Do not hold it too long: overheated wax turns to mush, snaps at a touch and drips.'],
   honey: ['Honey Jar', 'Glass cracked!', 'The honey jar broke and the floor was sticky all afternoon. The Client is still stuck to it.', 'Half a jar of honey that flows very, very slowly. The hollow glass side breaks at a touch; the side with honey behind it holds. After a flip it takes several seconds for the honey to come down, so plan your next hit early.'],
 };
 const CHAPS_EN = [
@@ -555,9 +555,14 @@ function onCore(b, alpha) { if (!b.c) return false; const i = ((Math.round(alpha
 function matAt(b, alpha) {
   const m = b.mat;
   if (m.fill) return backed(b, alpha) ? coreMat(m) : m;
-  if (m.warm) {   // 手温：按焐热的程度在“凉”和“焐透”两套数值之间插值
+  if (m.warm) {   // 手温：凉 → 刚好（peak）→ 太热（hot）。没有 hot 的材料就是凉 → 焐透一路变软
     const k = Math.round((b.heat || 0) * 40) / 40; if (!k) return m;
-    if (b._wk !== k) { const w = m.warm, f = (a, c) => a + (c - a) * k; b._wm = Object.assign({}, m, { hard: Math.round(f(m.hard, w.hard)), brittle: Math.round(f(m.brittle, w.brittle)), loose: f(m.loose, w.loose), plastic: f(m.plastic, w.plastic) }); b._wk = k; }
+    if (b._wk !== k) {
+      const w = m.warm; let A = m, B = w, t = k;
+      if (w.hot) { if (k > w.peak) { A = w; B = w.hot; t = (k - w.peak) / (1 - w.peak); } else t = k / w.peak; }
+      const f = key => A[key] + (B[key] - A[key]) * t;
+      b._wm = Object.assign({}, m, { hard: Math.round(f('hard')), brittle: Math.round(f('brittle')), loose: f('loose'), plastic: f('plastic') }); b._wk = k;
+    }
     return b._wm;
   }
   const base = onCore(b, alpha) ? coreMat(m) : m;
@@ -1077,7 +1082,7 @@ function showOrder() {
       <dt>${L('硬度', 'Hardness')}</dt><dd>${L(`力度到 ${m.hard} 才会变形`, `Needs force ${m.hard} to dent`)}</dd>
       ${m.harden ? `<dt>${L('越砸越硬', 'Hardens')}</dt><dd>${L(`每砸好一下，下限 +${m.harden}，最高到 ${m.brittle - (m.minWin || 10)}`, `Each good hit raises the floor by ${m.harden}, up to ${m.brittle - (m.minWin || 10)}`)}</dd>` : ''}
       ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('放在地上不拎，太高的会往下塌、往两边摊，塌到够扁就停；尖角朝下，那个角会被压平', 'Left on the floor, anything too tall sinks and spreads until it is squat enough, then stops. A corner pressed down gets flattened')}</dd>` : ''}
-      ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${L(`拎在手里越久越软：窗口从 ${m.hard}–${m.brittle} 降到 ${m.warm.hard}–${m.warm.brittle}，一下砸得更多；放下慢慢凉回来${m.warm.sag ? '。焐软了放下还会塌' : ''}`, `The longer you hold it, the softer it gets: the window drops from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle} and each hit does more. It cools once put down${m.warm.sag ? '. Warm and left on the floor, it slumps' : ''}`)}</dd>` : ''}
+      ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${m.warm.hot ? L(`拎在手里会被焐软。手温 ${Math.round(m.warm.peak * 100)}% 左右最好砸：窗口从 ${m.hard}–${m.brittle} 变成 ${m.warm.hard}–${m.warm.brittle}；焐过头就太软，掉到 ${m.warm.hot.hard}–${m.warm.hot.brittle}，一碰就坏。放下慢慢凉回来${m.warm.sag ? '，焐软了放下还会塌' : ''}`, `Your hand warms it. Around ${Math.round(m.warm.peak * 100)}% it is best to work: the window goes from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle}. Overheat it and it turns to mush at ${m.warm.hot.hard}–${m.warm.hot.brittle}, breaking at a touch. It cools once put down${m.warm.sag ? ', and slumps while warm' : ''}`) : L(`拎在手里越久越软：窗口从 ${m.hard}–${m.brittle} 降到 ${m.warm.hard}–${m.warm.brittle}，一下砸得更多；放下慢慢凉回来${m.warm.sag ? '。焐软了放下还会塌' : ''}`, `The longer you hold it, the softer it gets: the window drops from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle} and each hit does more. It cools once put down${m.warm.sag ? '. Warm and left on the floor, it slumps' : ''}`)}</dd>` : ''}
       ${m.fill ? `<dt>${L('里面会流', 'Contents flow')}</dt><dd>${L(`里面的${m.core.label[0]}会往下流，翻过来要等一会儿才流到底。没垫着的那面：${m.hard}–${m.brittle}`, `The contents (${lc(m.core.label[1])}) flow downward and take a moment to settle after a flip. Hollow side: ${m.hard}–${m.brittle}`)}</dd>` : ''}
       <dt>${L('易碎', 'Fragility')}</dt><dd>${m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
       <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
@@ -1244,7 +1249,10 @@ function update(dt) {
     if (b.mat.fill) flowFill(b, dt);
     if (b.mat.warm && G.state === 'play') {
       const w = b.mat.warm, h0 = b.heat || 0; b.heat = clamp(h0 + (b.held ? w.rate : -w.cool) * dt, 0, 1);
-      if (h0 < .6 && b.heat >= .6 && (b.warmMsg || 0) < 2) { b.warmMsg = (b.warmMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('焐软了', 'Softened'), C.coin, 20); }
+      const soft = w.peak || .6, hot = w.hot ? w.peak + .15 : 2;
+      if (h0 < soft && b.heat >= soft && (b.warmMsg || 0) < 2) { b.warmMsg = (b.warmMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('焐软了', 'Softened'), C.coin, 20); }
+      if (h0 < hot && b.heat >= hot && (b.hotMsg || 0) < 3) { b.hotMsg = (b.hotMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('太热了，要化了！放下凉一凉', 'Too hot, melting! Put it down to cool'), C.alarm, 20); }
+      if (b.heat >= hot && b.held && Math.random() < dt * 8) fxp(b.lowX + rand(-12, 12), FLOOR - b.clear - 2, 1, 'drop', b.mat.chips, { up: 0, g: 900 });   // 化得往下滴
     }
     const sagNow = b.mat.warm ? (b.mat.warm.sag || 0) * (b.heat || 0) : b.mat.sag;
     if (sagNow && G.state === 'play' && G.started) {
@@ -1780,7 +1788,7 @@ function drawRoundBar() {
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
 function layerTag(b) {
   const m = b.mat;
-  if (m.warm) return [L('手温 ', 'Warm ') + Math.round((b.heat || 0) * 100) + '%', (b.heat || 0) > .5 ? C.coin : C.dim];
+  if (m.warm) { const h = b.heat || 0, w = m.warm, tooHot = w.hot && h >= w.peak + .15; return [(tooHot ? L('太热 ', 'Too hot ') : L('手温 ', 'Warm ')) + Math.round(h * 100) + '%', tooHot ? C.alarm : h > (w.peak || .5) - .1 ? C.coin : C.dim]; }
   if (m.fill) { const on = faceMat(b).isCore; return [on ? L(m.core.label[0], m.core.label[1]) : L('空的', 'Hollow'), on ? C.coin : C.dim]; }
   if (!b.c) return [L('下限 +', 'Floor +') + Math.round(b.hardAdd), C.coin]; const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? C.coin : C.dim]; }
 function drawGauge() {
