@@ -180,7 +180,7 @@ body {
 /* ---------- 常量 ---------- */
 const W = 960, H = 600, FLOOR = 520, WALL_R = 880;
 // 竖屏时只看世界的右半边（房间变窄、力度表还在右侧），顶上多出 TOP 高的一条放甲方和圆度条
-let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0, BOT = 0;   // BOT：竖屏底部放圆度条的一条，拎材料的手不会挡住
+let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0, BOT = 0;   // BOT：竖屏底部放横版力度表的一条，拎材料的手不会挡住
 const midX = () => (WALL_L + WALL_R) / 2;
 // 触屏判断：有的手机浏览器不报 hover:none，所以再看触点数，只要没有精确指针（鼠标）就当触屏
 const mq = q => !!(window.matchMedia && matchMedia(q).matches);
@@ -1290,7 +1290,8 @@ function drawGauge() {
   const m = G.mat, b = G.body;
   const py = PORT ? 136 - TOP : 0;
   ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
-  const fz = PORT ? 1.35 : 1;
+  if (PORT) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort
+  const fz = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
   ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
@@ -1323,10 +1324,32 @@ function drawHints() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`; ctx.fillStyle = C.dim;
   ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
 }
+/* 竖屏底部的横版力度表：左轻右重。画面坐标 */
+function drawGaugePort() {
+  const m = G.mat, b = G.body, X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
+  ctx.fillStyle = C.hull; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
+  ctx.save(); rr(ctx, X0, y, X1 - X0, h, h / 2); ctx.clip();
+  ctx.fillStyle = '#3b3180'; ctx.fillRect(X0, y, X1 - X0, h);
+  const g = ctx.createLinearGradient(gx(m.hard), 0, gx(m.brittle), 0); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(gx(m.hard), y, gx(m.brittle) - gx(m.hard), h);
+  ctx.fillStyle = C.alarm; ctx.fillRect(gx(m.brittle), y, X1 - gx(m.brittle), h);
+  ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let xx = gx(m.brittle); xx < X1 + h; xx += 9) { ctx.moveTo(xx, y); ctx.lineTo(xx - h, y + h); } ctx.stroke();
+  ctx.restore();
+  ctx.textAlign = 'center'; ctx.font = EN ? `700 13px ${BODY}` : `16px ${BODY}`; const ly = y + h + 18;
+  ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), (X0 + gx(m.hard)) / 2, ly); ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), (gx(m.hard) + gx(m.brittle)) / 2, ly);
+  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(L('碎', 'BRK'), (gx(m.brittle) + X1) / 2, ly); }
+  const lh = G.lastHit;
+  if (lh && G.time - lh.t < 3) { ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const xx = gx(lh.F); ctx.fillStyle = '#fff'; ctx.fillRect(xx - 2, y - 3, 4, h + 6); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(xx - 2, y - 3, 4, h + 6); ctx.globalAlpha = 1; }
+  if (b && !b.dead && G.state === 'play') {
+    if (b.held && b.clear > 2) { const xx = gx(clamp(Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100, 0, 100));
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(xx, y - 4); ctx.lineTo(xx - 8, y - 17); ctx.lineTo(xx + 8, y - 17); ctx.closePath(); ctx.stroke(); }
+    if (G.needle > 1) { const xx = gx(G.needle); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(xx, y - 3); ctx.lineTo(xx - 8, y - 16); ctx.lineTo(xx + 8, y - 16); ctx.closePath(); ctx.fill(); }
+  }
+}
 /* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
 function drawHudPort(t) {
   ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
-  const x0 = 22, w = 384, y = TOP + H + 30, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
+  const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
@@ -1338,7 +1361,6 @@ function drawHudPort(t) {
   let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
   ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
-  ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
   ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
@@ -1361,7 +1383,7 @@ function draw() {
   if (G.doom) drawDoom(G.doom);
   drawFx(); ctx.restore();
   drawGauge(); drawHints();
-  if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); } else drawRoundBar();
+  if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
 }
 
 /* ---------- 缩放与主循环 ---------- */
@@ -1369,7 +1391,7 @@ let scale = 1;
 function fit() {
   const aw = wrap.clientWidth, ah = wrap.clientHeight;
   PORT = ah > aw * 1.15;
-  if (PORT) { VW = 540; BOT = 104; TOP = clamp(Math.round(VW * ah / aw) - H - BOT, 132, 300); VH = H + TOP + BOT; CAMX = W - VW; } else { VW = W; VH = H; TOP = 0; BOT = 0; CAMX = 0; }
+  if (PORT) { VW = 540; BOT = 104; TOP = clamp(Math.round(VW * ah / aw) - H - BOT, 110, 300); VH = H + TOP + BOT; CAMX = WALL_R + 10 - VW; } else { VW = W; VH = H; TOP = 0; BOT = 0; CAMX = 0; }
   WALL_L = CAMX; stage.classList.toggle('port', PORT);
   let w = Math.floor(Math.min(aw, ah > 40 ? ah * VW / VH : aw, 1280)); if (!(w > 0)) w = 320;
   const h = Math.floor(w * VH / VW), dpr = Math.min(window.devicePixelRatio || 1, 2);
