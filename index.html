@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>甲方要圆</title>
-<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。42 单敲击小游戏。">
+<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。48 单敲击小游戏。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -199,7 +199,7 @@ const mq = q => !!(window.matchMedia && matchMedia(q).matches);
 const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
-const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' ? n : n.toLowerCase();
+const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
 const GRAV = 5200, FOLLOW = 20, ARM = 16, MIN_F = 4;
@@ -334,8 +334,24 @@ const MATS = {
   honey: { name: '蜂蜜罐', unit: '罐', hard: 16, brittle: 36, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .1, fric: .6, accel: 20000, jig: 0, target: .86, time: 160, snd: 'glass',
     fill: .5, flow: .4, core: { label: ['蜂蜜', 'Honey'], hard: 24, brittle: 82, loose: .95, plastic: .3, wet: 1, base: '#f2a81d', outline: '#a8650a', chips: ['#ffd36a', '#f2a81d', '#c87a0a'], snd: 'rubber', over: ['罐子裂了，蜂蜜往外渗！', 'Cracked! Honey seeping out!'] },
     base: '#cfe6f2', outline: '#4a6a7e', chips: ['#ffffff', '#cfe6f2'], over: '玻璃裂了！', dead: '蜂蜜罐碎了，地板粘了一下午。甲方的脚到现在还粘着。', blurb: '半罐蜂蜜，流得非常非常慢。空着的玻璃那面一碰就碎；有蜂蜜垫着的那面扛得住。翻过来得等好几秒蜂蜜才流下去，要提前想好下一下砸哪儿。' },
+  /* 芬兰特供。前面学过的花样混着来，外加三样新的：
+     flee  活的：砸过头不会碎，只会“急”（hp 算它的耐心），急够了就跑；brk 是力度表红区上的字
+     hot   烫手：每次拎起来最多拿几秒，到点自动撒手
+     floor 东西本身砸不坏，砸过头裂的是地板（hp 算地板的） */
+  santa: { name: '圣诞老人', unit: '位', hard: 10, brittle: 60, loose: 1.2, plastic: .9, smooth: .45, passes: 3, value: 7, hp: 3, rest: .45, bounce: .7, fric: .8, accel: 22000, jig: .45, target: .9, time: 110, flee: 1, brk: ['急', 'MAD'],
+    base: '#d8262a', outline: '#5a0f12', chips: ['#ff5a4a', '#ffffff', '#2e8b4f'], over: '圣诞老人急了！', dead: '圣诞老人受够了，坐上雪橇飞走了。今年甲方收不到礼物。', blurb: '从罗瓦涅米的圣诞老人村请来的，按小时收费。他本来就挺圆，甲方说还不够：帽子尖、两只手套、两只靴子都得收进去。肚子软，拍哪鼓哪，还会弹。别拍太狠，他会急。' },
+  reindeer: { name: '驯鹿', unit: '头', hard: 30, brittle: 74, loose: 1.4, plastic: .4, smooth: .2, passes: 1, value: 10, hp: 3, rest: .2, fric: .7, accel: 24000, jig: .05, target: .84, time: 140, snd: 'reindeer', flee: 1, brk: ['急', 'MAD'],
+    base: '#b8955e', outline: '#4a2c14', chips: ['#f2e2c0', '#c9a874', '#8a5530'], over: '驯鹿急了！', dead: '驯鹿受够了，一溜烟跑回了拉普兰。圣诞老人明天只能自己拉雪橇了。', blurb: '圣诞老人借给甲方的，说好明天要还。脑袋本来就挺圆，麻烦的是头上那对角，一叉一叉的，得一叉一叉敲掉。角很硬，轻了敲不动；可下手太重，驯鹿会急。' },
+  salmiak: { name: '咸甘草糖', unit: '颗', hard: 28, brittle: 60, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 8, hp: 3, rest: .2, fric: .6, accel: 28000, jig: .02, target: .84, time: 110, snd: 'snap',
+    base: '#1d1d22', outline: '#7a7a88', chips: ['#2a2a32', '#4a4a56', '#e6e6ee'], over: '裂开了！', dead: '咸甘草糖碎成了一把黑渣。甲方舔了一口地板，现在正在漱口。', blurb: '芬兰国民零食，黑的，咸的，菱形的。甲方舔了一下，脸绿了（本来就是绿的，现在更绿）。两个长尖最凸；糖又硬又脆，窗口不宽。' },
+  aalto: { name: 'A! 立牌', unit: '块', hard: 24, brittle: 54, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 9, hp: 2, rest: .25, fric: .5, accel: 28000, jig: 0, target: .82, time: 130, snd: 'plastic',
+    base: '#e3f2f8', outline: '#7fb3c8', chips: ['#e3f2f8', '#ffffff', '#141414'], over: '崩了一角！', dead: '立牌碎了一地。阿尔托大学说没关系，他们还有问号和引号。', blurb: '阿尔托大学的标志：一个 A 加一个感叹号，有时也换成问号或引号。甲方问能不能换成句号，中文那种，圆的。亚克力立牌，又脆窗口又窄，只能失手一次：先把感叹号那一竖敲掉，再收拾 A 的尖顶和两只脚。' },
+  sauna: { name: '桑拿石', unit: '块', hard: 38, brittle: 84, loose: .9, plastic: 0, smooth: 0, passes: 0, value: 8.5, hp: 3, rest: .2, fric: .8, accel: 20000, jig: 0, target: .84, time: 120, hot: 1.5, rnd: [.52, .66],
+    base: '#3a3940', outline: '#e0702c', chips: ['#4a4950', '#2a292e', '#ff8a3c'], over: '崩掉一块！', dead: '桑拿石碎了一地。甲方的桑拿房今晚只能干蒸了。', blurb: '刚从桑拿炉上拿下来的石头，芬兰人往上泼水蒸桑拿。<strong>烫手</strong>：每次拎起来最多拿一秒半，到点就得撒手。抓起来要快，举高了直接松手最省事。' },
+  oldphone: { name: '老手机', unit: '部', hard: 48, brittle: 88, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .15, fric: .7, accel: 15000, jig: 0, target: .82, time: 160, floor: 1,
+    base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '最后一单：芬兰产的老款手机，据说能拿来砸核桃。芬兰人每年还办扔手机世锦赛。它自己确实砸不坏，坏的是地板：力度太大，甲方的地板会裂，裂三次就穿了。又沉又硬，得抡。' },
 };
-const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone'];
 const PER = 6;   // 每班六单
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -345,6 +361,7 @@ const CHAPS = [
   { name: '表里不一', intro: '这一班的东西都有两层：外面一层壳，里面一层芯，脾气不一样。壳砸穿了，力度表会跟着变成芯的。看清楚现在是哪一层朝下。' },
   { name: '软硬不吃', intro: '这一班的东西脾气都怪。金属越砸越硬，每浪费一下，后面都更难砸动；软的东西放在地上不管就会塌，压在底下的那面慢慢变平。不过塌也能帮你：把尖角朝下放着，让它自己塌圆。' },
   { name: '拿捏', intro: '这一班考你怎么拿。有的东西拎在手里会被焐软：越拎越软、一下砸得越多，放下又慢慢凉回来。有的东西里面装着沙子、硬币、蜂蜜，会慢慢往下流：有东西垫着的那面扛得住重砸，空着的那面一碰就碎。翻过来以后，等它流到底再砸。' },
+  { name: '芬兰特供', intro: '甲方的飞碟追着极光一路飞到了芬兰，装了一飞碟的特产回来，连圣诞老人和他的驯鹿都请上了船。芬兰人做东西结实、实用，就是不圆。这一班前面学过的花样全有，另外三样新的：活的东西砸狠了会急，急够三次就跑；桑拿石烫手，拎不了多久；最后那部老手机砸不坏，会坏的是甲方的地板。' },
 ];
 
 /* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
@@ -391,6 +408,12 @@ const MATS_EN = {
   piggy: ['Piggy Bank', 'Cracked!', 'The piggy bank broke and coins rolled everywhere. The Client picked them up one by one and called it compensation.', 'A ceramic pig, half full of coins. The hollow side is thin and cracks at a touch, but each hit takes off a lot. The side with coins behind it takes heavy hits, just changes slowly. After a flip, the coins take a moment to slide down.'],
   candle: ['Candle', 'Snapped!', 'The candle broke into several pieces. The Client says they will come in handy in a power cut.', 'A tall, thin candle. Hard when cold, best worked half warm, and if you stand it up warm it slumps on its own. Do not hold it too long: overheated wax turns to mush, snaps at a touch and drips.'],
   honey: ['Honey Jar', 'Glass cracked!', 'The honey jar broke and the floor was sticky all afternoon. The Client is still stuck to it.', 'Half a jar of honey that flows very, very slowly. The hollow glass side breaks at a touch; the side with honey behind it holds. After a flip it takes several seconds for the honey to come down, so plan your next hit early.'],
+  santa: ['Santa', 'Santa is upset!', 'Santa had enough, jumped in his sleigh and flew off. No presents for the Client this year.', "Hired by the hour from Santa's village in Rovaniemi. He's already quite round, but not round enough for the Client: the hat tip, both mittens and both boots have to go. His belly is soft, bulges wherever you hit it, and bounces. Don't hit too hard, or he gets upset."],
+  reindeer: ['Reindeer', 'Reindeer is upset!', 'The reindeer had enough and bolted back to Lapland. Santa will have to pull the sleigh himself tomorrow.', 'Santa lent it to the Client and wants it back tomorrow. The head is round enough already; the trouble is the antlers, branching every which way, and every tine has to go. Antler is hard, so soft taps do nothing. Hit too hard and the reindeer gets upset.'],
+  salmiak: ['Salty Liquorice', 'Cracked!', 'The salty liquorice crumbled into black grit. The Client licked the floor and is now rinsing their mouth.', "Finland's favourite sweet: black, salty and diamond-shaped. The Client licked one and turned green (they were already green, but now more so). The two long points stick out most. The candy is hard and brittle, and the window is not wide."],
+  aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', "Aalto University's logo: an A plus an exclamation mark, sometimes swapped for a question mark or quotes. The Client asked whether it could be a full stop instead. A round one. It's an acrylic standee: brittle, with a narrow window, and it only survives one slip. Knock the exclamation mark down first, then deal with the A's peak and feet."],
+  sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", 'Straight off the sauna stove, where Finns throw water on it for steam. <strong>Hot</strong>: you can hold it for a second and a half at most, then you have to let go. Grab fast. Lifting it high and letting go is easiest.'],
+  oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "Final order: an old Finnish phone, said to be tough enough to crack walnuts with. Finland even holds a mobile phone throwing world championship every year. This one really can't break. The floor can: hit too hard and the Client's floor cracks, and the third crack goes right through. Heavy and hard, so swing it."],
 };
 const CHAPS_EN = [
   ['Probation', ''],
@@ -400,6 +423,7 @@ const CHAPS_EN = [
   ['More Than Skin Deep', 'Everything this shift has two layers: a shell outside and a core inside, each with its own temper. Break through the shell and the force gauge switches to the core. Watch which layer is facing down.'],
   ['Stubborn Stuff', 'Everything this shift has a temper. Metals harden as you hit them, so every wasted hit makes the rest harder. Soft things slump if you leave them on the floor, flattening whatever side is underneath. But slumping can help too: set a corner down and let it sag round on its own.'],
   ['Handle With Care', 'This shift is about how you hold things. Some soften in your warm hand: the longer you hold them, the softer they get and the more each hit changes them, and they cool again once you put them down. Others hold sand, coins or honey that slowly flows downward: a side with something behind it can take a heavy hit, a hollow side breaks at a touch. Once you flip it, wait for the contents to settle before you hit.'],
+  ['Finnish Specials', "The Client's saucer chased the northern lights all the way to Finland and came back loaded with local specialities. Santa and his reindeer came along too. Finns make things sturdy and practical, just not round. This shift has every trick so far, plus three new ones: living things get upset if you hit too hard, and after three times they run off; the sauna stone is too hot to hold for long; and the old phone at the end can't break, but the Client's floor can."],
 ];
 if (EN) {
   for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
@@ -407,6 +431,13 @@ if (EN) {
 }
 
 /* ---------- 形状：以质心为原点的极坐标半径数组 ---------- */
+// 圣诞老人的帽子、驯鹿的一边鹿角（另一边对称）：形状和贴图共用
+const SANTA_HAT = [[-36, -66], [-33, -86], [-24, -102], [-10, -113], [8, -120], [28, -126], [46, -126], [52, -121], [44, -113], [37, -100], [33, -84], [32, -66]];
+// 驯鹿角（右边，左边对称）：轮廓只能从中心往外放射，所以做成掌状：一块角掌，掌上伸出几根往外微弯的叉
+const ANTLER_PALM = [17, 66, 78];   // 角掌：从离竖直多少度到多少度，伸出多远
+const ANTLER = [[23, 122, 11, 7], [42, 128, 11, 9], [59, 104, 10, 9]];   // 叉：[角度, 长度, 根部半宽, 往外弯多少度]
+const tinePts = (deg, len, w, bend, s) => { const A = [], B = []; for (let k = 0; k <= 8; k++) { const u = k / 8, a = (deg + bend * u * u) * Math.PI / 180 * s, r = 56 + (len - 56) * u, ww = w * (1 - u) + 1.6, dx = Math.sin(a), dy = -Math.cos(a); A.push([dx * r + dy * ww * s, dy * r - dx * ww * s]); B.push([dx * r - dy * ww * s, dy * r + dx * ww * s]); } return A.concat(B.reverse()); };
+const palmPts = s => { const [a0, a1, R] = ANTLER_PALM, p = []; for (let k = 0; k <= 12; k++) { const a = (a0 + (a1 - a0) * k / 12) * Math.PI / 180 * s, r = R - 14 * Math.abs(k / 12 - .45); p.push([Math.sin(a) * r, -Math.cos(a) * r]); } for (let k = 12; k >= 0; k--) { const a = (a0 + (a1 - a0) * k / 12) * Math.PI / 180 * s; p.push([Math.sin(a) * 30, -Math.cos(a) * 30]); } return p; };
 const rectPts = (hw, hh) => [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
 const SHAPES = {
   wood: () => rectPts(96, 78),
@@ -454,11 +485,53 @@ const SHAPES = {
   piggy: () => polarPts(96, a => 1 / Math.hypot(Math.cos(a) / 104, Math.sin(a) / 74) + bump(a, 0, 22, .14) + bump(a, -1.95, 18, .1) + bump(a, -1.2, 16, .1) + bump(a, 1.1, 14, .1) + bump(a, 2.05, 14, .1) + bump(a, Math.PI, 10, .08)),
   candle: () => [[-34, -110], [-8, -110], [-5, -128], [5, -128], [8, -110], [34, -110], [34, 110], [-34, 110]],
   honey: () => [[-62, -96], [62, -96], [62, -76], [76, -64], [80, 80], [66, 96], [-66, 96], [-80, 80], [-76, -64], [-62, -76]],
+  // 芬兰特供：圣诞老人、驯鹿、A! 用几块基本形状拼出来（见 blobPts），贴图里用同一套坐标
+  santa: () => blobPts([{ c: [0, 28, 70] }, { c: [0, -40, 38] }, { p: SANTA_HAT }, { e: [0, -66, 42, 12] }, { c: [48, -123, 13] }, { c: [-72, 22, 17] }, { c: [72, 22, 17] }, { e: [-30, 98, 25, 15] }, { e: [30, 98, 25, 15] }]),
+  reindeer: () => blobPts([{ e: [0, 16, 46, 54] }, { e: [0, 58, 34, 26] }, { e: [-56, -16, 26, 11, .35] }, { e: [56, -16, 26, 11, -.35] }, { p: palmPts(1) }, { p: palmPts(-1) }, ...ANTLER.flatMap(([d, l, w, k]) => [{ p: tinePts(d, l, w, k, 1) }, { p: tinePts(d, l, w, k, -1) }])]),
+  salmiak: () => [[-118, 0], [0, -64], [118, 0], [0, 64]],
+  aalto: () => blobPts([{ s: [-79, 78, -36, -74, 26] }, { s: [19, 78, -24, -74, 26] }, { s: [-56, 30, -4, 30, 22] }, { s: [69, -70, 69, 26, 27] }, { c: [69, 66, 25] }, { s: [-84, 98, 74, 98, 12] }]),   // 字外面留一圈亚克力边，底下一条插底座的边
+  sauna: () => { const n = 7, off = rand(0, TAU), p = []; for (let k = 0; k < n; k++) { const a = off + (k + rand(-.25, .25)) / n * TAU, q = rand(72, 112); p.push([Math.cos(a) * q, Math.sin(a) * q * .8]); } return chaikin(p, 2); },   // 圆润的多边形：桑拿石是磨过的
+  oldphone: () => superPts(54, 114, 5).map(([x, y]) => [x * (1 - .07 * Math.exp(-((y / 46) ** 2)) + .05 * clamp((y - 30) / 70, 0, 1)), y]),   // 圆角直板，中间略收腰，底下略宽
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
 function arcPts(cx, cy, rad, a0, a1, n) { const o = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); } return o; }
 function polarPts(n, f) { const o = []; for (let k = 0; k < n; k++) { const a = k / n * TAU, r = f(a); o.push([Math.cos(a) * r, Math.sin(a) * r]); } return o; }
 const bump = (a, a0, h, w) => { const d = Math.atan2(Math.sin(a - a0), Math.cos(a - a0)) / w; return h * Math.exp(-d * d); };
+/* 拼形状：圆 {c:[x,y,r]}、椭圆 {e:[x,y,rx,ry,转角]}、粗线段 {s:[x1,y1,x2,y2,半径]}、多边形 {p:[[x,y],…]}。
+   从原点往每个方向打射线，取所有块里最远的交点（跟 resample 一样，被挡住的凹处会被填平）。原点要落在某一块里面 */
+/* 把多边形的角磨圆（Chaikin 切角，每轮把每条边切成两段） */
+function chaikin(p, k) { for (let j = 0; j < k; j++) { const o = []; for (let i = 0, n = p.length; i < n; i++) { const a = p[i], b = p[(i + 1) % n]; o.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } p = o; } return p; }
+function blobPts(parts, n) {
+  n = n || 144; const o = [];
+  for (let k = 0; k < n; k++) {
+    const a = k / n * TAU, dx = Math.cos(a), dy = Math.sin(a); let far = 0;
+    for (const q of parts) far = Math.max(far, rayFar(q, dx, dy));
+    o.push([dx * far, dy * far]);
+  }
+  return o;
+}
+function rayCircle(cx, cy, r, dx, dy) { const b = dx * cx + dy * cy, d = b * b - (cx * cx + cy * cy - r * r); return d < 0 ? 0 : Math.max(0, b + Math.sqrt(d)); }
+function rayPoly(p, dx, dy) {
+  let far = 0;
+  for (let i = 0, n = p.length; i < n; i++) {
+    const ax = p[i][0], ay = p[i][1], ex = p[(i + 1) % n][0] - ax, ey = p[(i + 1) % n][1] - ay, den = dx * ey - dy * ex; if (Math.abs(den) < 1e-9) continue;
+    const t = (ax * ey - ay * ex) / den, u = (ax * dy - ay * dx) / den; if (t > far && u >= 0 && u <= 1) far = t;
+  }
+  return far;
+}
+function rayFar(q, dx, dy) {
+  if (q.c) return rayCircle(q.c[0], q.c[1], q.c[2], dx, dy);
+  if (q.p) return rayPoly(q.p, dx, dy);
+  if (q.s) {
+    const [x1, y1, x2, y2, r] = q.s, l = Math.hypot(x2 - x1, y2 - y1) || 1, nx = -(y2 - y1) / l * r, ny = (x2 - x1) / l * r;
+    return Math.max(rayCircle(x1, y1, r, dx, dy), rayCircle(x2, y2, r, dx, dy), rayPoly([[x1 + nx, y1 + ny], [x2 + nx, y2 + ny], [x2 - nx, y2 - ny], [x1 - nx, y1 - ny]], dx, dy));
+  }
+  // 椭圆：转到椭圆自己的坐标系、压成单位圆再解
+  const [x, y, rx, ry, ro] = q.e, cs = Math.cos(ro || 0), sn = Math.sin(ro || 0);
+  const ox = (-x * cs - y * sn) / rx, oy = (x * sn - y * cs) / ry, ux = (dx * cs + dy * sn) / rx, uy = (-dx * sn + dy * cs) / ry;
+  const A = ux * ux + uy * uy, B = ox * ux + oy * uy, C = ox * ox + oy * oy - 1, d = B * B - A * C;
+  return d < 0 ? 0 : Math.max(0, (-B + Math.sqrt(d)) / A);
+}
 function ptsFromR(r) { const p = new Array(N); for (let i = 0; i < N; i++) p[i] = [r[i] * COS[i], r[i] * SIN[i]]; return p; }
 function centroid(p) {
   let a = 0, cx = 0, cy = 0;
@@ -633,10 +706,11 @@ function deform(b, alpha, F) {
   let depth = b.meanR * m.loose * (TUNE.D0 + TUNE.D1 * t); if (over) depth *= m.plastic ? 2.4 : 1.3;
   const cut = cutShape(b.r, alpha, depth);
   if (m.plastic) bulge(b.r, alpha, cut, cut.removed * m.plastic);
-  if (over && !m.plastic) chip(b.r, alpha + rand(-.5, .5), b.meanR * rand(.22, .34));
+  const tough = m.floor || m.flee;   // 过头了裂的是地板 / 活的只会急：东西本身不崩、不裂
+  if (over && !m.plastic && !tough) chip(b.r, alpha + rand(-.5, .5), b.meanR * rand(.22, .34));
   if (m.passes) smooth(b.r, m.smooth, m.passes * (over ? 2 : 1));
   if (b.c) clampCore(b, core);   // 砸壳伤不到芯，只会把芯露出来；砸芯才会动到芯
-  if (over) addCrack(b, alpha);
+  if (over && !tough) addCrack(b, alpha);
   recenter(b);
   return { over, t, core };
 }
@@ -709,6 +783,10 @@ const HIT = {
   gold: p => { tone(300, .2, .3 * p, 'triangle', 250); tone(820, .16, .12 * p); noise(.05, .35 * p, 'lowpass', 900); },
   plastic: p => { noise(.07, .55 * p, 'bandpass', 1900, 1); tone(250, .07, .28 * p, 'square', 170); },
   ufo: p => { tone(260, .3, .22 * p, 'triangle', 240); tone(690, .35, .12 * p); noise(.06, .4 * p, 'bandpass', 1400, .8); tone(1800, .12, .07, 'sine', 900, .05); },
+  santa: p => { tone(150, .14, .45 * p, 'sine', 122); tone(128, .2, .4 * p, 'sine', 104, .15); noise(.07, .3 * p, 'lowpass', 420); },   // “嗬嗬”
+  reindeer: p => { HIT.wood(p); tone(2600, .25, .05, 'sine', 0, .03); tone(3300, .2, .04, 'sine', 0, .08); },   // 角磕一下 + 一串铃铛
+  sauna: p => { HIT.stone(p); noise(.4, .18 + .25 * p, 'highpass', 3500); },   // 石头声 + 一声“嘶”
+  oldphone: p => { tone(150, .12, .5 * p, 'square', 90); noise(.06, .45 * p, 'bandpass', 1100, 1); tone(1320, .09, .08, 'square', 0, .1); },   // 闷响，再“嘀”一声
 };
 const sfx = {
   thud: p => { tone(85, .08, .25 * p, 'sine', 55); noise(.04, .15 * p, 'lowpass', 500); },
@@ -718,6 +796,8 @@ const sfx = {
   win: () => { [523, 659, 784, 1047].forEach((f, k) => tone(f, .22, .25, 'triangle', 0, k * .1)); },
   fail: () => { tone(330, .5, .3, 'sawtooth', 70); tone(220, .7, .25, 'sawtooth', 50, .2); },
   ui: () => tone(660, .06, .15, 'triangle'),
+  huff: () => { tone(110, .28, .4, 'sawtooth', 70); noise(.2, .25, 'lowpass', 600); },
+  sizzle: () => { noise(.5, .35, 'highpass', 4000); noise(.3, .2, 'bandpass', 2000, 2); },
 };
 
 /* ---------- 甲方的台词 ---------- */
@@ -732,6 +812,8 @@ const LINES = {
   fail: () => EN ? ['Not round enough. We will round you instead.'] : ['不够圆。那就把你弄圆吧。'],
   shatter: () => EN ? ['Broken?! Guards, grind this artisan round.'] : ['碎了？！来人，把这个工匠磨圆。'],
   done: () => EN ? ['Very round. I am pleased.', 'Hm. Round. Next order.'] : ['很圆。我很满意。', '嗯。圆。下一单。'],
+  flee: () => EN ? ['It ran off?! Guards, grind this artisan round.'] : ['跑了？！来人，把这个工匠磨圆。'],
+  hot: () => EN ? ['Too hot? Finns sit next to that for fun.', 'If it burns, be quicker.'] : ['烫？芬兰人可是坐在旁边享受的。', '怕烫就快一点。'],
 };
 function say(kind, force) {
   if (!force && G.bubble && G.time - G.bubble.t0 < 1.6) return;
@@ -832,7 +914,7 @@ function impact(b, F, cx) {
   if (b.c && !res.core && faceMat(b).isCore) floatText(cx, FLOOR - 92, L('露出', 'Exposed: ') + L(m.core.label[0], lc(m.core.label[1])) + L('了', ''), C.coin, 22);
   const before = G.round; updateRoundness(); const gain = G.round - before;
   if (res.over) {
-    G.hp--; G.stats.over++; sfx.crack(); mood('angry', 2.2);
+    G.hp--; G.stats.over++; (m.flee ? sfx.huff : sfx.crack)(); mood('angry', 2.2);
     floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
     if (G.hp <= 0) { shatter(b); return; }
     say('over', true);
@@ -854,7 +936,18 @@ function updateRoundness() {
   G.wasReady = ready; deliverBtn.hidden = !(ready && G.state === 'play');
 }
 function shatter(b) {
+  if (b.mat.flee) {   // 活的：急够了站直了就跑，不碎
+    b.held = false; b.flee = true; b.fleeT = 0; let lo = 0; for (let i = 0; i < N; i++) lo = Math.max(lo, b.r[i] * SIN[i]); b.fleeY = FLOOR - lo;
+    sfx.huff(); [0, .12, .24].forEach(d => tone(520, .1, .16, 'square', 900, d)); G.shake = 10;
+    fail('shatter'); say('flee', true); return;
+  }
   b.dead = true; b.held = false; sfx.shatter(); G.shake = 24;
+  if (b.mat.floor) {   // 碎的是地板：砸出一个洞，东西连同你一起掉下去
+    const x0 = clamp(b.lowX, WALL_L + 80, WALL_R - 80);
+    for (let f = 0; f < 9; f++) { const s = rand(10, 22); frags.push({ pts: [[-s, -s * .6], [s * .8, -s * .7], [s, s * .5], [-s * .6, s * .8]], x: x0 + rand(-70, 70), y: FLOOR + 4, a: rand(0, TAU), vx: rand(-280, 280), vy: rand(-620, -280), w: rand(-8, 8), c: pick(['#2a2166', '#3d3190', '#7566db']), o: '#1e1747' }); }
+    stain(x0, 110, '#05030f', 6); burst(x0, 24, ['#2a2166', '#7566db', '#cfc8f0'], 1, 'chip');
+    fail('shatter'); return;
+  }
   const k = 7 + (Math.random() * 3 | 0); let i0 = 0;
   for (let f = 0; f < k; f++) {
     const i1 = f === k - 1 ? N : Math.min(N, i0 + Math.round(N / k + rand(-5, 5))), pts = [[0, 0]];
@@ -944,7 +1037,19 @@ const MATFX = {
   piggy: (x, p, over, b, core) => { if (core) sparks(x, 3 + 5 * p, ['#ffe37a', '#ffffff'], p); else { shards(x, 2 + 4 * p, ['#ffc4d2', '#ffffff']); if (over) fxp(x, FLOOR - 12, 10, 'glyph', ['#f2c230'], { ch: ['◎'], s0: 14, s1: 20, g: 900, up: 380, life: 1.2 }); } },
   candle: (x, p, over, b) => { if ((b.heat || 0) > .5) stain(x, 8 + 12 * p, '#f4e6c8', 3); else shards(x, 2 + 4 * p, ['#fff6e0', '#f4e6c8']); },
   honey: (x, p, over, b, core) => { if (core) { if (over) stain(x, 50, '#f2a81d'); } else { sparks(x, 2 + 3 * p, ['#ffffff', '#cfe6f2'], p); if (over) shards(x, 10, ['#cfe6f2', '#ffffff']); } },
+  santa: (x, p, over) => { fxp(x, FLOOR - 16, p > .5 ? 2 : 1, 'glyph', ['#ffffff', '#ffd35c'], { ch: [L('嗬', 'HO')], s0: 18, s1: 26, g: 60, up: 220, life: 1.5 }); if (over) twinkle(x, FLOOR - 20, 6, ['#ffffff']); },
+  reindeer: (x, p) => { puff(x, 2 + 4 * p, '#f2e2c0'); if (p > .5) fxp(x, FLOOR - 14, 1, 'glyph', ['#ffd35c'], { ch: ['♪'], s0: 14, s1: 20, g: 120, up: 200, life: 1.3 }); },
+  salmiak: (x, p, over) => { puff(x, 2 + 3 * p, '#e6e6ee'); if (over) shards(x, 8, ['#2a2a32', '#4a4a56']); },
+  aalto: (x, p, over) => { fxp(x, FLOOR - 14, over ? 6 : 1 + Math.round(2 * p), 'glyph', ['#ffffff', '#cfe7f1'], { ch: ['!', '?', '”'], s0: 16, s1: 24, g: 400, up: 220, life: 1.3 }); if (over) shards(x, 10, ['#d6ecf5', '#ffffff']); },
+  sauna: (x, p) => { steam(x, 4 + 8 * p); sparks(x, 2 + 4 * p, ['#ffb070', '#ff7a30'], p); },
+  oldphone: (x, p, over) => {   // 手机没事，地板有事
+    dust(x, 4 + 4 * p);
+    if (over) { stain(x, 50, 'rgba(8,5,24,.85)', 4); shards(x, 10, ['#2a2166', '#3d3190', '#7566db']); ring(x, 130, '#7566db'); }
+    else if (p > .7) fxp(x, FLOOR - 12, 2, 'glyph', ['#9fb85a'], { ch: ['♪'], s0: 14, s1: 18, g: 200, up: 180, life: 1.2 });
+  },
 };
+/* 蒸汽：往上飘、越飘越大的白烟 */
+function steam(x, n, y) { for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-20, 20), y: y === undefined ? FLOOR - 6 : y, vx: rand(-30, 30), vy: rand(-140, -60), life: rand(.9, 1.5), t: 0, s: rand(8, 16), c: '#ffffff', rot: 0, vr: 0, kind: 'dust', a: .4 }); }
 function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
 /* ---------- 回合流程 ---------- */
@@ -1083,7 +1188,8 @@ function showOrder() {
       ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('放在地上不拎，太高的会往下塌、往两边摊，塌到够扁就停；尖角朝下，那个角会被压平', 'Left on the floor, anything too tall sinks and spreads until it is squat enough, then stops. A corner pressed down gets flattened')}</dd>` : ''}
       ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${m.warm.hot ? L(`拎在手里会被焐软。手温 ${Math.round(m.warm.peak * 100)}% 左右最好砸：窗口从 ${m.hard}–${m.brittle} 变成 ${m.warm.hard}–${m.warm.brittle}；焐过头就太软，掉到 ${m.warm.hot.hard}–${m.warm.hot.brittle}，一碰就坏。放下慢慢凉回来${m.warm.sag ? '，焐软了放下还会塌' : ''}`, `Your hand warms it. Around ${Math.round(m.warm.peak * 100)}% it is best to work: the window goes from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle}. Overheat it and it turns to mush at ${m.warm.hot.hard}–${m.warm.hot.brittle}, breaking at a touch. It cools once put down${m.warm.sag ? ', and slumps while warm' : ''}`) : L(`拎在手里越久越软：窗口从 ${m.hard}–${m.brittle} 降到 ${m.warm.hard}–${m.warm.brittle}，一下砸得更多；放下慢慢凉回来${m.warm.sag ? '。焐软了放下还会塌' : ''}`, `The longer you hold it, the softer it gets: the window drops from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle} and each hit does more. It cools once put down${m.warm.sag ? '. Warm and left on the floor, it slumps' : ''}`)}</dd>` : ''}
       ${m.fill ? `<dt>${L('里面会流', 'Contents flow')}</dt><dd>${L(`里面的${m.core.label[0]}会往下流，翻过来要等一会儿才流到底。没垫着的那面：${m.hard}–${m.brittle}`, `The contents (${lc(m.core.label[1])}) flow downward and take a moment to settle after a flip. Hollow side: ${m.hard}–${m.brittle}`)}</dd>` : ''}
-      <dt>${L('易碎', 'Fragility')}</dt><dd>${m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
+      ${m.hot ? `<dt>${L('烫手', 'Hot')}</dt><dd>${L(`每次拎起来最多拿 ${m.hot} 秒，到点自动撒手`, `You can hold it ${m.hot} s at a time, then you drop it`)}</dd>` : ''}
+      <dt>${L('易碎', 'Fragility')}</dt><dd>${m.flee ? L(`力度超过 ${m.brittle} 会急，能忍 ${m.hp - 1} 次，再急就跑了`, `Above ${m.brittle} they get upset. They put up with that ${m.hp - 1} times, then run off`) : m.floor ? L(`它自己砸不坏；力度超过 ${m.brittle} 地板会裂，地板能扛 ${m.hp - 1} 次`, `It can't break. Above ${m.brittle} the floor cracks; the floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
       <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
       <dt>${L('价值', 'Value')}</dt><dd>× ${m.value.toFixed(1)}</dd>
     </dl>
@@ -1185,7 +1291,7 @@ function toLocal(b, px, py) {
 function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
   const h = toLocal(b, P.x, P.y); if (!h.inside) return false;
-  b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.gx = h.x; b.gy = h.y; b.userRot = 0;
+  b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; return true;
 }
@@ -1238,8 +1344,19 @@ window.addEventListener('blur', () => { keys.left = keys.right = false; });
 /* ---------- 每帧更新 ---------- */
 function update(dt) {
   G.time += dt; const b = G.body;
-  if (b && !b.dead) {
+  if (b && b.flee) {   // 急够了：站直，往右一蹦一蹦地跑出画面
+    b.fleeT += dt; b.x += 640 * dt; b.y = b.fleeY - Math.abs(Math.sin(b.fleeT * 13)) * 34; b.a += (0 - b.a) * Math.min(1, dt * 10); b.clear = b.fleeY - b.y; b.flash = Math.max(0, b.flash - dt * 3); b.jig *= 1 - Math.min(1, dt * 6);
+    if (Math.random() < dt * 18) dust(b.x - b.meanR * .6, 1);
+  } else if (b && !b.dead) {
     if (b.held) b.userRot += ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * 2.4 * dt;
+    // 烫手：拎着超过 hot 秒就得撒手；平时也一直冒热气
+    if (b.mat.hot && G.state === 'play') {
+      if (b.held && (b.holdT = (b.holdT || 0) + dt) > b.mat.hot) {
+        release(); sfx.sizzle(); steam(b.x, 6, b.y - b.meanR * .5);
+        floatText(b.x, b.y - b.meanR - 30, L('烫！', 'Hot!'), C.alarm, 26); if (Math.random() < .5) say('hot');
+      }
+      if (Math.random() < dt * 2.5) steam(b.x + rand(-.4, .4) * b.meanR, 1, b.y - b.meanR * .7);
+    }
     stage.classList.toggle('held', !!b.held);
     const h = dt / 4; for (let k = 0; k < 4 && !b.dead; k++) stepBody(b, h);
     b.jigV += (-700 * b.jig - (b.mat.jig > .3 ? 9 : 22) * b.jigV) * dt; b.jig = clamp(b.jig + b.jigV * dt, -.3, .3);
@@ -1623,6 +1740,202 @@ Object.assign(ART, {
     c.fillStyle = '#fff6e0'; c.fillRect(-46, 4, 92, 40); c.fillStyle = '#a8650a'; c.font = `700 ${EN ? 15 : 20}px ${BODY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('蜂蜜', 'HONEY'), 0, 25);
   },
 });
+/* 芬兰特供 */
+/* 在贴图坐标里描出“现在”的轮廓（砸掉的地方跟着变），用来画发烫的边、亚克力的边 */
+function artOutline(c, b) {
+  const M = b.artM || [1, 0, 0, 1], det = M[0] * M[3] - M[1] * M[2] || 1;
+  c.beginPath();
+  for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i] - b.artX, y = b.r[i] * SIN[i] - b.artY, u = (M[3] * x - M[2] * y) / det, v = (-M[1] * x + M[0] * y) / det; if (i) c.lineTo(u, v); else c.moveTo(u, v); }
+  c.closePath();
+}
+/* 活的东西的眼睛：会眨，拎起来瞪圆，急了眉毛往下压。col 是眼珠颜色，brow 是眉毛颜色 */
+function eyes(c, b, t, xs, y, w, h, col, brow) {
+  const hurt = G.hp < b.mat.hp && G.state === 'play', wide = b.held ? 1.25 : 1, blink = !b.held && (t + b.deco[0].k * 4) % 3.6 < .13;
+  for (const x of xs) {
+    if (blink) { c.strokeStyle = col; c.lineWidth = 2.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(x - w, y); c.quadraticCurveTo(x, y + h * .5, x + w, y); c.stroke(); continue; }
+    c.fillStyle = col; c.beginPath(); c.ellipse(x, y, w * wide, h * wide, 0, 0, TAU); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x + w * .35, y - h * .38, w * .42, 0, TAU); c.fill(); c.beginPath(); c.arc(x - w * .3, y + h * .35, w * .18, 0, TAU); c.fill();
+  }
+  if (hurt) { c.strokeStyle = brow; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); for (const x of xs) { const s = Math.sign(x) || 1; c.moveTo(x + s * w * 1.6, y - h * 2); c.lineTo(x - s * w * .6, y - h * 1.35); } c.stroke(); }
+  c.lineCap = 'butt';
+}
+Object.assign(ART, {
+  santa(c, b, t) {
+    const W = '#fbf6f0', shade = 'rgba(150,130,120,.28)';
+    // 红衣服：左上亮、右下暗
+    let g = c.createRadialGradient(-30, -6, 6, 0, 24, 118); g.addColorStop(0, '#ff6b56'); g.addColorStop(.55, '#dc2a2c'); g.addColorStop(1, '#9e141b'); c.fillStyle = g; c.fillRect(-120, -140, 240, 270);
+    // 靴子（下摆会盖住靴口）
+    for (const s of [-1, 1]) {
+      g = c.createLinearGradient(0, 84, 0, 114); g.addColorStop(0, '#3a3236'); g.addColorStop(1, '#141012'); c.fillStyle = g; c.beginPath(); c.ellipse(s * 30, 98, 25, 15, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.28)'; c.beginPath(); c.ellipse(s * 30 - 9, 100, 7, 3.5, -.2, 0, TAU); c.fill();
+    }
+    // 下摆的白毛边：沿着肚子底下那一圈
+    c.fillStyle = W; c.beginPath(); c.arc(0, 28, 72, .42, Math.PI - .42); c.arc(0, 28, 56, Math.PI - .5, .5, true); c.closePath(); c.fill();
+    c.fillStyle = shade; c.beginPath(); c.arc(0, 28, 72, .42, Math.PI - .42); c.arc(0, 28, 66, Math.PI - .45, .45, true); c.closePath(); c.fill();
+    // 胸前一道白毛边
+    c.fillStyle = W; rr(c, -12, -8, 24, 92, 11); c.fill(); c.fillStyle = shade; rr(c, 4, -8, 8, 92, 4); c.fill();
+    // 腰带和金扣
+    c.fillStyle = '#231a1c'; c.beginPath(); c.moveTo(-90, 22); c.quadraticCurveTo(0, 34, 90, 22); c.lineTo(90, 40); c.quadraticCurveTo(0, 52, -90, 40); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.moveTo(-90, 22); c.quadraticCurveTo(0, 34, 90, 22); c.lineTo(90, 26); c.quadraticCurveTo(0, 38, -90, 26); c.closePath(); c.fill();
+    c.strokeStyle = '#ffd35c'; c.lineWidth = 5; rr(c, -15, 25, 30, 23, 5); c.stroke(); c.fillStyle = '#ffd35c'; rr(c, -3, 33, 14, 5, 2); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-11, 28); c.lineTo(-4, 28); c.stroke();
+    // 袖口白毛 + 绿手套
+    for (const s of [-1, 1]) {
+      c.fillStyle = W; c.beginPath(); c.ellipse(s * 57, 21, 7, 16, s * .15, 0, TAU); c.fill();
+      g = c.createRadialGradient(s * 72 - 6, 15, 2, s * 72, 22, 18); g.addColorStop(0, '#5cc27a'); g.addColorStop(1, '#1f6e3a'); c.fillStyle = g; c.beginPath(); c.arc(s * 72, 22, 17, 0, TAU); c.fill();
+      c.fillStyle = '#1f6e3a'; c.beginPath(); c.ellipse(s * 66, 10, 6, 9, s * -.6, 0, TAU); c.fill();   // 大拇指
+    }
+    // 脑袋：白头发打底，脸
+    c.fillStyle = W; c.beginPath(); c.arc(0, -40, 38, 0, TAU); c.fill();
+    g = c.createRadialGradient(-8, -50, 4, 0, -44, 30); g.addColorStop(0, '#ffe2cc'); g.addColorStop(1, '#f2bf9c'); c.fillStyle = g; c.beginPath(); c.ellipse(0, -44, 26, 23, 0, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,110,110,.45)'; c.beginPath(); c.arc(-18, -38, 6.5, 0, TAU); c.arc(18, -38, 6.5, 0, TAU); c.fill();
+    // 大胡子：一团云
+    c.fillStyle = W; c.beginPath();
+    for (const [x, y, r0] of [[-27, -26, 13], [-19, -12, 15], [-6, -4, 17], [8, -5, 17], [20, -13, 15], [28, -26, 13], [0, -18, 18]]) { c.moveTo(x + r0, y); c.arc(x, y, r0, 0, TAU); }
+    c.fill();
+    c.strokeStyle = shade; c.lineWidth = 2; c.lineCap = 'round'; c.beginPath(); c.arc(-14, -12, 7, .6, 2.4); c.moveTo(18.1, -6.6); c.arc(14, -12, 7, .9, 2.6); c.moveTo(3.5, 2.8); c.arc(0, -2, 6, .9, 2.2); c.stroke();
+    // 小胡子、鼻子
+    for (const [col, dy] of [['rgba(150,130,120,.4)', 2.5], [W, 0]]) { c.fillStyle = col; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * 12, -31 + dy, 14, 7, s * -.32, 0, TAU); c.fill(); } }
+    c.strokeStyle = shade; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-3, -30); c.quadraticCurveTo(-13, -27, -24, -31); c.moveTo(3, -30); c.quadraticCurveTo(13, -27, 24, -31); c.stroke();
+    g = c.createRadialGradient(-2, -40, 1, 0, -38, 8); g.addColorStop(0, '#ffb3a0'); g.addColorStop(1, '#e8766a'); c.fillStyle = g; c.beginPath(); c.arc(0, -37, 7, 0, TAU); c.fill();
+    // 帽子：软软地往右耷拉，毛边、绒球
+    g = c.createLinearGradient(-30, -120, 40, -70); g.addColorStop(0, '#ff5a4a'); g.addColorStop(1, '#b3161d'); c.fillStyle = g;
+    c.beginPath(); SANTA_HAT.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-6, -76); c.quadraticCurveTo(10, -100, 34, -116); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.moveTo(-22, -78); c.quadraticCurveTo(-18, -100, 4, -114); c.stroke();
+    c.fillStyle = W; c.beginPath(); c.ellipse(0, -66, 42, 12, 0, 0, TAU); c.fill();
+    c.fillStyle = shade; c.beginPath(); c.ellipse(0, -62, 40, 7, 0, 0, Math.PI); c.fill();
+    g = c.createRadialGradient(44, -128, 2, 48, -123, 14); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#ddd6cf'); c.fillStyle = g; c.beginPath(); c.arc(48, -123, 13, 0, TAU); c.fill();
+    eyes(c, b, t, [-10, 10], -47, 3.4, 4.4, '#2a1a1a', '#8a7a72');   // 画在帽檐后面，急了压下来的眉毛才看得见
+    // 肚子上一点高光
+    c.fillStyle = 'rgba(255,255,255,.14)'; c.beginPath(); c.ellipse(-38, 30, 12, 26, .35, 0, TAU); c.fill();
+    c.lineCap = 'butt';
+  },
+  reindeer(c, b, t) {
+    // 鹿角：根部深一点，越往尖越白；每根叉一侧高光、一侧暗线
+    let g = c.createRadialGradient(0, 0, 30, 0, 0, 160); g.addColorStop(0, '#8a6232'); g.addColorStop(.35, '#c9a46a'); g.addColorStop(.75, '#ecdbb4'); g.addColorStop(1, '#fbf4e2'); c.fillStyle = g; c.fillRect(-150, -175, 300, 320);
+    const path = P => { c.beginPath(); P.forEach((q, i) => i ? c.lineTo(...q) : c.moveTo(...q)); c.closePath(); };
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const s2 of [-1, 1]) {
+      for (const [d, l, w, k] of ANTLER) {
+        const P = tinePts(d, l, w, k, s2), n = P.length / 2, hi = P.slice(1, n - 1), lo = P.slice(n + 1, P.length - 1);
+        c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 2; c.beginPath(); hi.forEach((q, i) => i ? c.lineTo(...q) : c.moveTo(...q)); c.stroke();
+        c.strokeStyle = 'rgba(110,76,34,.3)'; c.beginPath(); lo.forEach((q, i) => i ? c.lineTo(...q) : c.moveTo(...q)); c.stroke();
+      }
+    }
+    c.lineJoin = 'miter';
+    // 耳朵
+    for (const s of [-1, 1]) {
+      c.fillStyle = '#8a5530'; c.beginPath(); c.ellipse(s * 56, -16, 26, 11, -s * .35, 0, TAU); c.fill();
+      c.fillStyle = '#e7a58e'; c.beginPath(); c.ellipse(s * 60, -17.5, 16, 5.5, -s * .35, 0, TAU); c.fill();
+    }
+    // 脑袋
+    g = c.createRadialGradient(-14, -6, 6, 0, 18, 66); g.addColorStop(0, '#c48a56'); g.addColorStop(.7, '#9a6238'); g.addColorStop(1, '#74462a'); c.fillStyle = g; c.beginPath(); c.ellipse(0, 16, 46, 54, 0, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,236,210,.28)'; c.beginPath(); c.ellipse(0, -8, 9, 22, 0, 0, TAU); c.fill();   // 额头一道浅色
+    c.fillStyle = 'rgba(255,140,140,.35)'; c.beginPath(); c.arc(-30, 32, 8, 0, TAU); c.arc(30, 32, 8, 0, TAU); c.fill();
+    eyes(c, b, t, [-19, 19], 8, 7, 9, '#1e120c', '#3a2214');
+    // 睫毛
+    if (!b.held) { c.strokeStyle = '#1e120c'; c.lineWidth = 2; c.lineCap = 'round'; c.beginPath(); for (const s of [-1, 1]) { c.moveTo(s * 25, 1); c.lineTo(s * 30, -3); c.moveTo(s * 22, -1); c.lineTo(s * 25, -6); } c.stroke(); }
+    // 口鼻
+    g = c.createLinearGradient(0, 34, 0, 86); g.addColorStop(0, '#f0d6b4'); g.addColorStop(1, '#cfa77c'); c.fillStyle = g; c.beginPath(); c.ellipse(0, 58, 34, 26, 0, 0, TAU); c.fill();
+    g = c.createRadialGradient(-5, 45, 1, 0, 49, 18); g.addColorStop(0, '#6a4a3c'); g.addColorStop(1, '#2a1812'); c.fillStyle = g; c.beginPath(); c.ellipse(0, 49, 17, 11, 0, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-6, 45, 5, 2.6, -.3, 0, TAU); c.fill();
+    c.fillStyle = '#1a0e0a'; c.beginPath(); c.ellipse(-6, 51, 3, 2, .4, 0, TAU); c.ellipse(6, 51, 3, 2, -.4, 0, TAU); c.fill();
+    c.strokeStyle = '#6a4228'; c.lineWidth = 2.2; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 60); c.lineTo(0, 66); c.moveTo(-9, 67); c.quadraticCurveTo(-4, 72, 0, 66); c.quadraticCurveTo(4, 72, 9, 67); c.stroke();
+    c.lineCap = 'butt';
+  },
+  salmiak(c, b, t) {
+    // 斜切的四个面：左上最亮、右下最暗；中间是平顶，压着一个小菱形。甘草带一点棕，表面有糖的光泽，撒着盐粉
+    const O = [[-118, 0], [0, -64], [118, 0], [0, 64]], I = O.map(([x, y]) => [x * .74, y * .7]), face = ['#6a5f66', '#3f383e', '#141013', '#2a2327'];
+    c.fillStyle = '#1d1a1d'; c.fillRect(-160, -100, 320, 200);
+    for (let k = 0; k < 4; k++) { const k2 = (k + 1) % 4; c.fillStyle = face[k]; c.beginPath(); c.moveTo(...O[k]); c.lineTo(...O[k2]); c.lineTo(...I[k2]); c.lineTo(...I[k]); c.closePath(); c.fill(); }
+    let g = c.createLinearGradient(-60, -40, 50, 40); g.addColorStop(0, '#41383d'); g.addColorStop(1, '#171315'); c.fillStyle = g; c.beginPath(); I.forEach((p, i) => i ? c.lineTo(...p) : c.moveTo(...p)); c.closePath(); c.fill();
+    for (const [dx, dy, col] of [[1.2, 1.2, 'rgba(0,0,0,.6)'], [-1.2, -1.2, 'rgba(255,255,255,.16)']]) { c.strokeStyle = col; c.lineWidth = 2.5; c.beginPath(); I.forEach(([x, y], i) => { const p = [x * .55 + dx, y * .55 + dy]; if (i) c.lineTo(...p); else c.moveTo(...p); }); c.closePath(); c.stroke(); }
+    // 光泽：左上斜面一道亮，顶面一块柔光，一个高光点
+    g = c.createLinearGradient(-90, -40, -30, -20); g.addColorStop(0, 'rgba(255,255,255,.05)'); g.addColorStop(.5, 'rgba(255,255,255,.32)'); g.addColorStop(1, 'rgba(255,255,255,.05)'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(-104, -6); c.lineTo(-14, -56); c.lineTo(-10, -48); c.lineTo(-92, -4); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 2; c.lineCap = 'round'; c.beginPath(); c.moveTo(...I[0]); c.lineTo(...I[1]); c.stroke(); c.lineCap = 'butt';
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.ellipse(-26, -14, 36, 10, -.48, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(-48, -18, 6, 2.6, -.5, 0, TAU); c.fill();
+    // 盐粉：边上多、中间少；几颗盐粒会闪
+    for (const d of b.deco) { const x = d.x * 112, y = d.y * 60, e = Math.abs(x) / 118 + Math.abs(y) / 64; if (e > 1 || (e < .55 && d.k > .3)) continue; c.fillStyle = `rgba(240,238,244,${.25 + d.k * .5})`; c.beginPath(); c.arc(x, y, .7 + d.s * 1.7, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.9)'; for (const [x, y, ph] of [[46, 18, 0], [-62, 14, 2.1], [70, -6, 4.2]]) spark(c, x, y, 2 + 3.5 * Math.max(0, Math.sin(t * 2.6 + ph)));
+  },
+  aalto(c, b, t) {
+    // 亚克力底板：浅蓝、透亮
+    let g = c.createLinearGradient(-110, -100, 110, 100); g.addColorStop(0, '#f8feff'); g.addColorStop(1, '#cbe5f0'); c.fillStyle = g; c.fillRect(-140, -130, 280, 260);
+    const A = () => { c.beginPath(); c.moveTo(-96, 80); c.lineTo(-44, -80); c.lineTo(-16, -80); c.lineTo(36, 80); c.lineTo(2, 80); c.lineTo(-9.7, 44); c.lineTo(-50.3, 44); c.lineTo(-62, 80); c.closePath(); };
+    const bang = () => { c.beginPath(); c.moveTo(52, -80); c.lineTo(86, -80); c.lineTo(80, 36); c.lineTo(58, 36); c.closePath(); };
+    // 白色底印比字大一圈，再印黑字
+    c.lineJoin = 'round'; c.fillStyle = c.strokeStyle = '#ffffff'; c.lineWidth = 12;
+    A(); c.fill(); c.stroke(); bang(); c.fill(); c.stroke(); rr(c, 54, 52, 30, 28, 5); c.fill(); c.stroke();
+    c.fillStyle = '#141414'; A(); c.moveTo(-30, -18); c.lineTo(-19.5, 14); c.lineTo(-40.5, 14); c.closePath(); c.fill('evenodd');
+    bang(); c.fill(); rr(c, 54, 52, 30, 28, 5); c.fill();
+    // 亚克力上的斜反光 + 沿着现在的轮廓一圈亮边
+    c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.moveTo(-140, 10); c.lineTo(40, -130); c.lineTo(62, -130); c.lineTo(-140, 30); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.moveTo(-140, 46); c.lineTo(84, -130); c.lineTo(92, -130); c.lineTo(-140, 54); c.closePath(); c.fill();
+    artOutline(c, b); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 7; c.stroke(); c.strokeStyle = 'rgba(120,180,205,.35)'; c.lineWidth = 16; c.globalCompositeOperation = 'multiply'; c.stroke(); c.globalCompositeOperation = 'source-over';
+    c.lineJoin = 'miter';
+  },
+  sauna(c, b, t) {
+    // 深灰的橄榄石：左上亮、右下暗，带绿点和白点
+    let g = c.createRadialGradient(-34, -40, 8, 0, 0, 128); g.addColorStop(0, '#85838c'); g.addColorStop(.45, '#4a4850'); g.addColorStop(1, '#1d1c21'); c.fillStyle = g; c.fillRect(-160, -160, 320, 320);
+    c.fillStyle = 'rgba(255,255,255,.08)'; c.beginPath(); c.moveTo(-96, -24); c.quadraticCurveTo(-60, -66, -30, -76); c.lineTo(10, -40); c.quadraticCurveTo(-30, -10, -50, 6); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.moveTo(20, 18); c.quadraticCurveTo(70, 0, 100, -6); c.lineTo(80, 76); c.quadraticCurveTo(40, 72, 6, 64); c.closePath(); c.fill();
+    for (const d of b.deco) { c.fillStyle = d.k > .74 ? 'rgba(140,175,100,.45)' : d.k > .4 ? 'rgba(8,8,12,.32)' : 'rgba(230,230,240,.22)'; c.beginPath(); c.arc(d.x * 110, d.y * 90, .8 + d.s * 2.2, 0, TAU); c.fill(); }
+    // 发烫：沿着现在的轮廓一圈柔和的红光，一明一暗
+    const k = .78 + .22 * Math.sin(t * 2.4); artOutline(c, b); c.lineJoin = 'round';
+    c.strokeStyle = `rgba(255,84,20,${.2 * k})`; c.lineWidth = 34; c.stroke(); c.strokeStyle = `rgba(255,120,40,${.28 * k})`; c.lineWidth = 16; c.stroke(); c.strokeStyle = `rgba(255,190,110,${.45 * k})`; c.lineWidth = 4; c.stroke(); c.lineJoin = 'miter';
+    // 两道裂缝，里面透出火光
+    c.save(); c.shadowColor = '#ff6a20'; c.shadowBlur = 12; c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const [w, col] of [[5, `rgba(255,110,30,${.55 * k})`], [2, `rgba(255,220,150,${.9 * k})`]]) {
+      c.strokeStyle = col; c.lineWidth = w; c.beginPath();
+      c.moveTo(-84, 30); c.lineTo(-52, 22); c.lineTo(-30, 36); c.lineTo(-4, 28); c.moveTo(-52, 22); c.lineTo(-46, 4);
+      c.moveTo(36, -62); c.lineTo(46, -36); c.lineTo(70, -24); c.moveTo(46, -36); c.lineTo(38, -14);
+      c.stroke();
+    }
+    c.restore();
+    // 刚泼上去的水珠，正在嗞嗞冒汽
+    for (const [x, y, r0, ph] of [[-18, -50, 7, 0], [6, -60, 5, 1.7], [24, -46, 4, 3.1]]) {
+      const q = r0 * (.75 + .25 * Math.sin(t * 9 + ph));
+      c.fillStyle = 'rgba(190,230,255,.85)'; c.beginPath(); c.ellipse(x, y, q, q * .7, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.arc(x - q * .35, y - q * .3, q * .3, 0, TAU); c.fill();
+    }
+  },
+  oldphone(c, b, t) {
+    // 机身：深蓝，左边一道高光
+    let g = c.createLinearGradient(-58, 0, 58, 0); g.addColorStop(0, '#1d273a'); g.addColorStop(.3, '#3e5172'); g.addColorStop(.62, '#2b3850'); g.addColorStop(1, '#151c2a'); c.fillStyle = g; c.fillRect(-120, -160, 240, 320);
+    c.fillStyle = 'rgba(255,255,255,.16)'; rr(c, -47, -100, 6, 190, 3); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.1)'; c.beginPath(); c.ellipse(-6, -104, 34, 6, 0, Math.PI, TAU); c.fill();
+    // 听筒
+    rr(c, -17, -106, 34, 7, 3.5); c.fillStyle = '#0b0f17'; c.fill(); c.fillStyle = '#2b3850'; for (const x of [-9, -3, 3, 9]) c.fillRect(x - 1, -104.5, 2, 4);
+    // 屏幕：黑框 + 绿屏
+    rr(c, -40, -94, 80, 70, 12); c.fillStyle = '#0d121b'; c.fill(); rr(c, -40, -94, 80, 70, 12); c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 2; c.stroke();
+    g = c.createLinearGradient(0, -86, 0, -32); g.addColorStop(0, '#b5cf74'); g.addColorStop(1, '#93b053'); c.fillStyle = g; rr(c, -33, -87, 66, 56, 4); c.fill();
+    const px = '#2e3a1a'; c.fillStyle = px;
+    for (let k = 0; k < 4; k++) c.fillRect(-30 + k * 3.2, -78 - k * 2.2, 2.2, 4 + k * 2.2);   // 信号
+    c.fillRect(19, -84, 10, 5); c.fillRect(29, -83, 1.5, 3); c.fillStyle = '#b5cf74'; c.fillRect(20.5, -83, 3, 3); c.fillStyle = px;   // 电池
+    // 贪吃蛇绕着一圈爬，前面一颗果子
+    const cell = i => { i = ((i % 24) + 24) % 24; return i < 8 ? [i, 0] : i < 12 ? [7, i - 8] : i < 20 ? [19 - i, 4] : [0, 24 - i]; }, s = Math.floor(t * 7);
+    for (let k = 0; k < 7; k++) { const [x, y] = cell(s - k); c.fillRect(-21 + x * 5.6, -73 + y * 6.2, 4.6, 4.6); }
+    const [fx, fy] = cell(s + 5); c.beginPath(); c.arc(-18.7 + fx * 5.6, -70.7 + fy * 6.2, 2.2, 0, TAU); c.fill();
+    c.font = `700 7px ui-monospace,Menlo,monospace`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(L('菜单', 'Menu'), 0, -34);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.moveTo(-33, -87); c.lineTo(-8, -87); c.lineTo(-33, -60); c.closePath(); c.fill();   // 屏幕反光
+    // 导航键和两边的小键
+    g = c.createLinearGradient(0, -18, 0, 2); g.addColorStop(0, '#e4e9f0'); g.addColorStop(1, '#a9b2c0'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(-26, -15); c.quadraticCurveTo(0, -7, 26, -15); c.quadraticCurveTo(30, -6, 26, 2); c.quadraticCurveTo(0, 9, -26, 2); c.quadraticCurveTo(-30, -6, -26, -15); c.fill();
+    for (const s of [-1, 1]) { rr(c, s * 40 - 6, -14, 12, 15, 6); c.fill(); }
+    // 数字键
+    c.font = `700 9px ${NUM}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    '123456789*0#'.split('').forEach((ch, k) => {
+      const x = -29 + (k % 3) * 29, y = 22 + (k / 3 | 0) * 20;
+      g = c.createLinearGradient(0, y - 7, 0, y + 7); g.addColorStop(0, '#eef1f5'); g.addColorStop(1, '#b9c1cc'); c.fillStyle = g; rr(c, x - 13, y - 7, 26, 14, 7); c.fill();
+      c.fillStyle = 'rgba(0,0,0,.25)'; rr(c, x - 12, y + 5, 24, 2.5, 1.2); c.fill();
+      c.fillStyle = '#3a4456'; c.fillText(ch, x, y + .5);
+    });
+    c.fillStyle = '#0b0f17'; c.beginPath(); c.arc(0, 104, 2.4, 0, TAU); c.fill();   // 话筒孔
+  },
+});
 /* 芯的剖面图：画在壳的图案上面，坐标和 ART 一样是出厂时的坐标 */
 const CORE_ART = {
   coconut(c) { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(0, 0, 54, 0, TAU); c.fill(); c.fillStyle = '#d9eeee'; c.beginPath(); c.arc(0, 0, 40, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-14, -16, 14, 6, -.5, 0, TAU); c.fill(); },
@@ -1684,6 +1997,11 @@ function drawBody(b, t) {
   bodyPath(b); ctx.strokeStyle = m.outline; ctx.lineWidth = 3; ctx.stroke();
   if (b.flash > 0) { bodyPath(b); ctx.fillStyle = `rgba(255,255,255,${b.flash})`; ctx.fill(); }
   ctx.restore();
+  if (b.held && m.hot && G.state === 'play') {   // 烫手：抓的地方画一圈倒计时
+    const k = clamp(1 - (b.holdT || 0) / m.hot, 0, 1), ca = Math.cos(b.a), sa = Math.sin(b.a), hx = b.x + b.gx * ca - b.gy * sa, hy = b.y + b.gx * sa + b.gy * ca;
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(17,13,43,.6)'; ctx.beginPath(); ctx.arc(hx, hy, 20, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = k > .4 ? C.coin : C.alarm; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(hx, hy, 20, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(.001, k)); ctx.stroke(); ctx.lineCap = 'butt';
+  }
   // 参考圆：凸出虚线的地方就是该砸的地方
   if (G.state === 'play') { ctx.strokeStyle = 'rgba(244,240,255,.42)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 7]); ctx.beginPath(); ctx.arc(b.x, b.y, b.meanR, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
 }
@@ -1806,7 +2124,7 @@ function drawGauge() {
   ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let yy = GY0 - GW; yy < gy(m.brittle); yy += 9) { ctx.moveTo(GX, yy + GW); ctx.lineTo(GX + GW, yy); } ctx.stroke();
   ctx.restore();
   ctx.font = EN ? `700 ${9.5 * fz}px ${BODY}` : `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(L('碎', 'BRK'), 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
+  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
   const lh = G.lastHit;
   if (lh && G.time - lh.t < 3) {
     ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const yy = gy(lh.F);
@@ -1855,7 +2173,7 @@ function drawGaugePort() {
   ctx.restore();
   ctx.textAlign = 'center'; ctx.font = EN ? `700 13px ${BODY}` : `16px ${BODY}`; const ly = y + h + 18;
   ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), (X0 + gx(m.hard)) / 2, ly); ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), (gx(m.hard) + gx(m.brittle)) / 2, ly);
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(L('碎', 'BRK'), (gx(m.brittle) + X1) / 2, ly); }
+  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), (gx(m.brittle) + X1) / 2, ly); }
   const lh = G.lastHit;
   if (lh && G.time - lh.t < 3) { ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const xx = gx(lh.F); ctx.fillStyle = '#fff'; ctx.fillRect(xx - 2, y - 3, 4, h + 6); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(xx - 2, y - 3, 4, h + 6); ctx.globalAlpha = 1; }
   if (b && !b.dead && G.state === 'play') {
@@ -1924,7 +2242,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
-  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 42-order whacking game.';
+  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 48-order whacking game.';
   document.getElementById('help').textContent = TOUCH
     ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
     : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
@@ -1932,7 +2250,7 @@ if (EN) {
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
 }
-try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
+try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
 let last = 0;
 function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
 
