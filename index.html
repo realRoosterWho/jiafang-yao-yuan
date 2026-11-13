@@ -861,7 +861,7 @@ cv.addEventListener('pointerdown', e => {
   if (tryGrab()) { grabId = e.pointerId; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
 });
 cv.addEventListener('pointermove', e => {
-  if (e.pointerId === rotId) { const b = G.body; if (b && b.held) b.userRot -= (e.clientX - rotX) * .012;   // 往右滑 = 逆时针，跟手感一致 rotX = e.clientX; return; }
+  if (e.pointerId === rotId) { const b = G.body; if (b && b.held) b.userRot -= (e.clientX - rotX) * .012; /* 往右滑 = 逆时针 */ rotX = e.clientX; return; }
   if (grabId !== null && e.pointerId !== grabId) return;
   setPointer(e); const b = G.body;
   cv.style.cursor = b && b.held ? 'grabbing' : (b && !b.dead && G.state === 'play' && toLocal(b, P.x, P.y).inside ? 'grab' : 'default');
