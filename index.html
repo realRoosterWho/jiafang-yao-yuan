@@ -182,6 +182,9 @@ const W = 960, H = 600, FLOOR = 520, WALL_R = 880;
 let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0;
 const midX = () => (WALL_L + WALL_R) / 2;
 const TOUCH = !!(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches);
+// 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
+const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
+const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' ? n : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
 const GRAV = 5200, FOLLOW = 20, ARM = 16, MIN_F = 4;
@@ -272,6 +275,44 @@ const CHAPS = [
   { name: '甲方的仓库', intro: '仓库里堆着从地球顺回来的东西，全是方的、带棱的。甲方看一眼就头疼。' },
   { name: '甲方的收藏室', intro: '最后一班是甲方的私人收藏。件件价值连城，砸坏哪件你都赔不起。' },
 ];
+
+/* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
+const MATS_EN = {
+  wood: ['Wood', 'Split!', 'The wood is now a pile of kindling.', 'The most easygoing material. Wide force window, good for warming up.'],
+  stone: ['Stone', 'Chipped!', 'The stone crumbled to gravel.', 'Hard and heavy. Nothing happens unless you really swing it. Swing too hard and it chips.'],
+  meat: ['Meat', 'Mashed!', 'This cut of meat is now a puddle of paste.', 'Deforms at a touch and bulges wherever you squeeze it. Drop it from too high and it turns to mush.'],
+  can: ['Can', 'Crushed!', 'The can has been flattened into sheet metal.', 'Soft metal. It never loses material: flattened spots bulge out to the sides.'],
+  pc: ['Computer', 'Parts flew out!', 'The computer is now a floor full of parts.', 'Hard and brittle, with a narrow force window. The monitor stand has to go too.'],
+  gem: ['Gem', 'Chipped!', 'The gem shattered into a handful of sparkly dust.', 'Extremely hard, extremely brittle. The force has to be just right. One gem pays like several other orders.'],
+  dough: ['Dough', 'Pancaked!', 'The dough is now a flatbread. The Client does not eat flatbread.', 'Absurdly soft. It spreads when you so much as set it down, and it never loses material. The hard part is not overdoing it.'],
+  cheese: ['Cheese', 'Crumbled!', 'The cheese crumbled into a plate of parmesan.', "A cut wedge with three points. Crumbly: every hit takes off a big chunk, so go easy and don't get greedy."],
+  melon: ['Melon', 'Cracked!', 'The watermelon exploded all over the floor.', 'Half a melon; the cut side is flat. Deal with the two sharp corners first. No bonus for splashing juice on the Client.'],
+  carrot: ['Carrot', 'Snapped!', 'The carrot is now diced carrot.', 'Long and thin. Hold the thick end and knock the tip shorter bit by bit, then come back for the other side.'],
+  ice: ['Ice', 'Cracked!', 'The ice is now a cup of shaved ice.', "Rush order: the ice is melting and the Client won't wait long. The floor is slippery too. Let go and it slides away."],
+  egg: ['Egg', 'Cracked!', 'Yolk everywhere. The Client says this is the least round shape of all.', "Handle with care. A little too much force breaks it, and <strong>you can't afford a single break</strong>. Letting go a hand's width above the floor is plenty."],
+  brick: ['Brick', 'Chipped!', 'The brick crumbled into rubble.', 'A long, hard red brick. Shorten both ends first. Hit it too softly and it only sheds dust.'],
+  cone: ['Cone', 'Squashed!', 'The traffic cone is now a rubber mat.', "Rubber. It never loses material, and it's bouncy: after you let go it hops a couple more times, and every hop counts."],
+  gear: ['Gear', 'Tooth broke!', "The gear split into pieces. The Client's machine has stopped.", "Steel. Eight teeth: knock them off one by one and it's round. Point a tooth down and give it everything."],
+  bottle: ['Bottle', 'Cracked!', 'Broken glass all over the floor. The Client is barefoot.', "The force window is low and narrow. The whole neck has to go, but don't rush: it only survives one slip."],
+  gold: ['Gold', 'Flattened!', 'The gold bar is now gold leaf.', 'Dead heavy; it drags your hand. Luckily gold is soft: flattened spots bulge sideways and not a gram is lost.'],
+  ingot: ['Ingot', 'Cracked!', 'You actually broke a steel ingot. The Client is a little scared.', "The hardest thing here, and the only one you can't break. Dropping it from the top barely scratches it. <strong>Grab it and swing it down</strong> as hard as you can."],
+  cube: ['Cube', 'Piece flew off!', 'The puzzle cube is now a floor full of little cubes.', 'The Client twisted it for three years without solving it, and decided on a new approach. Plastic, brittle, not a wide force window.'],
+  phone: ['Phone', 'Screen cracked!', "The phone is broken. It had the Client's un-backed-up photos on it.", 'Tall and thin, with a very low window. Forearm strength is enough. Only one slip allowed.'],
+  record: ['Record', 'Cracked!', 'A record that was already round, and you made it not round.', "…This one is already round. The Client just wants to see if your hands get itchy. <strong>Deliver it as it is</strong>. If you drop it, that's on you."],
+  crown: ['Crown', 'Dented!', 'The crown is now a gold plate.', 'Solid gold with three points. Slam the points down and the gold bulges into the gaps on either side.'],
+  star: ['Star', 'Point broke!', "The star shattered. There's one fewer in the sky tonight.", 'The Client picked it from the sky. They say stars were always round and you Earthlings drew them wrong. Five points. Knock them off.'],
+  ufo: ['UFO', 'Alarm!', 'The saucer blew up. Now neither you nor the Client can go home.', "Final order: the Client's own ride. Big, flat and heavy, and the driver is still inside. Ignore him."],
+};
+const CHAPS_EN = [
+  ['Probation', ''],
+  ["The Client's Kitchen", "The Client is hungry. But on their planet, nothing that isn't round is allowed on the table."],
+  ["The Client's Warehouse", 'The warehouse is piled with things swiped from Earth, all square and full of edges. One look gives the Client a headache.'],
+  ["The Client's Collection", "The last shift is the Client's private collection. Every piece is priceless, and you can't afford to break any of them."],
+];
+if (EN) {
+  for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
+  CHAPS.forEach((c, i) => { c.name = CHAPS_EN[i][0]; c.intro = CHAPS_EN[i][1]; });
+}
 
 /* ---------- 形状：以质心为原点的极坐标半径数组 ---------- */
 const rectPts = (hw, hh) => [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
@@ -485,16 +526,16 @@ const sfx = {
 
 /* ---------- 甲方的台词 ---------- */
 const LINES = {
-  start: m => [`把这${m.unit}${m.name}给我弄圆。圆度不到 ${pct(G.target)}，圆的就是你。`],
-  light: () => ['你在给它挠痒痒吗？', '地球人都这么没力气？', '用点力。'],
-  good: () => ['嗯，圆了一点。', '继续。', '对，就砸那个角。', '还不够圆。'],
-  worse: () => ['你把它砸扁了。', '这也叫圆？', '越砸越不圆了！'],
-  over: () => ['轻点！那是我的东西！', '再碎一次，圆的就是你。', '你赔得起吗？'],
-  ready: () => ['……勉强算圆。可以交货了。', '够圆了。再磨一磨，酬劳更高。'],
-  hurry: () => ['我的耐心快缩成一个点了。', '快点，地球人。'],
-  fail: () => ['不够圆。那就把你弄圆吧。'],
-  shatter: () => ['碎了？！来人，把这个工匠磨圆。'],
-  done: () => ['很圆。我很满意。', '嗯。圆。下一单。'],
+  start: m => [L(`把这${m.unit}${m.name}给我弄圆。圆度不到 ${pct(G.target)}，圆的就是你。`, `Make this ${lc(m.name)} round. Under ${pct(G.target)}, and the round one is you.`)],
+  light: () => EN ? ['Are you tickling it?', 'Are all Earthlings this weak?', 'Harder.'] : ['你在给它挠痒痒吗？', '地球人都这么没力气？', '用点力。'],
+  good: () => EN ? ['Hm. A little rounder.', 'Keep going.', 'Yes. That corner.', 'Not round enough.'] : ['嗯，圆了一点。', '继续。', '对，就砸那个角。', '还不够圆。'],
+  worse: () => EN ? ['You flattened it.', 'You call that round?', "It's getting less round!"] : ['你把它砸扁了。', '这也叫圆？', '越砸越不圆了！'],
+  over: () => EN ? ['Gently! That is mine!', 'Break it again and the round one is you.', 'Can you pay for that?'] : ['轻点！那是我的东西！', '再碎一次，圆的就是你。', '你赔得起吗？'],
+  ready: () => EN ? ['…Barely round. You may deliver.', 'Round enough. Polish it more and I pay more.'] : ['……勉强算圆。可以交货了。', '够圆了。再磨一磨，酬劳更高。'],
+  hurry: () => EN ? ['My patience is shrinking to a dot.', 'Hurry up, Earthling.'] : ['我的耐心快缩成一个点了。', '快点，地球人。'],
+  fail: () => EN ? ['Not round enough. We will round you instead.'] : ['不够圆。那就把你弄圆吧。'],
+  shatter: () => EN ? ['Broken?! Guards, grind this artisan round.'] : ['碎了？！来人，把这个工匠磨圆。'],
+  done: () => EN ? ['Very round. I am pleased.', 'Hm. Round. Next order.'] : ['很圆。我很满意。', '嗯。圆。下一单。'],
 };
 function say(kind, force) {
   if (!force && G.bubble && G.time - G.bubble.t0 < 1.6) return;
@@ -577,7 +618,7 @@ function impact(b, F, cx) {
     sfx.thud(.4 + power); dust(cx, 2 + F * .08); b.jigV += power * m.jig * 6;
     if (primary) {
       G.lastHit = { F, t: G.time, kind: 'light' }; G.stats.light++;
-      floatText(cx, FLOOR - 46, '太轻 ' + Math.round(F), C.dim, 20);
+      floatText(cx, FLOOR - 46, L('太轻 ', 'Too soft ') + Math.round(F), C.dim, 20);
       if (Math.random() < .45) say('light');
     }
     return;
@@ -598,7 +639,7 @@ function impact(b, F, cx) {
     say('over', true);
   } else {
     G.stats.good++;
-    const word = res.t < .3 ? '轻磨' : res.t < .75 ? '好' : '重击';
+    const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
     if (gain < -.012) say('worse'); else if (Math.random() < .3) say('good');
   }
@@ -663,58 +704,58 @@ function startAt(i) {
 function showBook() {
   G.state = 'menu'; const at = firstOpen(); let html = '';
   CHAPS.forEach((ch, k) => {
-    html += `<p class="chap">第 ${k + 1} 班 · ${ch.name}</p><div class="grid">`;
+    html += `<p class="chap">${L(`第 ${k + 1} 班`, `Shift ${k + 1}`)} · ${ch.name}</p><div class="grid">`;
     for (let i = k * PER; i < Math.min((k + 1) * PER, ORDER.length); i++) {
       const id = ORDER[i], best = SAVE.best[id] || 0;
-      html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="第 ${i + 1} 单 ${MATS[id].name}${best ? '，交付过，最高酬劳 ' + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span></button>`;
+      html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="${L(`第 ${i + 1} 单`, `Order ${i + 1}`)} ${MATS[id].name}${best ? L('，交付过，最高酬劳 ', ', delivered, best pay ') + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span></button>`;
     }
     html += '</div>';
   });
   setCard(`
-    <p class="eyebrow">订单簿</p>
-    <h2>从哪一单开工</h2>
+    <p class="eyebrow">${L('订单簿', 'Order book')}</p>
+    <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
     ${html}
-    <p class="note">绿色是交付过的。哪一单都能直接开工，酬劳从那一单算起。</p>
-    <div class="row"><button class="btn ghost" type="button" data-act="restart">返回</button></div>`);
+    <p class="note">${L('绿色是交付过的。哪一单都能直接开工，酬劳从那一单算起。', 'Green ones are delivered. Start from any order; pay counts from there.')}</p>
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('返回', 'Back')}</button></div>`);
 }
 function showChapter() {
   setupRound(); const k = G.idx / PER | 0, ch = CHAPS[k]; G.state = 'chapter';
   setCard(`
-    <p class="eyebrow">第 ${k + 1} 班 · 共 ${CHAPS.length} 班</p>
+    <p class="eyebrow">${L(`第 ${k + 1} 班 · 共 ${CHAPS.length} 班`, `Shift ${k + 1} of ${CHAPS.length}`)}</p>
     <h2>${ch.name}</h2>
     <p>${ch.intro}</p>
-    <p class="note">这一班六单：${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join('、')}。${G.score ? '目前累计酬劳 ◎ ' + G.score + '。' : ''}</p>
-    <div class="row"><button class="btn" type="button" data-act="enter">进去看看</button></div>`);
+    <p class="note">${L('这一班六单：', 'Six orders this shift: ')}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
+    <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button></div>`);
 }
 function showMenu() {
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; setupRound(); G.state = 'menu';
   const at = firstOpen();
   setCard(`
-    <p class="eyebrow">地球工匠 · 外星订单</p>
-    <h1>甲方要圆</h1>
-    <p>你是地球上手艺最好的工匠，所以被外星人绑回了母星。甲方只有一个需求：<strong>所有东西都得是圆的。</strong>圆度达标，接下一单；不达标，被做成圆形的就是你。这次一共 <strong>${ORDER.length} 单</strong>，分 ${CHAPS.length} 班。</p>
+    <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
+    <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
+    <p>${EN ? `You are the finest artisan on Earth, which is why aliens abducted you to their home planet. The Client has one requirement: <strong>everything must be round.</strong> Hit the roundness target and you get the next order. Miss it, and the thing made round is you. There are <strong>${ORDER.length} orders</strong> in ${CHAPS.length} shifts.` : `你是地球上手艺最好的工匠，所以被外星人绑回了母星。甲方只有一个需求：<strong>所有东西都得是圆的。</strong>圆度达标，接下一单；不达标，被做成圆形的就是你。这次一共 <strong>${ORDER.length} 单</strong>，分 ${CHAPS.length} 班。`}</p>
     <ul class="how">
-      <li><b>拎</b><span>按住材料把它拎起来。抓住哪一头，对面那头就朝下。</span></li>
-      <li><b>砸</b><span>往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。</span></li>
-      <li><b>磨</b><span>专挑凸出虚线圆的角砸。${TOUCH ? '拎着的时候按左边的 ↺ ↻ 可以微调角度。' : 'A / D 或滚轮可以微调角度。'}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${L('按住材料把它拎起来。抓住哪一头，对面那头就朝下。', '<strong>Lift.</strong> Press and hold the material to pick it up. Whichever end you grab, the opposite end points down.')}</span></li>
+      <li><b>${L('砸', '2')}</b><span>${L('往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。', '<strong>Slam.</strong> Smash it on the floor, or lift it high and let go. Watch the force gauge on the right: green works, too soft does nothing, red breaks it.')}</span></li>
+      <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候按左边的 ↺ ↻ 可以微调角度。', 'While holding, press ↺ ↻ on the left to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? '接着做第 ' + (at + 1) + ' 单' : '开工'}</button><button class="btn ghost" type="button" data-act="book">订单簿</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button><button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0;
   setCard(`
-    <p class="eyebrow">第 ${G.idx + 1} / ${ORDER.length} 单 · ${CHAPS[G.idx / PER | 0].name}${G.loop ? ' · 加班第 ' + G.loop + ' 轮' : ''}</p>
-    <h2>把这${m.unit}${m.name}弄圆</h2>
+    <p class="eyebrow">${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)} · ${CHAPS[G.idx / PER | 0].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
+    <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
     <p>${m.blurb}</p>
     <dl class="spec">
-      <dt>力度窗口</dt><dd><div class="window" role="img" aria-label="力度 ${m.hard} 到 ${m.brittle} 之间有效"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
-      <dt>硬度</dt><dd>力度到 ${m.hard} 才会变形</dd>
-      <dt>易碎</dt><dd>${m.brittle >= 100 ? '砸不坏，放心抡' : `力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`}</dd>
-      <dt>松散</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>每一下的形变量</dd>
-      <dt>价值</dt><dd>× ${m.value.toFixed(1)}</dd>
+      <dt>${L('力度窗口', 'Force window')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
+      <dt>${L('硬度', 'Hardness')}</dt><dd>${L(`力度到 ${m.hard} 才会变形`, `Needs force ${m.hard} to dent`)}</dd>
+      <dt>${L('易碎', 'Fragility')}</dt><dd>${m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
+      <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
+      <dt>${L('价值', 'Value')}</dt><dd>× ${m.value.toFixed(1)}</dd>
     </dl>
-    <p>达标线 <strong>${pct(G.target)}</strong>，甲方耐心 <strong>${m.time} 秒</strong>，从你第一次拎起材料开始算。${best ? `这一单你拿过最高 <strong>◎ ${best}</strong>。` : ''}</p>
-    <div class="row"><button class="btn" type="button" data-act="go">接单</button></div>`);
+    <p>${EN ? `Target <strong>${pct(G.target)}</strong>. The Client's patience: <strong>${m.time} s</strong>, counted from your first lift.${best ? ` Your best on this order: <strong>◎ ${best}</strong>.` : ''}` : `达标线 <strong>${pct(G.target)}</strong>，甲方耐心 <strong>${m.time} 秒</strong>，从你第一次拎起材料开始算。${best ? `这一单你拿过最高 <strong>◎ ${best}</strong>。` : ''}`}</p>
+    <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button></div>`);
 }
 function computePay() {
   const m = G.mat, b = G.body, base = 100 * m.value * (1 + .5 * G.loop);
@@ -728,17 +769,17 @@ function deliver() {
   G.score += p.total; G.done++; G.state = 'result'; sfx.win(); say('done', true); mood('happy', 4);
   const old = saveBest(ORDER[G.idx], p.total);
   setCard(`
-    <p class="eyebrow">交货成功</p>
-    <h2>圆度 ${pct(G.round)}，甲方点了点头</h2>
+    <p class="eyebrow">${L('交货成功', 'Delivered')}</p>
+    <h2>${L(`圆度 ${pct(G.round)}，甲方点了点头`, `${pct(G.round)} round. The Client nods`)}</h2>
     <dl class="spec tally">
-      <dt>基础酬劳 × 价值 ${m.value.toFixed(1)}</dt><dd>${Math.round(p.base)}</dd>
-      <dt>超出达标线 ${pct(G.target)}</dt><dd>× ${p.q.toFixed(2)}</dd>
-      <dt>材料保留 ${pct(p.keep)}</dt><dd>× ${p.keepMul.toFixed(2)}</dd>
-      <dt>砸过头 ${G.stats.over} 次</dt><dd>× ${p.overMul.toFixed(2)}</dd>
-      <dt>剩余耐心 ${Math.ceil(Math.max(0, G.timeLeft))} 秒</dt><dd>+ ${p.timeBonus}</dd>
-      <dt>本单酬劳${old && p.total > old ? ' · 新纪录' : ''}</dt><dd class="sum">◎ ${p.total}</dd>
+      <dt>${L('基础酬劳 × 价值', 'Base pay × value')} ${m.value.toFixed(1)}</dt><dd>${Math.round(p.base)}</dd>
+      <dt>${L('超出达标线', 'Above target')} ${pct(G.target)}</dt><dd>× ${p.q.toFixed(2)}</dd>
+      <dt>${L('材料保留', 'Material kept')} ${pct(p.keep)}</dt><dd>× ${p.keepMul.toFixed(2)}</dd>
+      <dt>${L(`砸过头 ${G.stats.over} 次`, `Overhits: ${G.stats.over}`)}</dt><dd>× ${p.overMul.toFixed(2)}</dd>
+      <dt>${L('剩余耐心', 'Patience left')} ${Math.ceil(Math.max(0, G.timeLeft))} ${L('秒', 's')}</dt><dd>+ ${p.timeBonus}</dd>
+      <dt>${L('本单酬劳', 'Pay for this order')}${old && p.total > old ? L(' · 新纪录', ' · New best') : ''}</dt><dd class="sum">◎ ${p.total}</dd>
     </dl>
-    <div class="row"><button class="btn" type="button" data-act="next">${G.idx + 1 < ORDER.length ? '下一单' : '看看甲方怎么说'}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="next">${G.idx + 1 < ORDER.length ? L('下一单', 'Next order') : L('看看甲方怎么说', 'Hear the verdict')}</button></div>`);
 }
 function fail(reason) {
   if (G.state !== 'play') return;
@@ -749,24 +790,25 @@ function fail(reason) {
 }
 function showOver() {
   G.state = 'over'; const m = G.mat;
-  const why = G.failReason === 'shatter' ? m.dead : `甲方的耐心用完了。圆度停在 ${pct(G.round)}，达标线是 ${pct(G.target)}。`;
+  const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，达标线是 ${pct(G.target)}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; the target was ${pct(G.target)}.`);
   setCard(`
-    <p class="eyebrow">交货失败</p>
-    <h2>你被做成了圆形</h2>
+    <p class="eyebrow">${L('交货失败', 'Delivery failed')}</p>
+    <h2>${L('你被做成了圆形', 'You have been made round')}</h2>
     <p>${why}</p>
-    <p>完成 ${G.done} 单，累计酬劳 <strong>◎ ${G.startScore}</strong>。</p>
-    <div class="row"><button class="btn" type="button" data-act="retry">重做这一单</button><button class="btn ghost" type="button" data-act="restart">回首页</button></div>`);
+    <p>${L(`完成 ${G.done} 单，累计酬劳`, `Orders delivered: ${G.done}. Total pay:`)} <strong>◎ ${G.startScore}</strong>${L('。', '.')}</p>
+    <div class="row"><button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showWin() {
   G.state = 'win';
   setCard(`
-    <p class="eyebrow">${G.done >= ORDER.length ? ORDER.length + ' 单全部交付' : '最后一单交付'}</p>
-    <h2>甲方非常满意</h2>
-    <p>所以他们决定不放你走了。累计酬劳 <strong>◎ ${G.score}</strong>。下一轮每一单的达标线都会再高一点。</p>
-    <div class="row"><button class="btn" type="button" data-act="again">继续加班</button><button class="btn ghost" type="button" data-act="restart">回首页</button></div>`);
+    <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
+    <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
+    <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的达标线都会再高一点。', '. Next round, every target goes a little higher.')}</p>
+    <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function act(a) {
   audioInit(); sfx.ui();
+  if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();
@@ -783,7 +825,7 @@ card.addEventListener('click', e => {
 });
 deliverBtn.addEventListener('click', e => { e.currentTarget.blur(); deliver(); });
 muteBtn.addEventListener('click', e => {
-  audioInit(); muted = !muted; muteBtn.textContent = muted ? '声音 关' : '声音 开'; muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
+  audioInit(); muted = !muted; muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
 });
 
 /* ---------- 输入 ---------- */
@@ -1113,7 +1155,7 @@ function drawBg(t) {
   ctx.fillStyle = '#3a2d80'; ctx.beginPath(); ctx.arc(250, 404, 20, 0, TAU); ctx.fill();
   // 墙上的厂训
   ctx.save(); ctx.translate(628, 448); ctx.strokeStyle = 'rgba(147,232,90,.22)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 44, 0, TAU); ctx.stroke();
-  ctx.fillStyle = 'rgba(147,232,90,.26)'; ctx.font = `22px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('一切', 0, -13); ctx.fillText('皆圆', 0, 13); ctx.restore();
+  ctx.fillStyle = 'rgba(147,232,90,.26)'; ctx.font = `22px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (EN) ctx.font = `15px ${DISPLAY}`; ctx.fillText(L('一切', 'ALL IS'), 0, -11); ctx.fillText(L('皆圆', 'ROUND'), 0, 11); ctx.restore();
   // 地板
   ctx.fillStyle = '#2a2166'; ctx.fillRect(0, FLOOR, W, H - FLOOR); ctx.fillStyle = '#7566db'; ctx.fillRect(0, FLOOR, W, 4); ctx.fillStyle = '#1e1747'; ctx.fillRect(0, FLOOR + 4, W, 5);
   ctx.fillStyle = '#3d3190'; for (let x = 30; x < W; x += 64) { ctx.beginPath(); ctx.arc(x, FLOOR + 24, 4, 0, TAU); ctx.fill(); }
@@ -1178,7 +1220,7 @@ function drawDoom(d) {
 }
 
 /* ---------- 绘制：甲方、圆度条、力度表 ---------- */
-function wrapText(text, maxW) { const out = []; let cur = ''; for (const ch of text) { if (cur && ctx.measureText(cur + ch).width > maxW) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out; }
+function wrapText(text, maxW) { const out = []; let cur = ''; for (const ch of (EN ? text.match(/\S+\s*/g) || [] : text)) { if (cur && ctx.measureText(cur + ch).width > maxW) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out; }
 function drawAlien(t) {
   const cx = 92, cy = 112, R = 56, playing = G.state === 'play';
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1), ringCol = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm;
@@ -1208,8 +1250,8 @@ function drawAlien(t) {
   if (PORT) return;   // 竖屏的文字和气泡在 drawHudPort 里另排
   // 窗下：耐心、单号、酬劳
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.font = `500 15px ${NUM}`; ctx.fillStyle = ringCol; ctx.fillText('甲方耐心 ' + Math.ceil(Math.max(0, G.timeLeft)) + ' 秒', cx, 204);
-  ctx.font = `13px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`第 ${G.idx + 1} / ${ORDER.length} 单` + (G.loop ? ' · 加班' : ''), cx, 228);
+  ctx.font = `500 15px ${NUM}`; ctx.fillStyle = ringCol; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), cx, 204);
+  ctx.font = `13px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), cx, 228);
   ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, cx, 256);
   // 气泡
   const bb = G.bubble;
@@ -1224,18 +1266,18 @@ function drawAlien(t) {
 }
 function drawRoundBar() {
   const x0 = 262, w = 420, y = 30, h = 24, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target;
-  ctx.textBaseline = 'alphabetic'; ctx.font = `20px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText('圆形程度', x0 - 10, y + 19);
+  ctx.textBaseline = 'alphabetic'; ctx.font = `${EN ? 18 : 20}px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText(L('圆形程度', 'Roundness'), x0 - 10, y + 19);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
   rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
   ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(tx, y - 5); ctx.lineTo(tx, y + h + 5); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = `500 12px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText('达标 ' + pct(G.target), tx, y - 10);
+  ctx.font = `500 12px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText(L('达标 ', 'Goal ') + pct(G.target), tx, y - 10);
   ctx.font = `36px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 14, y + 27);
   // 材料名、耐久、敲击统计
   const m = G.mat; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 52);
-  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText('耐久', px, y + 51); px += 34;
+  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 51); px += EN ? 28 : 34;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 17, y + 46, 5.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
-  ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, x0 + w, y + 51);
+  ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), x0 + w, y + 51);
 }
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
 function drawGauge() {
@@ -1243,7 +1285,7 @@ function drawGauge() {
   const py = PORT ? 136 - TOP : 0;
   ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
   const fz = PORT ? 1.35 : 1;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText('力度', GX + GW / 2 + 1, 60);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
   ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(GX, GY0, GW, GY1 - GY0);
@@ -1251,8 +1293,8 @@ function drawGauge() {
   ctx.fillStyle = C.alarm; ctx.fillRect(GX, GY0, GW, gy(m.brittle) - GY0);
   ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let yy = GY0 - GW; yy < gy(m.brittle); yy += 9) { ctx.moveTo(GX, yy + GW); ctx.lineTo(GX + GW, yy); } ctx.stroke();
   ctx.restore();
-  ctx.font = `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText('碎', 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText('好', 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText('轻', 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
+  ctx.font = EN ? `700 ${9.5 * fz}px ${BODY}` : `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
+  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(L('碎', 'BRK'), 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
   const lh = G.lastHit;
   if (lh && G.time - lh.t < 3) {
     ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const yy = gy(lh.F);
@@ -1266,31 +1308,33 @@ function drawGauge() {
     if (G.needle > 1) { const yy = gy(G.needle); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(GX + GW + 3, yy); ctx.lineTo(GX + GW + 15, yy - 7); ctx.lineTo(GX + GW + 15, yy + 7); ctx.closePath(); ctx.fill(); }
   }
 }
-const TIPS = ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时按 ↺ ↻，或另一根手指左右滑，微调角度' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+const TIPS = EN
+  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: press ↺ ↻ or slide a second finger to turn' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
+  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时按 ↺ ↻，或另一根手指左右滑，微调角度' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
 function drawHints() {
   if (G.state !== 'play') return;
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? 17 : 15}px ${BODY}`; ctx.fillStyle = C.dim;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`; ctx.fillStyle = C.dim;
   ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
 }
 /* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
 function drawHudPort(t) {
   ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
   const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
-  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText('圆形程度', x0, y - 9);
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
   rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
   ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(tx, y - 5); ctx.lineTo(tx, y + h + 5); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = `500 14px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.dim; ctx.fillText('达标 ' + pct(G.target), tx, y - 10);
+  ctx.font = `500 14px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.dim; ctx.fillText(L('达标 ', 'Goal ') + pct(G.target), tx, y - 10);
   ctx.font = `40px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 12, y + 29);
   ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
-  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText('耐久', px, y + 56); px += 42;
+  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
-  ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, VW - 12, y + 56);
+  ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
-  ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText('甲方耐心 ' + Math.ceil(Math.max(0, G.timeLeft)) + ' 秒', 12, 124);
-  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`第 ${G.idx + 1} / ${ORDER.length} 单` + (G.loop ? ' · 加班' : ''), VW / 2, 124);
+  ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
+  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
   ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
@@ -1328,6 +1372,15 @@ function fit() {
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
+if (EN) {
+  document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
+  document.getElementById('help').textContent = TOUCH
+    ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
+    : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
+  deliverBtn.innerHTML = 'Deliver<kbd>Space</kbd>'; muteBtn.textContent = 'Sound on';
+  cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
+  document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
+}
 try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
 let last = 0;
 function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
