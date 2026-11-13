@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>甲方要圆</title>
-<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。24 单敲击小游戏。">
+<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。30 单敲击小游戏。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -270,14 +270,35 @@ const MATS = {
     base: '#ffd83c', outline: '#fff3b0', chips: ['#fffde0', '#ffd83c', '#ff9d2e'], over: '崩掉一角！', dead: '星星碎了。今晚的天上少了一颗。', blurb: '甲方从天上摘的。他们说恒星本来就是圆的，是你们地球人画错了。五个角，敲掉。' },
   ufo: { name: '飞碟', unit: '架', hard: 44, brittle: 64, loose: .8, plastic: .5, smooth: .4, passes: 2, value: 8, hp: 2, rest: .15, fric: .6, accel: 14000, jig: .03, target: .9, time: 130,
     base: '#b9bfcc', outline: '#2e3340', chips: ['#e3e7ee', '#8a90a0', '#7de8ff', '#ffd35c'], over: '警报响了！', dead: '飞碟炸了。这下你和甲方都回不去了。', blurb: '最后一单：甲方的座驾。又大又扁又沉，司机还在里面。别管他。' },
+  /* 第五班：表里不一。外面一层壳、里面一层芯，各有各的力度窗口；哪一层朝下，力度表就按哪一层算 */
+  coconut: { name: '椰子', unit: '个', hard: 12, brittle: 60, loose: 1.3, plastic: 0, smooth: 0, passes: 0, value: 6, hp: 2, rest: .25, fric: .5, accel: 24000, jig: 0, target: .93, time: 100, snd: 'wood', rough: 3,
+    core: { label: ['硬壳', 'Hard shell'], hard: 62, brittle: 100, loose: .3, base: '#5c3a1e', outline: '#2e1a0a', chips: ['#5c3a1e', '#fffaf0'], snd: 'stone', over: ['裂了！', 'Cracked!'], pts: () => arcPts(0, 0, 64, 0, TAU, 40) },
+    base: '#a8763f', outline: '#5a3a18', chips: ['#c79a5e', '#a8763f', '#7d5326'], over: '砸过头了！', dead: '椰子裂成两半，椰汁流了一地。甲方说他不渴。', blurb: '外面是软软的椰棕，轻轻一砸就掉；里面的硬壳本来就是圆的，轻了根本砸不动。把棕剥干净就行，别用蛮力。' },
+  parcel: { name: '快递', unit: '件', hard: 10, brittle: 74, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 7, hp: 2, rest: .2, fric: .6, accel: 24000, jig: 0, target: .88, time: 100, snd: 'wood',
+    core: { label: ['花瓶', 'Vase'], hard: 20, brittle: 40, loose: .8, base: '#3f8fd6', outline: '#173e6b', chips: ['#3f8fd6', '#ffffff', '#bfe0ff'], snd: 'glass', over: ['花瓶裂了！', 'The vase cracked!'],
+      pts: () => [[-14, -76], [14, -76], [12, -54], [36, -22], [40, 12], [30, 52], [22, 74], [-22, 74], [-30, 52], [-40, 12], [-36, -22], [-12, -54]] },
+    base: '#c99a5b', outline: '#6e4a1c', chips: ['#e0b97f', '#c99a5b', '#9a6f36'], over: '箱子砸烂了！', dead: '花瓶碎在箱子里。箱子上“易碎”两个字，现在是陈述句。', blurb: '纸箱随便砸，可里面立着一只花瓶，顶上和底下只隔一层纸板。四个角离花瓶远，放心砸；见到蓝色就得收着力。' },
+  walnut: { name: '核桃', unit: '颗', hard: 42, brittle: 82, loose: .7, plastic: 0, smooth: 0, passes: 0, value: 8, hp: 3, rest: .3, fric: .5, accel: 26000, jig: 0, target: .91, time: 110, snd: 'wood', rough: 3,
+    core: { label: ['核桃仁', 'Kernel'], hard: 8, brittle: 34, loose: 1.1, base: '#e6c088', outline: '#8a5a24', chips: ['#e6c088', '#f6e2bd', '#b98646'], snd: 'snap', over: ['仁碎了！', 'Kernel crushed!'], pts: () => polarPts(48, a => 1 / Math.hypot(Math.cos(a) / 86, Math.sin(a) / 68)) },
+    base: '#b07a3f', outline: '#5e3a14', chips: ['#c9955a', '#b07a3f', '#7d5326'], over: '壳崩了！', dead: '核桃碎成了核桃碎。甲方说他要的是圆，不是馅。', blurb: '壳很硬，得用力。可壳一砸穿，露出来的仁又软又脆，同样的力气会把它拍烂。砸穿的那一面，换成轻手。' },
+  geode: { name: '晶洞', unit: '块', hard: 50, brittle: 86, loose: .8, plastic: 0, smooth: 0, passes: 0, value: 9, hp: 2, rest: .2, fric: .6, accel: 22000, jig: 0, target: .9, time: 120, snd: 'stone',
+    core: { label: ['水晶', 'Crystal'], hard: 30, brittle: 50, loose: .9, base: '#8a4fd8', outline: '#e9d5ff', chips: ['#c9a3ff', '#8a4fd8', '#ffffff'], snd: 'gem', over: ['水晶崩了！', 'Crystal chipped!'], pts: () => arcPts(20, 2, 68, 0, TAU, 14) },
+    base: '#80828e', outline: '#2f303a', chips: ['#a5a7b3', '#80828e', '#55576a'], over: '石头崩了！', dead: '晶洞碎了一地，亮晶晶的。甲方很心疼，但不是心疼你。', blurb: '外面是一坨石头，里面偏着长了一窝水晶。石头要重砸，水晶只能中等力度。水晶那一侧的石皮很薄，留神。' },
+  bonbon: { name: '酒心巧克力', unit: '块', hard: 26, brittle: 50, loose: .6, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 3, rest: .15, fric: .7, accel: 26000, jig: 0, target: .88, time: 120, snd: 'snap',
+    core: { label: ['酒心', 'Filling'], hard: 5, brittle: 24, loose: 1.1, wet: 1, base: '#ff9db5', outline: '#b8395c', chips: ['#ff9db5', '#ffd0dc', '#b8395c'], snd: 'meat', over: ['酒心溅出来了！', 'Filling everywhere!'], pts: () => rectPts(76, 76) },
+    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '巧克力崩了！', dead: '酒心流干了，只剩一摊巧克力。甲方舔了一口，说不圆也行，但不给钱。', blurb: '方的，壳薄，窗口窄。四个角砸下去一定会砸到酒心，酒心几乎一碰就溅。壳上用巧劲，露了心就只能轻轻点。' },
+  earth: { name: '地球', unit: '颗', hard: 46, brittle: 70, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 2, rest: .2, fric: .6, accel: 16000, jig: 0, target: .93, time: 140, snd: 'stone',
+    core: { label: ['岩浆', 'Magma'], hard: 14, brittle: 36, loose: 1, wet: 1, base: '#ff8a1e', outline: '#ffe08a', chips: ['#ffd23c', '#ff8a1e', '#e23d1e'], snd: 'meat', over: ['岩浆喷了！', 'Eruption!'], pts: () => arcPts(0, 0, 82, 0, TAU, 48) },
+    base: '#2f7fd6', outline: '#0e2c5a', chips: ['#2f7fd6', '#4fb86a', '#ffffff', '#8a6a3a'], over: '地震了！', dead: '地球碎了。你老家没了，不过甲方说新的更圆。', blurb: '甲方量过了：你老家不够圆，山太高，沟太深。把山砸平。地壳很薄，下面全是岩浆，砸穿了就只能轻拿轻放。' },
 };
-const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth'];
 const PER = 6;   // 每班六单
 const CHAPS = [
   { name: '试用期', intro: '' },
   { name: '甲方的厨房', intro: '甲方饿了。可在他们的星球上，不圆的东西不许上桌。' },
   { name: '甲方的仓库', intro: '仓库里堆着从地球顺回来的东西，全是方的、带棱的。甲方看一眼就头疼。' },
   { name: '甲方的收藏室', intro: '最后一班是甲方的私人收藏。件件价值连城，砸坏哪件你都赔不起。' },
+  { name: '表里不一', intro: '这一班的东西都有两层：外面一层壳，里面一层芯，脾气不一样。壳砸穿了，力度表会跟着变成芯的。看清楚现在是哪一层朝下。' },
 ];
 
 /* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
@@ -306,12 +327,19 @@ const MATS_EN = {
   crown: ['Crown', 'Dented!', 'The crown is now a gold plate.', 'Solid gold with three points. Slam the points down and the gold bulges into the gaps on either side.'],
   star: ['Star', 'Point broke!', "The star shattered. There's one fewer in the sky tonight.", 'The Client picked it from the sky. They say stars were always round and you Earthlings drew them wrong. Five points. Knock them off.'],
   ufo: ['UFO', 'Alarm!', 'The saucer blew up. Now neither you nor the Client can go home.', "Final order: the Client's own ride. Big, flat and heavy, and the driver is still inside. Ignore him."],
+  coconut: ['Coconut', 'Too hard!', 'The coconut split in two and the water ran everywhere. The Client says they are not thirsty.', 'Soft husk outside, falls off at a tap. The hard shell inside is already round, and soft hits do nothing to it. Just peel the husk clean. No brute force.'],
+  parcel: ['Parcel', 'Box wrecked!', 'The vase broke inside the box. The word FRAGILE on it is now a statement of fact.', 'Smash the cardboard all you like, but a vase stands inside, with one sheet of card above and below it. The corners are far from the vase. Once you see blue, go easy.'],
+  walnut: ['Walnut', 'Shell chipped!', 'The walnut is now chopped walnut. The Client wanted round, not filling.', 'The shell is hard and needs force. But once you break through, the kernel is soft and fragile, and the same force will squash it. Wherever it shows, switch to a light hand.'],
+  geode: ['Geode', 'Rock chipped!', 'The geode is all over the floor, sparkling. The Client is heartbroken, though not about you.', 'A lump of rock with a nest of crystal grown off-centre inside. Rock wants heavy hits, crystal only medium ones. The rock is thin on the crystal side. Careful.'],
+  bonbon: ['Liqueur Chocolate', 'Chocolate chipped!', 'The filling drained out, leaving a puddle of chocolate. The Client licked it and said round is optional, but so is paying.', 'Square, thin shell, narrow window. Rounding the corners will reach the filling, and the filling splashes at almost any touch. Finesse on the shell, feather taps once it shows.'],
+  earth: ['Earth', 'Earthquake!', 'Earth broke. Your home is gone, but the Client says the new one will be rounder.', 'The Client measured it: your home is not round enough. Mountains too tall, trenches too deep. Flatten them. The crust is thin with magma right under it, so once you are through, be gentle.'],
 };
 const CHAPS_EN = [
   ['Probation', ''],
   ["The Client's Kitchen", "The Client is hungry. But on their planet, nothing that isn't round is allowed on the table."],
   ["The Client's Warehouse", 'The warehouse is piled with things swiped from Earth, all square and full of edges. One look gives the Client a headache.'],
   ["The Client's Collection", "The last shift is the Client's private collection. Every piece is priceless, and you can't afford to break any of them."],
+  ['More Than Skin Deep', 'Everything this shift has two layers: a shell outside and a core inside, each with its own temper. Break through the shell and the force gauge switches to the core. Watch which layer is facing down.'],
 ];
 if (EN) {
   for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
@@ -348,10 +376,18 @@ const SHAPES = {
   crown: () => [[-98, 72], [98, 72], [106, -66], [56, -8], [0, -86], [-56, -8], [-106, -66]],
   star: () => { const p = []; for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k / 10 * TAU, rr = k % 2 ? 66 : 114; p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; },
   ufo: () => [[-136, 8], ...arcPts(0, -14, 60, Math.PI, TAU, 16), [136, 8], [120, 26], [70, 44], [0, 52], [-70, 44], [-120, 26]],
+  coconut: () => polarPts(64, a => 1 / Math.hypot(Math.cos(a) / 118, Math.sin(a) / 86) + bump(a, 0, 18, .22) + bump(a, Math.PI, 14, .25)),
+  parcel: () => rectPts(112, 86),
+  walnut: () => polarPts(64, a => 1 / Math.hypot(Math.cos(a) / 100, Math.sin(a) / 82) + bump(a, 0, 22, .2) + bump(a, Math.PI, 8, .3) + bump(a, 1.6, 7, .5) + bump(a, -1.5, 7, .5)),
+  geode: () => [[-104, -36], [-62, -92], [8, -102], [84, -74], [116, -8], [92, 62], [30, 98], [-52, 90], [-108, 40]],
+  bonbon: () => rectPts(88, 88),
+  earth: () => polarPts(120, a => 100 + bump(a, .3, 26, .16) + bump(a, 1.5, 20, .12) + bump(a, 2.6, 30, .14) + bump(a, 3.9, 22, .18) + bump(a, 5.2, 28, .13) - bump(a, .9, 10, .2) - bump(a, 3.2, 9, .25) - bump(a, 4.6, 10, .2)),
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
 function polarPts(f) { const o = []; for (let k = 0; k < 90; k++) { const a = k / 90 * TAU, rr = f(a); o.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return o; }
 function arcPts(cx, cy, rad, a0, a1, n) { const o = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); } return o; }
+function polarPts(n, f) { const o = []; for (let k = 0; k < n; k++) { const a = k / n * TAU, r = f(a); o.push([Math.cos(a) * r, Math.sin(a) * r]); } return o; }
+const bump = (a, a0, h, w) => { const d = Math.atan2(Math.sin(a - a0), Math.cos(a - a0)) / w; return h * Math.exp(-d * d); };
 function ptsFromR(r) { const p = new Array(N); for (let i = 0; i < N; i++) p[i] = [r[i] * COS[i], r[i] * SIN[i]]; return p; }
 function centroid(p) {
   let a = 0, cx = 0, cy = 0;
@@ -435,27 +471,35 @@ function recenter(b) {
     b.x += cx * c - cy * s; b.y += cx * s + cy * c;
     b.artX -= cx; b.artY -= cy; b.gx -= cx; b.gy -= cy;
     for (const k of b.cracks) for (const q of k) { q[0] -= cx; q[1] -= cy; }
+    if (b.c) { b.c = resample(ptsFromR(b.c), cx, cy); clampCore(b, false); }
   }
   props(b);
 }
 /* 一次有效或过猛的敲击对形状做的全部事情。alpha = 地板方向在材料自身坐标里的角度 */
+/* 双层材料：b.c 是芯的轮廓（跟 b.r 同一个原点，永远不超出 b.r）。朝下那个方向上壳已经磨穿，这一下就算砸在芯上 */
+function coreMat(m) { return m._cm || (m._cm = Object.assign({}, m, m.core, { isCore: true, over: L(m.core.over[0], m.core.over[1]) })); }
+function onCore(b, alpha) { if (!b.c) return false; const i = ((Math.round(alpha / DPHI) % N) + N) % N; return b.r[i] - b.c[i] < 2.5; }
+function faceMat(b) { return b && b.c && onCore(b, Math.PI / 2 - b.a) ? coreMat(b.mat) : b ? b.mat : G.mat; }
+function clampCore(b, core) { for (let i = 0; i < N; i++) { if (core) { if (b.c[i] > b.r[i]) b.c[i] = b.r[i]; } else if (b.r[i] < b.c[i]) b.r[i] = b.c[i]; } }
 function deform(b, alpha, F) {
-  const m = b.mat, over = F > m.brittle, t = over ? 1 : (F - m.hard) / (m.brittle - m.hard);
+  const core = onCore(b, alpha), m = core ? coreMat(b.mat) : b.mat, over = F > m.brittle, t = over ? 1 : (F - m.hard) / (m.brittle - m.hard);
   let depth = b.meanR * m.loose * (TUNE.D0 + TUNE.D1 * t); if (over) depth *= m.plastic ? 2.4 : 1.3;
   const cut = cutShape(b.r, alpha, depth);
   if (m.plastic) bulge(b.r, alpha, cut, cut.removed * m.plastic);
   if (over && !m.plastic) chip(b.r, alpha + rand(-.5, .5), b.meanR * rand(.22, .34));
   if (m.passes) smooth(b.r, m.smooth, m.passes * (over ? 2 : 1));
+  if (b.c) clampCore(b, core);   // 砸壳伤不到芯，只会把芯露出来；砸芯才会动到芯
   if (over) addCrack(b, alpha);
   recenter(b);
-  return { over, t };
+  return { over, t, core };
 }
 function makeBody(id) {
   const m = MATS[id]; let p, c, r, tries = 0;
   do { p = SHAPES[id](); c = centroid(p); r = resample(p, c[0], c[1]); }
   while (m.rnd && ++tries < 80 && (roundness(r) < m.rnd[0] || roundness(r) > m.rnd[1]));
   if (m.rough) for (let i = 0; i < N; i++) r[i] += rand(-m.rough, m.rough);
-  const b = { id, mat: m, r, x: midX(), y: 300, vx: 0, vy: 0, a: 0, w: 0, held: false, gx: 0, gy: 0, targetA: 0, userRot: 0,
+  let cr = null; if (m.core) { cr = resample(m.core.pts(), c[0], c[1]); for (let i = 0; i < N; i++) cr[i] = Math.max(6, Math.min(cr[i], r[i] - 5)); }
+  const b = { c: cr, id, mat: m, r, x: midX(), y: 300, vx: 0, vy: 0, a: 0, w: 0, held: false, gx: 0, gy: 0, targetA: 0, userRot: 0,
     artX: -c[0], artY: -c[1], cracks: [], armed: false, primary: true, sleeping: true, sleepT: 0, jig: 0, jigV: 0, flash: 0,
     lowX: midX(), clear: 0, dead: false, deco: [] };
   for (let k = 0; k < 70; k++) b.deco.push({ x: rand(-1, 1), y: rand(-1, 1), s: Math.random(), k: Math.random() });
@@ -618,7 +662,8 @@ function impact(b, F, cx) {
   const primary = b.held || b.primary; if (!b.held) b.primary = false;
   const power = F / 100;
   if (G.state !== 'play') { sfx.thud(power); dust(cx, 3); return; }
-  if (F < m.hard) {
+  const lm = faceMat(b);
+  if (F < lm.hard) {
     sfx.thud(.4 + power); dust(cx, 2 + F * .08); b.jigV += power * m.jig * 6;
     if (primary) {
       G.lastHit = { F, t: G.time, kind: 'light' }; G.stats.light++;
@@ -633,13 +678,14 @@ function impact(b, F, cx) {
   G.shake = Math.max(G.shake, res.over ? 15 : 3 + 9 * power);
   G.lastHit = { F, t: G.time, kind: res.over ? 'over' : 'good' };
   const n = res.over ? 26 : Math.round(6 + 12 * res.t);
-  burst(cx, m.plastic ? Math.round(n * .5) : n, m.chips, power, m.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
-  if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b);
-  HIT[m.snd || b.id](.45 + .55 * power);
+  burst(cx, lm.plastic ? Math.round(n * .5) : n, lm.chips, power, lm.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
+  if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b, res.core);
+  HIT[lm.snd || b.id](.45 + .55 * power);
+  if (b.c && !res.core && faceMat(b).isCore) floatText(cx, FLOOR - 92, L('露出', 'Exposed: ') + L(m.core.label[0], lc(m.core.label[1])) + L('了', ''), C.coin, 22);
   const before = G.round; updateRoundness(); const gain = G.round - before;
   if (res.over) {
     G.hp--; G.stats.over++; sfx.crack(); mood('angry', 2.2);
-    floatText(cx, FLOOR - 56, m.over, C.alarm, 28);
+    floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
     if (G.hp <= 0) { shatter(b); return; }
     say('over', true);
   } else {
@@ -728,6 +774,12 @@ const MATFX = {
   crown: (x, p, over) => { twinkle(x, FLOOR - 10, 3 + 3 * p, ['#fff6cf', '#ffe37a']); if (over) shards(x, 6, ['#e23d4f', '#3fa7ff']); },
   star: (x, p) => twinkle(x, FLOOR - 10, 6 + 8 * p, ['#fffde0', '#ffd83c', '#ff9d2e'], 160),
   ufo: (x, p, over) => { sparks(x, 4 + 6 * p, ['#7de8ff', '#ffffff'], p); ring(x, 90 + 60 * p, '#7de8ff'); if (over) fxp(x, FLOOR - 12, 6, 'glyph', ['#ff5683'], { ch: ['!'], s0: 18, s1: 26, g: 200, up: 220, life: 1.3 }); },
+  coconut: (x, p, over, b, core) => { if (core) { sparks(x, 3 + 4 * p, ['#fffaf0', '#c79a5e'], p); if (over) { stain(x, 44, '#eaf6f4'); fxp(x, FLOOR - 8, 12, 'drop', ['#eaf6f4', '#ffffff'], { up: 300, g: 900 }); } } else puff(x, 5 + 6 * p, '#c79a5e'); },
+  parcel: (x, p, over, b, core) => { if (core) { shards(x, over ? 12 : 3, ['#3f8fd6', '#ffffff', '#bfe0ff']); if (over) twinkle(x, FLOOR - 20, 5, ['#ffffff']); } else puff(x, 4 + 5 * p, '#e0b97f'); },
+  walnut: (x, p, over, b, core) => { if (core) puff(x, 4 + 4 * p, '#f6e2bd'); else if (p > .6) sparks(x, 3, ['#c9955a'], p); },
+  geode: (x, p, over, b, core) => { if (core) { twinkle(x, FLOOR - 20, 3 + 5 * p, ['#e9d5ff', '#ffffff']); if (over) shards(x, 10, ['#c9a3ff', '#8a4fd8', '#ffffff']); } else sparks(x, 2 + 4 * p, ['#d8dae6', '#ffffff'], p); },
+  bonbon: (x, p, over, b, core) => { if (core) { stain(x, 18 + 30 * p, '#ff9db5'); if (over) fxp(x, FLOOR - 8, 14, 'drop', ['#ff9db5', '#ffd0dc'], { up: 340, g: 900 }); } },
+  earth: (x, p, over, b, core) => { if (core) { stain(x, 20 + 34 * p, '#ff8a1e'); sparks(x, 4 + 6 * p, ['#ffd23c', '#ff8a1e'], p); if (over) { ring(x, 110, '#ff8a1e'); fxp(x, FLOOR - 8, 16, 'drop', ['#ffd23c', '#e23d1e'], { up: 420, g: 900 }); } } else { puff(x, 3 + 4 * p, '#8a6a3a'); if (over) ring(x, 120, '#ffffff'); } },
 };
 function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
@@ -838,6 +890,7 @@ function showOrder() {
     <p>${m.blurb}</p>
     <dl class="spec">
       <dt>${L('力度窗口', 'Force window')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
+      ${m.core ? `<dt>${L(m.core.label[0], m.core.label[1])}</dt><dd><div class="window" role="img" aria-label="${L(`里面那层：力度 ${m.core.hard} 到 ${m.core.brittle} 之间有效`, `Inner layer: works between force ${m.core.hard} and ${m.core.brittle}`)}"><i class="w-light" style="width:${m.core.hard}%"></i><i class="w-ok" style="width:${m.core.brittle - m.core.hard}%"></i><i class="w-break" style="width:${100 - m.core.brittle}%"></i></div>${L(`里面那层：${m.core.hard} 到 ${m.core.brittle >= 100 ? '100，砸不坏' : m.core.brittle}`, `Inner layer: ${m.core.hard} to ${m.core.brittle >= 100 ? '100, unbreakable' : m.core.brittle}`)}</dd>` : ''}
       <dt>${L('硬度', 'Hardness')}</dt><dd>${L(`力度到 ${m.hard} 才会变形`, `Needs force ${m.hard} to dent`)}</dd>
       <dt>${L('易碎', 'Fragility')}</dt><dd>${m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
       <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
@@ -1255,6 +1308,55 @@ function drawBg(t) {
   ctx.fillStyle = '#2a2166'; ctx.fillRect(0, FLOOR, W, H - FLOOR); ctx.fillStyle = '#7566db'; ctx.fillRect(0, FLOOR, W, 4); ctx.fillStyle = '#1e1747'; ctx.fillRect(0, FLOOR + 4, W, 5);
   ctx.fillStyle = '#3d3190'; for (let x = 30; x < W; x += 64) { ctx.beginPath(); ctx.arc(x, FLOOR + 24, 4, 0, TAU); ctx.fill(); }
 }
+Object.assign(ART, {
+  coconut(c, b) {
+    c.strokeStyle = 'rgba(70,40,12,.45)'; c.lineWidth = 2;
+    for (const d of b.deco) { const a = d.k * TAU, r0 = 60 + d.s * 50; c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0 * .8); c.lineTo(Math.cos(a + .08) * (r0 + 22), Math.sin(a + .08) * (r0 + 22) * .8); c.stroke(); }
+    c.fillStyle = 'rgba(255,230,180,.18)'; c.beginPath(); c.ellipse(-30, -50, 70, 18, -.2, 0, TAU); c.fill();
+  },
+  parcel(c) {
+    c.fillStyle = '#e9d9a8'; c.fillRect(-16, -100, 32, 200); c.fillStyle = 'rgba(110,74,28,.25)'; c.fillRect(-120, -4, 240, 3);
+    c.fillStyle = '#d6423a'; c.fillRect(-104, -78, 62, 24); c.fillStyle = '#fff'; c.font = `700 ${EN ? 11 : 15}px ${BODY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('易碎', 'FRAGILE'), -73, -65);
+    c.strokeStyle = 'rgba(110,74,28,.5)'; c.lineWidth = 2; c.strokeRect(52, 48, 46, 26); c.beginPath(); c.moveTo(58, 56); c.lineTo(92, 56); c.moveTo(58, 62); c.lineTo(92, 62); c.moveTo(58, 68); c.lineTo(80, 68); c.stroke();
+  },
+  walnut(c) {
+    c.strokeStyle = 'rgba(70,40,12,.5)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-110, 0); c.bezierCurveTo(-40, -10, 40, 10, 126, 0); c.stroke();
+    c.lineWidth = 2; for (let k = 0; k < 6; k++) { const y = -66 + k * 26; c.beginPath(); c.moveTo(-90, y); c.bezierCurveTo(-40, y + 14, 20, y - 14, 96, y + 6); c.stroke(); }
+    c.fillStyle = 'rgba(255,225,170,.2)'; c.beginPath(); c.ellipse(-20, -52, 60, 14, -.1, 0, TAU); c.fill();
+  },
+  geode(c, b) {
+    for (const d of b.deco) { c.fillStyle = d.s > .5 ? 'rgba(255,255,255,.14)' : 'rgba(20,20,34,.2)'; c.beginPath(); c.arc(d.x * 115, d.y * 105, 2 + d.k * 5, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.moveTo(-104, -36); c.lineTo(-62, -92); c.lineTo(8, -102); c.lineTo(-30, -60); c.closePath(); c.fill();
+  },
+  bonbon(c) {
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(-88, -88, 176, 12); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-88, 76, 176, 12);
+  },
+  earth(c, b, t) {
+    c.fillStyle = '#4fb86a';
+    for (const [x, y, rx, ry, ro] of [[-58, -52, 34, 22, .5], [-78, 8, 16, 34, .2], [52, -70, 30, 16, -.3], [84, -10, 22, 40, .1], [20, 86, 46, 16, .1], [-50, 82, 24, 14, -.4], [112, 40, 16, 22, .5]]) { c.beginPath(); c.ellipse(x, y, rx, ry, ro, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.ellipse(0, -112, 46, 14, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(0, 114, 40, 12, 0, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.3)'; for (let k = 0; k < 3; k++) { c.beginPath(); c.ellipse(Math.sin(t * .3 + k * 2.1) * 90, -96 + k * 14, 26, 5, 0, 0, TAU); c.fill(); }
+  },
+});
+/* 芯的剖面图：画在壳的图案上面，坐标和 ART 一样是出厂时的坐标 */
+const CORE_ART = {
+  coconut(c) { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(0, 0, 54, 0, TAU); c.fill(); c.fillStyle = '#d9eeee'; c.beginPath(); c.arc(0, 0, 40, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-14, -16, 14, 6, -.5, 0, TAU); c.fill(); },
+  parcel(c) { c.fillStyle = '#fff'; c.fillRect(-60, -30, 120, 5); c.fillRect(-60, 26, 120, 5); c.fillStyle = '#ffd35c'; c.fillRect(-60, -6, 120, 12); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-26, -80, 9, 160); },
+  walnut(c) { c.strokeStyle = '#a8743a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -60); c.lineTo(0, 60); for (const s of [-1, 1]) for (let k = 0; k < 4; k++) { const y = -40 + k * 26; c.moveTo(s * 6, y); c.bezierCurveTo(s * 30, y - 16, s * 40, y + 16, s * 64, y); } c.stroke(); },
+  geode(c, b, t) {
+    for (let k = 0; k < 12; k++) { const a0 = k / 12 * TAU, a1 = a0 + TAU / 12; c.beginPath(); c.moveTo(22, 4); c.lineTo(22 + Math.cos(a0) * 70, 4 + Math.sin(a0) * 70); c.lineTo(22 + Math.cos(a1) * 70, 4 + Math.sin(a1) * 70); c.closePath(); c.fillStyle = k % 3 === 0 ? 'rgba(255,255,255,.3)' : k % 3 === 1 ? 'rgba(40,10,90,.3)' : 'rgba(255,255,255,.08)'; c.fill(); }
+    c.fillStyle = '#2a1050'; c.beginPath(); c.arc(22, 4, 16, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.95)'; spark(c, 4, -22, 3 + 5 * Math.max(0, Math.sin(t * 3))); spark(c, 46, 26, 3 + 4 * Math.max(0, Math.sin(t * 3 + 2)));
+  },
+  bonbon(c, b, t) { c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-22, -30 + Math.sin(t * 2) * 3, 30, 10, -.3, 0, TAU); c.fill(); c.fillStyle = 'rgba(184,57,92,.35)'; c.beginPath(); c.ellipse(16, 30, 40, 16, 0, 0, TAU); c.fill(); },
+  earth(c, b, t) { const g = c.createRadialGradient(0, 0, 6, 0, 0, 86); g.addColorStop(0, '#fff6c0'); g.addColorStop(.35, '#ffd23c'); g.addColorStop(.75, '#ff8a1e'); g.addColorStop(1, '#c8321e'); c.fillStyle = g; c.fillRect(-100, -100, 200, 200); c.fillStyle = `rgba(255,255,255,${.12 + .1 * Math.sin(t * 2.4)})`; c.beginPath(); c.arc(0, 0, 30, 0, TAU); c.fill(); },
+};
+function corePath(b) { ctx.beginPath(); for (let i = 0; i < N; i++) { const x = b.c[i] * COS[i], y = b.c[i] * SIN[i]; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); }
+function drawCore(b, t) {
+  const k = b.mat.core; corePath(b); ctx.fillStyle = k.base; ctx.fill();
+  ctx.save(); ctx.clip(); ctx.translate(b.artX, b.artY); if (CORE_ART[b.id]) CORE_ART[b.id](ctx, b, t); ctx.restore();
+  corePath(b); ctx.strokeStyle = k.outline; ctx.lineWidth = 2.5; ctx.stroke();
+}
 function bodyPath(b) { ctx.beginPath(); for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i]; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); }
 function drawBody(b, t) {
   const m = b.mat, near = clamp(1 - b.clear / 320, .15, 1);
@@ -1267,6 +1369,7 @@ function drawBody(b, t) {
   bodyPath(b); ctx.fillStyle = m.base; ctx.fill();
   ctx.save(); ctx.clip();
   ctx.save(); ctx.translate(b.artX, b.artY); ART[b.id](ctx, b, t); ctx.restore();
+  if (b.c) drawCore(b, t);
   if (b.cracks.length) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const pass of [['rgba(255,255,255,.35)', 5], ['rgba(20,8,16,.8)', 2.2]]) {
@@ -1382,13 +1485,15 @@ function drawRoundBar() {
   ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), x0 + w, y + 51);
 }
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
+function layerTag(b) { const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? C.coin : C.dim]; }
 function drawGauge() {
-  const m = G.mat, b = G.body;
+  const b = G.body, m = faceMat(b);
   const py = PORT ? 136 - TOP : 0;
   ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
   if (PORT) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort
   const fz = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
+  if (b && b.c) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 10' : '13'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 76); }
   ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(GX, GY0, GW, GY1 - GY0);
@@ -1434,9 +1539,10 @@ function drawHints() {
 }
 /* 竖屏底部的横版力度表：左轻右重。画面坐标 */
 function drawGaugePort() {
-  const m = G.mat, b = G.body, X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
+  const b = G.body, m = faceMat(b), X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
   ctx.fillStyle = C.hull; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
+  if (b && b.c) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 12' : '15'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
   ctx.save(); rr(ctx, X0, y, X1 - X0, h, h / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(X0, y, X1 - X0, h);
   const g = ctx.createLinearGradient(gx(m.hard), 0, gx(m.brittle), 0); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(gx(m.hard), y, gx(m.brittle) - gx(m.hard), h);
@@ -1514,7 +1620,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
-  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 24-order whacking game.';
+  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 30-order whacking game.';
   document.getElementById('help').textContent = TOUCH
     ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
     : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
