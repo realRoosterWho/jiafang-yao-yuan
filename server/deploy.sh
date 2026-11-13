@@ -10,5 +10,5 @@ DEST=/home/roosterwho/services/fullcircle
 rsync -az -e "${SSH[*]}" server/collector.py server/admin.py server/admin.html "$HOST:$DEST/"
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 git show HEAD:index.html > "$TMP"
-rsync -az --chmod=F644 -e "${SSH[*]}" "$TMP" "$HOST:$DEST/public/index.html"
-"${SSH[@]}" "$HOST" "sudo systemctl restart fullcircle && sleep 1 && curl -fsS http://127.0.0.1:2504/healthz && echo ' deployed'"
+rsync -az -e "${SSH[*]}" "$TMP" "$HOST:$DEST/public/index.html"
+"${SSH[@]}" "$HOST" "chmod 644 $DEST/public/index.html && sudo systemctl restart fullcircle && sleep 1 && curl -fsS http://127.0.0.1:2504/healthz && echo ' deployed'"
