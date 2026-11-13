@@ -894,10 +894,10 @@ function saveBest(id, pay) {
 }
 function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
 /* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
-   本地打开（file:// 或 localhost）和开了“请勿追踪”的浏览器都不发。 */
+   本地打开（file:// 或 localhost）不发，免得开发时弄脏数据。
+   不看“请勿追踪”/GPC：数据匿名、不存 IP、不跨站，说明卡里写明了；Firefox 隐私模式默认开 GPC，看它会漏掉一大片玩家。 */
 const TRACK = (() => {
-  const host = location.hostname, off = !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host)
-    || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
+  const host = location.hostname, off = !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host);
   if (off) return () => {};
   const URL_ = 'https://fullcircle.roosterwho.com/api/event', rid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
   let pid = ''; try { pid = localStorage.getItem('yuan.pid') || ''; if (!pid) { pid = rid(); localStorage.setItem('yuan.pid', pid); } } catch (e) { pid = rid(); }
