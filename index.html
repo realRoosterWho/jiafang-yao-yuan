@@ -421,7 +421,7 @@ const SHAPES = {
   melon: () => arcPts(0, 48, 114, Math.PI, TAU, 40),
   carrot: () => [[-128, 2], [-40, -24], [60, -40], [100, -34], [114, -12], [114, 12], [100, 34], [60, 40], [-40, 26]],
   ice: () => superPts(84, 84, 8),
-  egg: () => polarPts(a => 74 * (1 + .16 * Math.cos(2 * a) + .07 * Math.cos(a))),
+  egg: () => polarPts(90, a => 74 * (1 + .16 * Math.cos(2 * a) + .07 * Math.cos(a))),
 
   brick: () => rectPts(100, 60),
   cone: () => [[-92, 100], [92, 100], [92, 80], [52, 72], [15, -100], [-15, -100], [-52, 72], [-92, 80]],
@@ -432,7 +432,7 @@ const SHAPES = {
 
   cube: () => rectPts(84, 84),
   phone: () => superPts(56, 106, 9),
-  record: () => polarPts(() => 94),
+  record: () => polarPts(90, () => 94),
   crown: () => [[-98, 72], [98, 72], [106, -66], [56, -8], [0, -86], [-56, -8], [-106, -66]],
   star: () => { const p = []; for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k / 10 * TAU, rr = k % 2 ? 66 : 114; p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; },
   ufo: () => [[-136, 8], ...arcPts(0, -14, 60, Math.PI, TAU, 16), [136, 8], [120, 26], [70, 44], [0, 52], [-70, 44], [-120, 26]],
@@ -456,7 +456,6 @@ const SHAPES = {
   honey: () => [[-62, -96], [62, -96], [62, -76], [76, -64], [80, 80], [66, 96], [-66, 96], [-80, 80], [-76, -64], [-62, -76]],
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
-function polarPts(f) { const o = []; for (let k = 0; k < 90; k++) { const a = k / 90 * TAU, rr = f(a); o.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return o; }
 function arcPts(cx, cy, rad, a0, a1, n) { const o = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); } return o; }
 function polarPts(n, f) { const o = []; for (let k = 0; k < n; k++) { const a = k / n * TAU, r = f(a); o.push([Math.cos(a) * r, Math.sin(a) * r]); } return o; }
 const bump = (a, a0, h, w) => { const d = Math.atan2(Math.sin(a - a0), Math.cos(a - a0)) / w; return h * Math.exp(-d * d); };
