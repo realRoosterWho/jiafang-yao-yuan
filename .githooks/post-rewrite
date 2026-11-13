@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# git pull --rebase / git rebase 落到 main 后部署（commit --amend 已经由 post-commit 处理）
+[ "$1" = "rebase" ] || exit 0
+exec "$(dirname "$0")/deploy-if-changed" "$(git rev-parse -q --verify ORIG_HEAD 2>/dev/null)"

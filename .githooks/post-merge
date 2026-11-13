@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# 合并分支、git pull（包括快进合并）进 main 后部署（见 deploy-if-changed）
+exec "$(dirname "$0")/deploy-if-changed" "$(git rev-parse -q --verify ORIG_HEAD 2>/dev/null)"

@@ -13,7 +13,13 @@
 - 游戏会匿名上报每一单的开工、交付、失败、中途关掉（随机玩家 ID，不存 IP）。本地打开不上报。
 - 服务端代码在 `server/`：`collector.py` 收事件写 SQLite，`admin.py` + `admin.html` 是后台。
 
-**部署是自动的**：在 `main` 上提交、并且改动了 `index.html` 或 `server/`，`post-commit` 钩子会在后台把这次提交（HEAD，不是工作区）部署到 roosterpi，日志在 `.git/deploy.log`。新 clone 要先启用钩子：
+**部署是自动的**：`main` 上的 HEAD 一变，并且这次变化碰了 `index.html` 或 `server/`，钩子就在后台把 HEAD（不是工作区）部署到 roosterpi：
+
+- 直接提交、`--amend`（`post-commit`）
+- 合并分支、`git pull`，包括快进合并（`post-merge`）
+- `git rebase`、`git pull --rebase`（`post-rewrite`）
+
+在别的分支或 worktree 上提交不会部署，合并进 `main` 才会。日志在 `.git/deploy.log`，部署失败会弹 macOS 通知。新 clone 要先启用钩子：
 
 ```bash
 git config core.hooksPath .githooks
