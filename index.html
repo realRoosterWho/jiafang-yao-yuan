@@ -302,15 +302,15 @@ const MATS = {
     core: { label: ['岩浆', 'Magma'], hard: 10, brittle: 46, loose: 1, wet: 1, base: '#ff8a1e', outline: '#ffe08a', chips: ['#ffd23c', '#ff8a1e', '#e23d1e'], snd: 'meat', over: ['岩浆喷了！', 'Eruption!'], pts: () => arcPts(0, 0, 82, 0, TAU, 48) },
     base: '#2f7fd6', outline: '#0e2c5a', chips: ['#2f7fd6', '#4fb86a', '#ffffff', '#8a6a3a'], over: '地震了！', dead: '地球碎了。你老家没了，不过甲方说新的更圆。', blurb: '甲方量过了：你老家不够圆，山太高，沟太深。把山砸平。地壳很薄，下面全是岩浆，砸穿了就只能轻拿轻放。' },
   /* 第六班：软硬不吃。harden = 每次有效敲击把力度下限抬高多少（minWin 是窗口最窄剩多少）；sag = 放在地上时往下塌的速度 */
-  butter: { name: '黄油', unit: '块', hard: 6, brittle: 60, loose: 1.1, plastic: .9, smooth: .3, passes: 1, value: 6, hp: 3, rest: .05, fric: .9, accel: 20000, jig: .15, target: .86, time: 120, snd: 'meat', sag: 14,
+  butter: { name: '黄油', unit: '块', hard: 6, brittle: 60, loose: 1.1, plastic: .9, smooth: .3, passes: 1, value: 6, hp: 3, rest: .05, fric: .9, accel: 20000, jig: .15, target: .86, time: 120, snd: 'meat', sag: .03,
     base: '#ffe27a', outline: '#b8901e', chips: ['#fff2b8', '#ffe27a', '#f2c94c'], over: '拍成泥了！', dead: '黄油被拍成了一张纸，糊在地板上。甲方说正好拿来擦鞋。', blurb: '一长条黄油，放在地上不管会慢慢塌。平的那面朝下塌得慢，尖角朝下塌得快。试试把角朝下放着，等它自己塌圆。' },
   copper: { name: '铜块', unit: '块', hard: 22, brittle: 86, harden: 3, minWin: 12, loose: 1, plastic: .4, smooth: .2, passes: 1, value: 7, hp: 3, rest: .2, fric: .5, accel: 20000, jig: 0, target: .9, time: 120, snd: 'steel',
     base: '#c8743a', outline: '#5e2c0c', chips: ['#f0a466', '#c8743a', '#8a4a1e'], over: '砸裂了！', dead: '铜块裂成几瓣。铜本来很韧的，你是怎么做到的。', blurb: '铜越砸越硬。每砸好一下，力度窗口的下限就往上抬一点，绿色那段越来越窄。所以别浪费在平的那面上，专挑最凸的角。' },
-  jelly: { name: '果冻', unit: '个', hard: 3, brittle: 34, loose: 1.3, plastic: .9, smooth: .4, passes: 2, value: 7, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .5, target: .87, time: 130, snd: 'rubber', sag: 12, wet: 1,
+  jelly: { name: '果冻', unit: '个', hard: 3, brittle: 34, loose: 1.3, plastic: .9, smooth: .4, passes: 2, value: 7, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .5, target: .87, time: 130, snd: 'rubber', sag: .045, wet: 1,
     base: '#e83a5a', outline: '#8a1430', chips: ['#ff7a92', '#e83a5a', '#ffd0da'], over: '果冻碎了！', dead: '果冻摔成了一滩果汁。甲方用吸管吸干净了，但不给钱。', blurb: '城堡模子倒出来的果冻，软得一碰就晃，放着塌得也快。轻手，而且别让它平躺太久。' },
   rebar: { name: '钢筋', unit: '根', hard: 30, brittle: 94, harden: 1.3, minWin: 14, loose: 1.5, plastic: .7, smooth: .2, passes: 1, value: 8, hp: 3, rest: .15, fric: .5, accel: 16000, jig: 0, target: .86, time: 150, snd: 'steel',
     base: '#6f747e', outline: '#24272e', chips: ['#a5aab4', '#6f747e', '#9a5a2e'], over: '砸弯了！', dead: '钢筋断了。工地上的人正在到处找它。', blurb: '一根长钢筋。拎着一头，另一头正好朝下，竖着砸两头会让它变短变粗，铁匠管这叫镦粗。钢也越砸越硬，后面要一下比一下重。' },
-  slime: { name: '史莱姆', unit: '坨', hard: 4, brittle: 34, loose: 1.1, plastic: 1, smooth: .5, passes: 2, value: 8, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .45, target: .86, time: 130, snd: 'rubber', sag: 11, wet: 1,
+  slime: { name: '史莱姆', unit: '坨', hard: 4, brittle: 34, loose: 1.1, plastic: 1, smooth: .5, passes: 2, value: 8, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .45, target: .86, time: 130, snd: 'rubber', sag: .04, wet: 1,
     base: '#6fdc4a', outline: '#1f6e18', chips: ['#b8ff8a', '#6fdc4a', '#3a9e2a'], over: '史莱姆炸开了！', dead: '史莱姆碎成了一地小史莱姆，正四散逃跑。', blurb: '一坨史莱姆，伸着好几只触手，放着就往下淌。它会看着你，别在意。触手朝下放着能让它自己缩回去。' },
   weight: { name: '秤砣', unit: '个', hard: 40, brittle: 92, harden: 2, minWin: 10, loose: .8, plastic: .3, smooth: .2, passes: 1, value: 10, hp: 2, rest: .15, fric: .6, accel: 16000, jig: 0, target: .88, time: 150, snd: 'steel',
     base: '#3e4048', outline: '#121318', chips: ['#7a7d88', '#3e4048', '#9a5a2e'], over: '砸崩了！', dead: '秤砣崩了，甲方说以后称东西全凭感觉。', blurb: '生铁秤砣，头上一个提钮，底下又宽又平。铁越砸越硬，一开始就要想好先砸哪儿：钮最凸，但底下两个角也得处理。' },
@@ -525,22 +525,36 @@ function matAt(b, alpha) {
   return b._hm;
 }
 function faceMat(b) { return b ? matAt(b, Math.PI / 2 - b.a) : G.mat; }
-/* 蠕变：软东西躺在地上会被自己压塌。接触面越窄（尖角朝下）压强越大、塌得越快；平面朝下几乎不动 */
+/* 蠕变：软东西躺在地上会被自己压塌。整块往下沉、往两边摊（面积不变）；越高越瘦塌得越快，摊成饼以后就慢下来。
+   另外接触地面的那一小块会被压平，尖角朝下压得最快 */
 function creep(b, dt) {
   b.sagT = (b.sagT || 0) + dt; if (b.sagT < .1) return; const t = b.sagT; b.sagT = 0;
+  const gX = Math.sin(b.a), gY = Math.cos(b.a);   // 地板方向，材料自身坐标
+  let h0 = 1e9, h1 = -1e9, q0 = 1e9, q1 = -1e9;
+  for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i], h = x * gX + y * gY, q = y * gX - x * gY; if (h < h0) h0 = h; if (h > h1) h1 = h; if (q < q0) q0 = q; if (q > q1) q1 = q; }
+  const tall = (h1 - h0) / Math.max(q1 - q0, 1), e = Math.min(.08, b.mat.sag * t * tall * tall), sv = 1 - e, sh = 1 / sv;
+  const S = (x, y) => { const h = (x * gX + y * gY) * sv, q = (y * gX - x * gY) * sh; return [h * gX - q * gY, h * gY + q * gX]; };
+  b.r = resample(ptsFromR(b.r).map(p => S(p[0], p[1])), 0, 0);
+  // 图案、裂纹、手抓的点跟着一起压扁
+  const c1 = S(1, 0), c2 = S(0, 1), M = b.artM || [1, 0, 0, 1];
+  b.artM = [c1[0] * M[0] + c2[0] * M[1], c1[1] * M[0] + c2[1] * M[1], c1[0] * M[2] + c2[0] * M[3], c1[1] * M[2] + c2[1] * M[3]];
+  [b.artX, b.artY] = S(b.artX, b.artY); [b.gx, b.gy] = S(b.gx, b.gy);
+  for (const k of b.cracks) for (const p of k) { const v = S(p[0], p[1]); p[0] = v[0]; p[1] = v[1]; }
+  // 接触面压平
   const alpha = Math.PI / 2 - b.a; let top = -1e9;
   for (let i = 0; i < N; i++) { const h = b.r[i] * Math.cos(i * DPHI - alpha); if (h > top) top = h; }
   let lo = 1e9, hi = -1e9;
   for (let i = 0; i < N; i++) { const d = i * DPHI - alpha, c = Math.cos(d); if (c > 0 && b.r[i] * c > top - 3) { const lat = b.r[i] * Math.sin(d); if (lat < lo) lo = lat; if (lat > hi) hi = lat; } }
-  const depth = b.mat.sag * t * clamp(b.meanR * .5 / Math.max(hi - lo, 6), .3, 2.5);
-  const cut = cutShape(b.r, alpha, depth); bulge(b.r, alpha, cut, cut.removed); smooth(b.r, .3, 1);
+  const flat = b.mat.sag * 60 * t * clamp(b.meanR * .5 / Math.max(hi - lo, 6), .2, 2.5);
+  const cut = cutShape(b.r, alpha, flat); bulge(b.r, alpha, cut, cut.removed);
   recenter(b); snapToFloor(b); updateRoundness();
+  const depth = e * (h1 - h0) + flat;   // 这一下一共沉了多少
   // 看得见的塌：身子一颤一颤、底下摊开一滩、头几次飘字提醒
-  b.jigV += .5 + depth * .4;
+  b.jigV += .3 + depth * .3;
   if (!b.puddle || stains.indexOf(b.puddle) < 0) { stain(b.lowX, 10, b.mat.chips[0], 3); b.puddle = stains[stains.length - 1]; }
-  b.puddle.x = b.lowX; b.puddle.w = Math.min(b.meanR * 1.4, b.puddle.w + depth * 3);
+  b.puddle.x = b.lowX; b.puddle.w = Math.min(b.meanR * 1.4, b.puddle.w + depth * 2);
   if (b.mat.wet && Math.random() < .5) fxp(b.lowX + rand(-1, 1) * (hi - lo) * .5, FLOOR - 4, 1, 'drop', b.mat.chips, { up: 40, g: 600 });
-  if ((b.sagMsgN || 0) < 3 && G.time - (b.sagMsgT || -9) > 3) { b.sagMsgN = (b.sagMsgN || 0) + 1; b.sagMsgT = G.time; floatText(b.x, FLOOR - b.meanR * 2 - 24, L('在塌…', 'Slumping…'), C.coin, 20); }
+  if (depth > .4 && (b.sagMsgN || 0) < 3 && G.time - (b.sagMsgT || -9) > 3) { b.sagMsgN = (b.sagMsgN || 0) + 1; b.sagMsgT = G.time; floatText(b.x, FLOOR - b.meanR * 2 - 24, L('在塌…', 'Slumping…'), C.coin, 20); }
 }
 function clampCore(b, core) { for (let i = 0; i < N; i++) { if (core) { if (b.c[i] > b.r[i]) b.c[i] = b.r[i]; } else if (b.r[i] < b.c[i]) b.r[i] = b.c[i]; } }
 function deform(b, alpha, F) {
@@ -1513,7 +1527,7 @@ function drawBody(b, t) {
   ctx.save(); ctx.translate(b.x, b.y + (b.clear < 6 ? b.jig * b.meanR * .8 : 0)); ctx.scale(1 + b.jig, 1 - b.jig); ctx.rotate(b.a); ctx.lineJoin = 'round';
   bodyPath(b); ctx.fillStyle = m.base; ctx.fill();
   ctx.save(); ctx.clip();
-  ctx.save(); ctx.translate(b.artX, b.artY); ART[b.id](ctx, b, t); ctx.restore();
+  ctx.save(); ctx.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; ctx.transform(M[0], M[1], M[2], M[3], 0, 0); } ART[b.id](ctx, b, t); ctx.restore();
   if (b.c) drawCore(b, t);
   if (b.cracks.length) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
