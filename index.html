@@ -6,7 +6,7 @@
 <meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。24 单敲击小游戏。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Fredoka:wght@500;700&display=swap">
 <style>
@@ -31,13 +31,17 @@ html, body { height: 100%; }
 body {
   margin: 0;
   box-sizing: border-box;
-  padding-block: 12px;
+  height: 100dvh;
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: var(--space);
   color: var(--ink);
   font-family: var(--body);
   overflow: hidden;
+  touch-action: manipulation; overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; -webkit-touch-callout: none;
 }
 #app { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 #wrap { flex: 1 1 0; min-height: 0; width: 100%; display: grid; place-items: center; }
@@ -135,6 +139,11 @@ body {
 .lv.now b { color: var(--coin); box-shadow: inset 0 0 0 2px var(--coin); }
 .lv:hover { background: var(--hull-hi); }
 .lv:focus-visible { outline: 3px solid var(--coin); outline-offset: 1px; }
+/* 竖屏手机：舞台换成竖版，按钮跟着放大 */
+#stage.port #deliver { right: 17%; bottom: calc(var(--u) * 8); font-size: max(15px, calc(var(--u) * 30)); }
+#stage.port #mute { bottom: calc(var(--u) * 10); font-size: max(11px, calc(var(--u) * 17)); }
+.touch #deliver kbd { display: none; }
+@media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
 @media (prefers-reduced-motion: reduce) { #deliver { animation: none; } }
 </style>
 </head>
@@ -157,7 +166,11 @@ body {
 'use strict';
 
 /* ---------- 常量 ---------- */
-const W = 960, H = 600, FLOOR = 520, WALL_L = 0, WALL_R = 880;
+const W = 960, H = 600, FLOOR = 520, WALL_R = 880;
+// 竖屏时只看世界的右半边（房间变窄、力度表还在右侧），顶上多出 TOP 高的一条放甲方和圆度条
+let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0;
+const midX = () => (WALL_L + WALL_R) / 2;
+const TOUCH = !!(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches);
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
 const GRAV = 5200, FOLLOW = 20, ARM = 16, MIN_F = 4;
@@ -386,9 +399,9 @@ function makeBody(id) {
   do { p = SHAPES[id](); c = centroid(p); r = resample(p, c[0], c[1]); }
   while (m.rnd && ++tries < 80 && (roundness(r) < m.rnd[0] || roundness(r) > m.rnd[1]));
   if (m.rough) for (let i = 0; i < N; i++) r[i] += rand(-m.rough, m.rough);
-  const b = { id, mat: m, r, x: 440, y: 300, vx: 0, vy: 0, a: 0, w: 0, held: false, gx: 0, gy: 0, targetA: 0, userRot: 0,
+  const b = { id, mat: m, r, x: midX(), y: 300, vx: 0, vy: 0, a: 0, w: 0, held: false, gx: 0, gy: 0, targetA: 0, userRot: 0,
     artX: -c[0], artY: -c[1], cracks: [], armed: false, primary: true, sleeping: true, sleepT: 0, jig: 0, jigV: 0, flash: 0,
-    lowX: 440, clear: 0, dead: false, deco: [] };
+    lowX: midX(), clear: 0, dead: false, deco: [] };
   for (let k = 0; k < 70; k++) b.deco.push({ x: rand(-1, 1), y: rand(-1, 1), s: Math.random(), k: Math.random() });
   props(b); b.area0 = b.area; snapToFloor(b);
   return b;
@@ -540,7 +553,7 @@ function stepBody(b, dt) {
   if (lS > 0) { b.x += lP; resolve(b, WALL_L, lY / lS, 1, 0, .3, .3); }
   if (rS > 0) { b.x -= rP; resolve(b, WALL_R, rY / rS, -1, 0, .3, .3); }
   if (touch && Math.hypot(b.vx, b.vy) < 14 && Math.abs(b.w) < .1) { b.sleepT += dt; if (b.sleepT > .3) { b.sleeping = true; b.vx = b.vy = b.w = 0; } } else b.sleepT = 0;
-  if (b.y > H + 400 || b.x < -400 || b.x > W + 400 || !isFinite(b.x + b.y + b.a)) { b.x = 440; b.y = 200; b.vx = b.vy = b.w = 0; b.a = 0; }
+  if (b.y > H + 400 || b.x < -400 || b.x > W + 400 || !isFinite(b.x + b.y + b.a)) { b.x = midX(); b.y = 200; b.vx = b.vy = b.w = 0; b.a = 0; }
 }
 
 /* ---------- 敲击结算 ---------- */
@@ -609,7 +622,7 @@ function burst(x, n, colors, power, kind, y) {
 function dust(x, n) {
   for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-14, 14), y: FLOOR - 2, vx: rand(-90, 90), vy: rand(-40, -6), life: rand(.35, .6), t: 0, s: rand(5, 12), c: '#cfc8f0', rot: 0, vr: 0, kind: 'dust' });
 }
-function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, 60, WALL_R - 60), y, text, color, size, t: 0 }); }
+function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -672,7 +685,7 @@ function showMenu() {
     <ul class="how">
       <li><b>拎</b><span>按住材料把它拎起来。抓住哪一头，对面那头就朝下。</span></li>
       <li><b>砸</b><span>往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。</span></li>
-      <li><b>磨</b><span>专挑凸出虚线圆的角砸。A / D 或滚轮可以微调角度。</span></li>
+      <li><b>磨</b><span>专挑凸出虚线圆的角砸。${TOUCH ? '砸平的一面只会越砸越扁。' : 'A / D 或滚轮可以微调角度。'}</span></li>
     </ul>
     <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? '接着做第 ' + (at + 1) + ' 单' : '开工'}</button><button class="btn ghost" type="button" data-act="book">订单簿</button></div>`);
 }
@@ -721,7 +734,7 @@ function fail(reason) {
   G.state = 'failing'; G.failReason = reason; G.failT = reason === 'shatter' ? 1.5 : 1.0;
   if (G.body) G.body.held = false; deliverBtn.hidden = true;
   say(reason === 'shatter' ? 'shatter' : 'fail', true); mood('angry', 9); sfx.fail();
-  G.doom = { x: 430, y: -80, vx: 46, vy: 0, a: 0 };
+  G.doom = { x: midX() - 10, y: -80, vx: 46, vy: 0, a: 0 };
 }
 function showOver() {
   G.state = 'over'; const m = G.mat;
@@ -765,7 +778,7 @@ muteBtn.addEventListener('click', e => {
 /* ---------- 输入 ---------- */
 function setPointer(e) {
   const rc = cv.getBoundingClientRect(); if (!rc.width) return;
-  P.x = (e.clientX - rc.left) * W / rc.width; P.y = clamp((e.clientY - rc.top) * H / rc.height, 6, FLOOR + 420);
+  P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6, FLOOR + 420);
 }
 function toLocal(b, px, py) {
   const dx = px - b.x, dy = py - b.y, c = Math.cos(b.a), s = Math.sin(b.a);
@@ -837,7 +850,7 @@ function update(dt) {
   if (d) {
     d.vy += 2400 * dt; d.y += d.vy * dt; d.x += d.vx * dt; d.a += d.vx / 44 * dt;
     if (d.y > FLOOR - 44) { d.y = FLOOR - 44; if (d.vy > 300) { sfx.thud(1); dust(d.x, 6); } d.vy = d.vy > 140 ? -d.vy * .5 : 0; }
-    if (d.x > WALL_R - 50 || d.x < 50) d.vx *= -1;
+    if (d.x > WALL_R - 50 || d.x < WALL_L + 50) d.vx *= -1;
   }
 }
 
@@ -1063,7 +1076,7 @@ function spark(c, x, y, s) { c.beginPath(); c.moveTo(x, y - s); c.quadraticCurve
 /* ---------- 绘制：场景 ---------- */
 const STARS = []; for (let k = 0; k < 90; k++) STARS.push({ x: Math.random() * WALL_R, y: Math.random() * (FLOOR - 40), r: rand(.5, 1.7), sp: rand(.5, 2), ph: rand(0, TAU) });
 function drawBg(t) {
-  const g = ctx.createLinearGradient(0, 0, 0, FLOOR); g.addColorStop(0, '#0c0922'); g.addColorStop(1, '#261b5c'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, FLOOR);
+  const g = ctx.createLinearGradient(0, 0, 0, FLOOR); g.addColorStop(0, '#0c0922'); g.addColorStop(1, '#261b5c'); ctx.fillStyle = g; ctx.fillRect(0, -TOP, W, FLOOR + TOP);
   ctx.fillStyle = '#fff';
   for (const s of STARS) { ctx.globalAlpha = .25 + .45 * Math.abs(Math.sin(t * s.sp + s.ph)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill(); }
   ctx.globalAlpha = 1;
@@ -1167,6 +1180,7 @@ function drawAlien(t) {
   ctx.stroke(); ctx.lineCap = 'butt';
   ctx.restore();
   ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R - 6, 1.15 * Math.PI, 1.45 * Math.PI); ctx.stroke();
+  if (PORT) return;   // 竖屏的文字和气泡在 drawHudPort 里另排
   // 窗下：耐心、单号、酬劳
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.font = `500 15px ${NUM}`; ctx.fillStyle = ringCol; ctx.fillText('甲方耐心 ' + Math.ceil(Math.max(0, G.timeLeft)) + ' 秒', cx, 204);
@@ -1201,17 +1215,19 @@ function drawRoundBar() {
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
 function drawGauge() {
   const m = G.mat, b = G.body;
-  ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, 0, W - WALL_R, FLOOR); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, 0, 3, FLOOR);
+  const py = PORT ? 136 - TOP : 0;
+  ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
+  const fz = PORT ? 1.35 : 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText('力度', GX + GW / 2 + 1, 60);
-  ctx.font = `500 11px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
+  ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(GX, GY0, GW, GY1 - GY0);
   const g = ctx.createLinearGradient(0, gy(m.hard), 0, gy(m.brittle)); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(GX, gy(m.brittle), GW, gy(m.hard) - gy(m.brittle));
   ctx.fillStyle = C.alarm; ctx.fillRect(GX, GY0, GW, gy(m.brittle) - GY0);
   ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let yy = GY0 - GW; yy < gy(m.brittle); yy += 9) { ctx.moveTo(GX, yy + GW); ctx.lineTo(GX + GW, yy); } ctx.stroke();
   ctx.restore();
-  ctx.font = `13px ${BODY}`; ctx.textBaseline = 'middle';
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText('碎', 893, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText('好', 893, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText('轻', 893, (gy(m.hard) + GY1) / 2);
+  ctx.font = `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
+  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText('碎', 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText('好', 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText('轻', 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
   const lh = G.lastHit;
   if (lh && G.time - lh.t < 3) {
     ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const yy = gy(lh.F);
@@ -1225,33 +1241,68 @@ function drawGauge() {
     if (G.needle > 1) { const yy = gy(G.needle); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(GX + GW + 3, yy); ctx.lineTo(GX + GW + 15, yy - 7); ctx.lineTo(GX + GW + 15, yy + 7); ctx.closePath(); ctx.fill(); }
   }
 }
-const TIPS = ['按住材料拎起来，往地板上砸', '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+const TIPS = ['按住材料拎起来，往地板上砸', TOUCH ? '抓住哪一头，对面那头就朝下' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
 function drawHints() {
   if (G.state !== 'play') return;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim;
-  ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], 400, FLOOR + 50);
+  if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? 17 : 15}px ${BODY}`; ctx.fillStyle = C.dim;
+  ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
+}
+/* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
+function drawHudPort(t) {
+  ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
+  const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText('圆形程度', x0, y - 9);
+  rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
+  ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
+  rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(tx, y - 5); ctx.lineTo(tx, y + h + 5); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font = `500 14px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.dim; ctx.fillText('达标 ' + pct(G.target), tx, y - 10);
+  ctx.font = `40px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 12, y + 29);
+  ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
+  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText('耐久', px, y + 56); px += 42;
+  for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
+  ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, VW - 12, y + 56);
+  const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
+  ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText('甲方耐心 ' + Math.ceil(Math.max(0, G.timeLeft)) + ' 秒', 12, 124);
+  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(`第 ${G.idx + 1} / ${ORDER.length} 单` + (G.loop ? ' · 加班' : ''), VW / 2, 124);
+  ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
+  const bb = G.bubble;
+  if (bb && G.time - bb.t0 < bb.dur) {
+    ctx.font = `17px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, 400);
+    const lh = 24, bw = Math.max(...bb.plines.map(l => ctx.measureText(l).width)) + 28, bh = bb.plines.length * lh + 16, bx = 12, by = 142;
+    ctx.globalAlpha = clamp((bb.dur - (G.time - bb.t0)) * 3, 0, 1) * clamp((G.time - bb.t0) * 8, 0, 1);
+    ctx.fillStyle = C.ink; rr(ctx, bx, by, bw, bh, 15); ctx.fill(); ctx.beginPath(); ctx.moveTo(bx + 26, by + 2); ctx.lineTo(bx + 36, by - 10); ctx.lineTo(bx + 48, by + 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C.hull; ctx.textAlign = 'left'; bb.plines.forEach((l, i) => ctx.fillText(l, bx + 14, by + 28 + i * lh));
+    ctx.globalAlpha = 1;
+  }
 }
 function draw() {
-  const t = G.time; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, W, H);
+  const t = G.time; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, VW, VH); ctx.translate(-CAMX, TOP);
   ctx.save(); if (!REDUCED && G.shake > .4) ctx.translate(rand(-1, 1) * G.shake, rand(-1, 1) * G.shake);
-  drawBg(t); drawAlien(t);
+  drawBg(t); if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) drawBody(G.body, t);
   if (G.doom) drawDoom(G.doom);
   drawFx(); ctx.restore();
-  drawGauge(); drawRoundBar(); drawHints();
+  drawGauge(); drawHints();
+  if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); } else drawRoundBar();
 }
 
 /* ---------- 缩放与主循环 ---------- */
 let scale = 1;
 function fit() {
   const aw = wrap.clientWidth, ah = wrap.clientHeight;
-  let w = Math.floor(Math.min(aw, ah > 40 ? ah * W / H : aw, 1280)); if (!(w > 0)) w = 320;
-  const h = Math.floor(w * H / W), dpr = Math.min(window.devicePixelRatio || 1, 2);
-  stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / W) + 'px');
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); scale = cv.width / W;
+  PORT = ah > aw * 1.15;
+  if (PORT) { VW = 540; TOP = clamp(Math.round(VW * ah / aw) - H, 110, 300); VH = H + TOP; CAMX = W - VW; } else { VW = W; VH = H; TOP = 0; CAMX = 0; }
+  WALL_L = CAMX; stage.classList.toggle('port', PORT);
+  let w = Math.floor(Math.min(aw, ah > 40 ? ah * VW / VH : aw, 1280)); if (!(w > 0)) w = 320;
+  const h = Math.floor(w * VH / VW), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / VW) + 'px');
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); scale = cv.width / VW;
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下。'; }
 try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
 let last = 0;
 function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
