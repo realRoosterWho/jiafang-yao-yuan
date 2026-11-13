@@ -29,7 +29,7 @@ PORT = int(os.environ.get("FC_PORT", "2504"))
 PUBLIC = Path(os.environ.get("FC_PUBLIC", HERE / "public"))
 DB_PATH = Path(os.environ.get("FC_DB", HERE / "data" / "events.db"))
 
-EVENTS = {"open", "start", "deliver", "fail", "quit", "win"}
+EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win"}
 MAX_BODY = 4096
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
 STATIC = {"/": ("index.html", "text/html; charset=utf-8")}
@@ -104,8 +104,18 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "fullcircle/1"
     sys_version = ""
 
-    def log_message(self, fmt, *args):  # 不往日志里写 IP
+    def log_message(self, fmt, *args):  # 默认的访问日志带 IP，关掉
         pass
+
+    def log_request(self, code="-", size="-"):
+        """只记页面和上报接口：方法、路径、状态码、事件名或拒收原因、浏览器大类。不记 IP。"""
+        path = self.path.split("?", 1)[0]
+        if path in ("/", "/api/event"):
+            ua = self.headers.get("User-Agent") or ""
+            fam = next((n for k, n in (("Edg/", "Edge"), ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("CriOS", "Chrome-iOS"),
+                                       ("Chrome/", "Chrome"), ("Safari/", "Safari")) if k in ua), "other")
+            mob = " mobile" if "Mobile" in ua else ""
+            print(f"{self.command} {path} {code} {getattr(self, '_note', '')} [{fam}{mob}]".replace("  ", " "), flush=True)
 
     def _send(self, code: int, body: bytes = b"", ctype: str = "text/plain; charset=utf-8", extra: dict | None = None):
         self.send_response(code)
@@ -195,20 +205,26 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             n = -1
         if n <= 0 or n > MAX_BODY:
+            self._note = f"bad-length:{n}"
             return self._send(413 if n > MAX_BODY else 400, b"bad length", extra=self._cors())
         raw = self.rfile.read(n)
         src = self._client()
         if not rate_ok(src):
+            self._note = "rate-limited"
             return self._send(429, b"slow down", extra=self._cors())
         try:
             msg = json.loads(raw)
         except ValueError:
+            self._note = f"bad-json:{raw[:40]!r}"
             return self._send(400, b"bad json", extra=self._cors())
         if not isinstance(msg, dict):
+            self._note = "bad-json:not-object"
             return self._send(400, b"bad json", extra=self._cors())
         pid, sid, ev = clean_id(msg.get("pid")), clean_id(msg.get("sid")), msg.get("ev")
         if not pid or not sid or ev not in EVENTS:
+            self._note = f"bad-event:{str(ev)[:16]} pid_ok={bool(pid)} sid_ok={bool(sid)}"
             return self._send(400, b"bad event", extra=self._cors())
+        self._note = ev
         seq = msg.get("seq") if isinstance(msg.get("seq"), int) else None
         ms = msg.get("ms") if isinstance(msg.get("ms"), int) else None
         country = (self.headers.get("CF-IPCountry") or "")[:2] or None
