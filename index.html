@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>甲方要圆</title>
-<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。30 单敲击小游戏。">
+<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。36 单敲击小游戏。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -290,8 +290,21 @@ const MATS = {
   earth: { name: '地球', unit: '颗', hard: 38, brittle: 80, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .2, fric: .6, accel: 16000, jig: 0, target: .9, time: 160, snd: 'stone',
     core: { label: ['岩浆', 'Magma'], hard: 10, brittle: 46, loose: 1, wet: 1, base: '#ff8a1e', outline: '#ffe08a', chips: ['#ffd23c', '#ff8a1e', '#e23d1e'], snd: 'meat', over: ['岩浆喷了！', 'Eruption!'], pts: () => arcPts(0, 0, 82, 0, TAU, 48) },
     base: '#2f7fd6', outline: '#0e2c5a', chips: ['#2f7fd6', '#4fb86a', '#ffffff', '#8a6a3a'], over: '地震了！', dead: '地球碎了。你老家没了，不过甲方说新的更圆。', blurb: '甲方量过了：你老家不够圆，山太高，沟太深。把山砸平。地壳很薄，下面全是岩浆，砸穿了就只能轻拿轻放。' },
+  /* 第六班：软硬不吃。harden = 每次有效敲击把力度下限抬高多少（minWin 是窗口最窄剩多少）；sag = 放在地上时往下塌的速度 */
+  butter: { name: '黄油', unit: '块', hard: 6, brittle: 60, loose: 1.1, plastic: .9, smooth: .3, passes: 1, value: 6, hp: 3, rest: .05, fric: .9, accel: 20000, jig: .15, target: .86, time: 120, snd: 'meat', sag: 5,
+    base: '#ffe27a', outline: '#b8901e', chips: ['#fff2b8', '#ffe27a', '#f2c94c'], over: '拍成泥了！', dead: '黄油被拍成了一张纸，糊在地板上。甲方说正好拿来擦鞋。', blurb: '一长条黄油，放在地上不管会慢慢塌。平的那面朝下塌得慢，尖角朝下塌得快。试试把角朝下放着，等它自己塌圆。' },
+  copper: { name: '铜块', unit: '块', hard: 22, brittle: 86, harden: 3, minWin: 12, loose: 1, plastic: .4, smooth: .2, passes: 1, value: 7, hp: 3, rest: .2, fric: .5, accel: 20000, jig: 0, target: .9, time: 120, snd: 'steel',
+    base: '#c8743a', outline: '#5e2c0c', chips: ['#f0a466', '#c8743a', '#8a4a1e'], over: '砸裂了！', dead: '铜块裂成几瓣。铜本来很韧的，你是怎么做到的。', blurb: '铜越砸越硬。每砸好一下，力度窗口的下限就往上抬一点，绿色那段越来越窄。所以别浪费在平的那面上，专挑最凸的角。' },
+  jelly: { name: '果冻', unit: '个', hard: 3, brittle: 34, loose: 1.3, plastic: .9, smooth: .4, passes: 2, value: 7, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .5, target: .87, time: 130, snd: 'rubber', sag: 7, wet: 1,
+    base: '#e83a5a', outline: '#8a1430', chips: ['#ff7a92', '#e83a5a', '#ffd0da'], over: '果冻碎了！', dead: '果冻摔成了一滩果汁。甲方用吸管吸干净了，但不给钱。', blurb: '城堡模子倒出来的果冻，软得一碰就晃，放着塌得也快。轻手，而且别让它平躺太久。' },
+  rebar: { name: '钢筋', unit: '根', hard: 30, brittle: 94, harden: 1.3, minWin: 14, loose: 1.5, plastic: .7, smooth: .2, passes: 1, value: 8, hp: 3, rest: .15, fric: .5, accel: 16000, jig: 0, target: .86, time: 150, snd: 'steel',
+    base: '#6f747e', outline: '#24272e', chips: ['#a5aab4', '#6f747e', '#9a5a2e'], over: '砸弯了！', dead: '钢筋断了。工地上的人正在到处找它。', blurb: '一根长钢筋。拎着一头，另一头正好朝下，竖着砸两头会让它变短变粗，铁匠管这叫镦粗。钢也越砸越硬，后面要一下比一下重。' },
+  slime: { name: '史莱姆', unit: '坨', hard: 4, brittle: 34, loose: 1.1, plastic: 1, smooth: .5, passes: 2, value: 8, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .45, target: .86, time: 130, snd: 'rubber', sag: 7, wet: 1,
+    base: '#6fdc4a', outline: '#1f6e18', chips: ['#b8ff8a', '#6fdc4a', '#3a9e2a'], over: '史莱姆炸开了！', dead: '史莱姆碎成了一地小史莱姆，正四散逃跑。', blurb: '一坨史莱姆，伸着好几只触手，放着就往下淌。它会看着你，别在意。触手朝下放着能让它自己缩回去。' },
+  weight: { name: '秤砣', unit: '个', hard: 40, brittle: 92, harden: 2, minWin: 10, loose: .8, plastic: .3, smooth: .2, passes: 1, value: 10, hp: 2, rest: .15, fric: .6, accel: 16000, jig: 0, target: .88, time: 150, snd: 'steel',
+    base: '#3e4048', outline: '#121318', chips: ['#7a7d88', '#3e4048', '#9a5a2e'], over: '砸崩了！', dead: '秤砣崩了，甲方说以后称东西全凭感觉。', blurb: '生铁秤砣，头上一个提钮，底下又宽又平。铁越砸越硬，一开始就要想好先砸哪儿：钮最凸，但底下两个角也得处理。' },
 };
-const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight'];
 const PER = 6;   // 每班六单
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -299,6 +312,7 @@ const CHAPS = [
   { name: '甲方的仓库', intro: '仓库里堆着从地球顺回来的东西，全是方的、带棱的。甲方看一眼就头疼。' },
   { name: '甲方的收藏室', intro: '最后一班是甲方的私人收藏。件件价值连城，砸坏哪件你都赔不起。' },
   { name: '表里不一', intro: '这一班的东西都有两层：外面一层壳，里面一层芯，脾气不一样。壳砸穿了，力度表会跟着变成芯的。看清楚现在是哪一层朝下。' },
+  { name: '软硬不吃', intro: '这一班的东西脾气都怪。金属越砸越硬，每浪费一下，后面都更难砸动；软的东西放在地上不管就会塌，压在底下的那面慢慢变平。不过塌也能帮你：把尖角朝下放着，让它自己塌圆。' },
 ];
 
 /* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
@@ -333,6 +347,12 @@ const MATS_EN = {
   geode: ['Geode', 'Rock chipped!', 'The geode is all over the floor, sparkling. The Client is heartbroken, though not about you.', 'A lump of rock with a nest of crystal grown off-centre inside. Rock wants heavy hits, crystal only medium ones. The rock is thin on the crystal side. Careful.'],
   bonbon: ['Liqueur Chocolate', 'Chocolate chipped!', 'The filling drained out, leaving a puddle of chocolate. The Client licked it and said round is optional, but so is paying.', 'Square, thin shell, narrow window. Rounding the corners will reach the filling, and the filling splashes at almost any touch. Finesse on the shell, feather taps once it shows.'],
   earth: ['Earth', 'Earthquake!', 'Earth broke. Your home is gone, but the Client says the new one will be rounder.', 'The Client measured it: your home is not round enough. Mountains too tall, trenches too deep. Flatten them. The crust is thin with magma right under it, so once you are through, be gentle.'],
+  butter: ['Butter', 'Squashed flat!', 'The butter is now a sheet glued to the floor. The Client says it is perfect for polishing shoes.', 'A long block of butter that slowly slumps if you leave it on the floor. A flat side down slumps slowly, a corner down slumps fast. Try setting a corner down and letting it sag round.'],
+  copper: ['Copper', 'Cracked!', 'The copper split into pieces. Copper is supposed to be tough. How did you manage that?', 'Copper hardens as you hit it. Every good hit raises the bottom of the force window, and the green band keeps shrinking. Do not waste hits on flat sides. Go for the biggest corner.'],
+  jelly: ['Jelly', 'Jelly burst!', 'The jelly is now a puddle of juice. The Client drank it with a straw, but is not paying.', 'Jelly from a castle mould. Wobbles at a touch and slumps fast. Hit gently, and do not leave it lying flat for long.'],
+  rebar: ['Rebar', 'Bent!', 'The rebar snapped. Someone at a building site is looking everywhere for it.', 'A long steel bar. Hold one end and the other points down: hitting the ends upright makes it shorter and thicker, which smiths call upsetting. Steel hardens too, so each hit must be heavier than the last.'],
+  slime: ['Slime', 'Slime burst!', 'The slime split into lots of little slimes, all running away.', 'A blob of slime with several tentacles that oozes downward if you leave it. It will watch you. Ignore it. Set a tentacle down and it will pull itself back in.'],
+  weight: ['Steelyard Weight', 'Chipped!', 'The weight chipped. The Client says they will weigh things by feel from now on.', 'A cast-iron weight with a knob on top and a wide flat base. Iron hardens as you hit it, so plan ahead: the knob sticks out most, but the two bottom corners need work too.'],
 };
 const CHAPS_EN = [
   ['Probation', ''],
@@ -340,6 +360,7 @@ const CHAPS_EN = [
   ["The Client's Warehouse", 'The warehouse is piled with things swiped from Earth, all square and full of edges. One look gives the Client a headache.'],
   ["The Client's Collection", "The last shift is the Client's private collection. Every piece is priceless, and you can't afford to break any of them."],
   ['More Than Skin Deep', 'Everything this shift has two layers: a shell outside and a core inside, each with its own temper. Break through the shell and the force gauge switches to the core. Watch which layer is facing down.'],
+  ['Stubborn Stuff', 'Everything this shift has a temper. Metals harden as you hit them, so every wasted hit makes the rest harder. Soft things slump if you leave them on the floor, flattening whatever side is underneath. But slumping can help too: set a corner down and let it sag round on its own.'],
 ];
 if (EN) {
   for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
@@ -382,6 +403,12 @@ const SHAPES = {
   geode: () => [[-104, -36], [-62, -92], [8, -102], [84, -74], [116, -8], [92, 62], [30, 98], [-52, 90], [-108, 40]],
   bonbon: () => rectPts(88, 88),
   earth: () => polarPts(120, a => 100 + bump(a, .3, 26, .16) + bump(a, 1.5, 20, .12) + bump(a, 2.6, 30, .14) + bump(a, 3.9, 22, .18) + bump(a, 5.2, 28, .13) - bump(a, .9, 10, .2) - bump(a, 3.2, 9, .25) - bump(a, 4.6, 10, .2)),
+  butter: () => [[-100, -46], [94, -52], [102, 44], [-98, 52]],
+  copper: () => [[-70, -82], [44, -88], [86, -40], [80, 70], [30, 88], [-80, 78], [-92, 0]],
+  jelly: () => [[-108, 62], [-96, 20], [-80, 14], [-74, -24], [-56, -30], [-48, -62], [-24, -66], [-18, -86], [18, -86], [24, -66], [48, -62], [56, -30], [74, -24], [80, 14], [96, 20], [108, 62]],
+  rebar: () => [[-150, -20], [150, -20], [150, 20], [-150, 20]],
+  slime: () => polarPts(96, a => 66 + bump(a, -1.2, 58, .16) + bump(a, .4, 48, .14) + bump(a, 1.9, 40, .2) + bump(a, 3.3, 62, .15) + bump(a, 4.4, 30, .18)),
+  weight: () => [[-82, 76], [-66, -10], [-40, -36], [-14, -42], [-16, -62], [-28, -74], [-22, -96], [22, -96], [28, -74], [16, -62], [14, -42], [40, -36], [66, -10], [82, 76]],
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
 function polarPts(f) { const o = []; for (let k = 0; k < 90; k++) { const a = k / 90 * TAU, rr = f(a); o.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return o; }
@@ -479,10 +506,28 @@ function recenter(b) {
 /* 双层材料：b.c 是芯的轮廓（跟 b.r 同一个原点，永远不超出 b.r）。朝下那个方向上壳已经磨穿，这一下就算砸在芯上 */
 function coreMat(m) { return m._cm || (m._cm = Object.assign({}, m, m.core, { isCore: true, over: L(m.core.over[0], m.core.over[1]) })); }
 function onCore(b, alpha) { if (!b.c) return false; const i = ((Math.round(alpha / DPHI) % N) + N) % N; return b.r[i] - b.c[i] < 2.5; }
-function faceMat(b) { return b && b.c && onCore(b, Math.PI / 2 - b.a) ? coreMat(b.mat) : b ? b.mat : G.mat; }
+/* 这一下砸在哪种材料上：芯/壳，再叠上这块料已经被砸硬了多少 */
+function matAt(b, alpha) {
+  const base = onCore(b, alpha) ? coreMat(b.mat) : b.mat;
+  if (!b.hardAdd || base.isCore) return base;
+  if (b._hmK !== b.hardAdd) { b._hm = Object.assign({}, base, { hard: Math.round(base.hard + b.hardAdd) }); b._hmK = b.hardAdd; }
+  return b._hm;
+}
+function faceMat(b) { return b ? matAt(b, Math.PI / 2 - b.a) : G.mat; }
+/* 蠕变：软东西躺在地上会被自己压塌。接触面越窄（尖角朝下）压强越大、塌得越快；平面朝下几乎不动 */
+function creep(b, dt) {
+  b.sagT = (b.sagT || 0) + dt; if (b.sagT < .1) return; const t = b.sagT; b.sagT = 0;
+  const alpha = Math.PI / 2 - b.a; let top = -1e9;
+  for (let i = 0; i < N; i++) { const h = b.r[i] * Math.cos(i * DPHI - alpha); if (h > top) top = h; }
+  let lo = 1e9, hi = -1e9;
+  for (let i = 0; i < N; i++) { const d = i * DPHI - alpha, c = Math.cos(d); if (c > 0 && b.r[i] * c > top - 3) { const lat = b.r[i] * Math.sin(d); if (lat < lo) lo = lat; if (lat > hi) hi = lat; } }
+  const depth = b.mat.sag * t * clamp(b.meanR * .5 / Math.max(hi - lo, 6), .08, 2.5);
+  const cut = cutShape(b.r, alpha, depth); bulge(b.r, alpha, cut, cut.removed); smooth(b.r, .3, 1);
+  recenter(b); snapToFloor(b); updateRoundness();
+}
 function clampCore(b, core) { for (let i = 0; i < N; i++) { if (core) { if (b.c[i] > b.r[i]) b.c[i] = b.r[i]; } else if (b.r[i] < b.c[i]) b.r[i] = b.c[i]; } }
 function deform(b, alpha, F) {
-  const core = onCore(b, alpha), m = core ? coreMat(b.mat) : b.mat, over = F > m.brittle, t = over ? 1 : (F - m.hard) / (m.brittle - m.hard);
+  const core = onCore(b, alpha), m = matAt(b, alpha), over = F > m.brittle, t = over ? 1 : (F - m.hard) / (m.brittle - m.hard);
   let depth = b.meanR * m.loose * (TUNE.D0 + TUNE.D1 * t); if (over) depth *= m.plastic ? 2.4 : 1.3;
   const cut = cutShape(b.r, alpha, depth);
   if (m.plastic) bulge(b.r, alpha, cut, cut.removed * m.plastic);
@@ -690,6 +735,10 @@ function impact(b, F, cx) {
     say('over', true);
   } else {
     G.stats.good++;
+    if (m.harden && !lm.isCore) {
+      const old = b.hardAdd || 0; b.hardAdd = Math.min(m.brittle - (m.minWin || 10) - m.hard, old + m.harden);
+      if (b.hardAdd > old) floatText(cx, FLOOR - 84, L('变硬 → ', 'Harder → ') + Math.round(m.hard + b.hardAdd), C.dim, 16);
+    }
     const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
     if (gain < -.012) say('worse'); else if (Math.random() < .3) say('good');
@@ -780,6 +829,12 @@ const MATFX = {
   geode: (x, p, over, b, core) => { if (core) { twinkle(x, FLOOR - 20, 3 + 5 * p, ['#e9d5ff', '#ffffff']); if (over) shards(x, 10, ['#c9a3ff', '#8a4fd8', '#ffffff']); } else sparks(x, 2 + 4 * p, ['#d8dae6', '#ffffff'], p); },
   bonbon: (x, p, over, b, core) => { if (core) { stain(x, 18 + 30 * p, '#ff9db5'); if (over) fxp(x, FLOOR - 8, 14, 'drop', ['#ff9db5', '#ffd0dc'], { up: 340, g: 900 }); } },
   earth: (x, p, over, b, core) => { if (core) { stain(x, 20 + 34 * p, '#ff8a1e'); sparks(x, 4 + 6 * p, ['#ffd23c', '#ff8a1e'], p); if (over) { ring(x, 110, '#ff8a1e'); fxp(x, FLOOR - 8, 16, 'drop', ['#ffd23c', '#e23d1e'], { up: 420, g: 900 }); } } else { puff(x, 3 + 4 * p, '#8a6a3a'); if (over) ring(x, 120, '#ffffff'); } },
+  butter: (x, p, over) => { stain(x, 12 + 22 * p, '#ffe9a0', 3); if (over) puff(x, 8, '#fff2b8'); },
+  copper: (x, p, over, b) => { sparks(x, 3 + 5 * p + (b.hardAdd || 0) * .2, ['#ffd08a', '#ff9a3c'], p); if (over) ring(x, 100, '#ff9a3c'); },
+  jelly: (x, p, over, b) => { b.jigV += 2 + 3 * p; fxp(x, FLOOR - 8, 3 + 6 * p, 'drop', ['#ff7a92', '#e83a5a'], { up: 220, g: 900 }); if (over) stain(x, 50, '#e83a5a'); },
+  rebar: (x, p, over, b) => { sparks(x, 5 + 8 * p + (b.hardAdd || 0) * .25, ['#fff6c0', '#ffd23c', '#ff8a1e'], p); if (over) ring(x, 110, '#ffd23c'); },
+  slime: (x, p, over) => { stain(x, 14 + 24 * p, '#6fdc4a', 3); fxp(x, FLOOR - 8, 3 + 5 * p, 'drop', ['#b8ff8a', '#6fdc4a'], { up: 260, g: 900 }); if (over) fxp(x, FLOOR - 12, 10, 'bubble', ['#b8ff8a'], { up: 160, g: -60, life: 1.2 }); },
+  weight: (x, p, over) => { sparks(x, 3 + 6 * p, ['#ffffff', '#ffd23c'], p); dust(x, 4); if (over) ring(x, 120, '#ffffff'); },
 };
 function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
@@ -804,6 +859,28 @@ function saveBest(id, pay) {
   return old;
 }
 function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
+/* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
+   本地打开（file:// 或 localhost）和开了“请勿追踪”的浏览器都不发。 */
+const TRACK = (() => {
+  const host = location.hostname, off = !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host)
+    || navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
+  if (off) return () => {};
+  const URL_ = 'https://fullcircle.roosterwho.com/api/event', rid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+  let pid = ''; try { pid = localStorage.getItem('yuan.pid') || ''; if (!pid) { pid = rid(); localStorage.setItem('yuan.pid', pid); } } catch (e) { pid = rid(); }
+  const sid = rid(), t0 = performance.now(); let seq = 0;
+  return (ev, data) => {
+    try {
+      const body = JSON.stringify({ v: 1, pid, sid, seq: seq++, ev, ms: Math.round(performance.now() - t0), data: data || {} });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, body))) fetch(URL_, { method: 'POST', body, mode: 'no-cors', keepalive: true }).catch(() => {});
+    } catch (e) {}
+  };
+})();
+const r3 = v => Math.round(v * 1000) / 1000;
+function roundInfo() {
+  const b = G.body;
+  return { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round), used: G.started ? Math.round((G.timeMax - G.timeLeft) * 10) / 10 : 0,
+    good: G.stats.good, over: G.stats.over, light: G.stats.light, keep: b && b.area0 ? r3(clamp(b.area / b.area0, 0, 1)) : null };
+}
 function startAt(i) {
   G.idx = clamp(i | 0, 0, ORDER.length - 1); G.loop = 0; G.score = 0; G.done = 0;
   if (G.idx && G.idx % PER === 0) showChapter(); else showOrder();
@@ -880,7 +957,8 @@ function showMenu() {
       <li><b>${L('砸', '2')}</b><span>${L('往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。', '<strong>Slam.</strong> Smash it on the floor, or lift it high and let go. Watch the force gauge on the right: green works, too soft does nothing, red breaks it.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候按左边的 ↺ ↻ 可以微调角度。', 'While holding, press ↺ ↻ on the left to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button><button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button><button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    <p class="note">${L('会匿名记录每一单的圆度、用时和成败，用来调难度；不收集任何个人信息。', 'Anonymous gameplay stats (roundness, time, pass/fail per order) are recorded to tune difficulty. No personal data.')}</p>`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0;
@@ -892,6 +970,8 @@ function showOrder() {
       <dt>${L('力度窗口', 'Force window')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
       ${m.core ? `<dt>${L(m.core.label[0], m.core.label[1])}</dt><dd><div class="window" role="img" aria-label="${L(`里面那层：力度 ${m.core.hard} 到 ${m.core.brittle} 之间有效`, `Inner layer: works between force ${m.core.hard} and ${m.core.brittle}`)}"><i class="w-light" style="width:${m.core.hard}%"></i><i class="w-ok" style="width:${m.core.brittle - m.core.hard}%"></i><i class="w-break" style="width:${100 - m.core.brittle}%"></i></div>${L(`里面那层：${m.core.hard} 到 ${m.core.brittle >= 100 ? '100，砸不坏' : m.core.brittle}`, `Inner layer: ${m.core.hard} to ${m.core.brittle >= 100 ? '100, unbreakable' : m.core.brittle}`)}</dd>` : ''}
       <dt>${L('硬度', 'Hardness')}</dt><dd>${L(`力度到 ${m.hard} 才会变形`, `Needs force ${m.hard} to dent`)}</dd>
+      ${m.harden ? `<dt>${L('越砸越硬', 'Hardens')}</dt><dd>${L(`每砸好一下，下限 +${m.harden}，最高到 ${m.brittle - (m.minWin || 10)}`, `Each good hit raises the floor by ${m.harden}, up to ${m.brittle - (m.minWin || 10)}`)}</dd>` : ''}
+      ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('放在地上不拎，压着的那面会慢慢塌平；尖角朝下塌得最快', 'Left on the floor, the side underneath slowly flattens. A corner pressed down slumps fastest')}</dd>` : ''}
       <dt>${L('易碎', 'Fragility')}</dt><dd>${m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
       <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
       <dt>${L('价值', 'Value')}</dt><dd>× ${m.value.toFixed(1)}</dd>
@@ -910,6 +990,7 @@ function deliver() {
   G.body.held = false; const p = G.pay = computePay(), m = G.mat;
   G.score += p.total; G.done++; G.state = 'result'; sfx.win(); say('done', true); mood('happy', 4);
   const old = saveBest(ORDER[G.idx], p.total);
+  TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: old }));
   setCard(`
     <p class="eyebrow">${L('交货成功', 'Delivered')}</p>
     <h2>${L(`圆度 ${pct(G.round)}，甲方点了点头`, `${pct(G.round)} round. The Client nods`)}</h2>
@@ -926,6 +1007,7 @@ function deliver() {
 function fail(reason) {
   if (G.state !== 'play') return;
   G.state = 'failing'; G.failReason = reason; G.failT = reason === 'shatter' ? 1.5 : 1.0;
+  TRACK('fail', Object.assign(roundInfo(), { reason }));
   if (G.body) G.body.held = false; deliverBtn.hidden = true;
   say(reason === 'shatter' ? 'shatter' : 'fail', true); mood('angry', 9); sfx.fail();
   G.doom = { x: midX() - 10, y: -80, vx: 46, vy: 0, a: 0 };
@@ -941,7 +1023,7 @@ function showOver() {
     <div class="row"><button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showWin() {
-  G.state = 'win';
+  G.state = 'win'; TRACK('win', { loop: G.loop, score: G.score, done: G.done });
   setCard(`
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
@@ -955,7 +1037,7 @@ function act(a) {
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();
   else if (a === 'enter') showOrder();
-  else if (a === 'go') { G.state = 'play'; overlay.hidden = true; say('start', true); updateRoundness(); }   // 本来就圆的那一单，一接单就能交货
+  else if (a === 'go') { G.state = 'play'; overlay.hidden = true; say('start', true); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
   else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (G.idx % PER === 0) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
   else if (a === 'restart') showMenu();
@@ -1044,6 +1126,7 @@ function update(dt) {
     const h = dt / 4; for (let k = 0; k < 4 && !b.dead; k++) stepBody(b, h);
     b.jigV += (-700 * b.jig - (b.mat.jig > .3 ? 9 : 22) * b.jigV) * dt; b.jig = clamp(b.jig + b.jigV * dt, -.3, .3);
     b.flash = Math.max(0, b.flash - dt * 3);
+    if (b.mat.sag && b.sleeping && !b.held && G.state === 'play' && G.started) creep(b, dt);
   }
   if (G.state === 'play' && G.started && b && !b.dead) {
     G.timeLeft -= dt;
@@ -1338,6 +1421,43 @@ Object.assign(ART, {
     c.fillStyle = 'rgba(255,255,255,.3)'; for (let k = 0; k < 3; k++) { c.beginPath(); c.ellipse(Math.sin(t * .3 + k * 2.1) * 90, -96 + k * 14, 26, 5, 0, 0, TAU); c.fill(); }
   },
 });
+Object.assign(ART, {
+  butter(c, b) {
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-130, -46, 260, 14);
+    c.fillStyle = '#d9dde6'; c.fillRect(46, -60, 90, 120); c.fillStyle = '#2f6fd6'; c.fillRect(46, -14, 90, 28);
+    c.fillStyle = '#fff'; c.font = `700 ${EN ? 12 : 15}px ${BODY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('黄油', 'BUTTER'), 91, 1);
+    c.strokeStyle = 'rgba(184,144,30,.35)'; c.lineWidth = 2; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(-100 + k * 34, -30); c.lineTo(-108 + k * 34, 36); c.stroke(); }
+  },
+  copper(c, b) {
+    const g = c.createLinearGradient(-90, -90, 90, 90); g.addColorStop(0, '#f0a466'); g.addColorStop(1, '#8a4a1e'); c.fillStyle = g; c.fillRect(-120, -120, 240, 240);
+    const n = 10 + Math.round((b.hardAdd || 0) * 2);   // 砸得越多，锤痕越密
+    for (let k = 0; k < Math.min(n, b.deco.length); k++) { const d = b.deco[k]; c.fillStyle = 'rgba(90,40,10,.25)'; c.beginPath(); c.arc(d.x * 80, d.y * 80, 5 + d.s * 7, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,220,180,.3)'; c.beginPath(); c.arc(d.x * 80 - 2, d.y * 80 - 2, 3 + d.s * 3, 0, TAU); c.fill(); }
+    c.fillStyle = 'rgba(80,190,150,.45)'; c.beginPath(); c.arc(-60, 60, 14, 0, TAU); c.arc(70, -70, 9, 0, TAU); c.fill();
+  },
+  jelly(c, b, t) {
+    const g = c.createLinearGradient(0, -90, 0, 70); g.addColorStop(0, '#ff7a92'); g.addColorStop(1, '#b81e3e'); c.fillStyle = g; c.fillRect(-130, -100, 260, 180);
+    c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(-30, -50, 12, 26, .3, 0, TAU); c.fill(); c.beginPath(); c.ellipse(-62, 6, 8, 16, .3, 0, TAU); c.fill();
+    c.fillStyle = '#ffd35c'; for (const [x, y] of [[20, 10], [50, 36], [-20, 30], [6, -30]]) { c.beginPath(); c.arc(x, y + Math.sin(t * 3 + x) * 2, 7, 0, TAU); c.fill(); }
+  },
+  rebar(c) {
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-160, -20, 320, 6);
+    c.strokeStyle = 'rgba(20,22,28,.55)'; c.lineWidth = 3; for (let x = -146; x < 150; x += 16) { c.beginPath(); c.moveTo(x, -20); c.lineTo(x + 8, 20); c.stroke(); }
+    c.fillStyle = 'rgba(154,90,46,.45)'; for (const x of [-90, 30, 110]) { c.beginPath(); c.ellipse(x, 4, 14, 8, 0, 0, TAU); c.fill(); }
+  },
+  slime(c, b, t) {
+    const g = c.createRadialGradient(-20, -20, 10, 0, 0, 140); g.addColorStop(0, '#b8ff8a'); g.addColorStop(1, '#3a9e2a'); c.fillStyle = g; c.fillRect(-160, -160, 320, 320);
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5; for (const d of b.deco.slice(0, 8)) { c.beginPath(); c.arc(d.x * 60, d.y * 60, 3 + d.s * 5, 0, TAU); c.stroke(); }
+    const look = Math.sin(t * .8) * 4;
+    for (const x of [-20, 20]) { c.fillStyle = '#fff'; c.beginPath(); c.arc(x, -6, 13, 0, TAU); c.fill(); c.fillStyle = '#122'; c.beginPath(); c.arc(x + look, -4, 6, 0, TAU); c.fill(); }
+    c.strokeStyle = '#1f6e18'; c.lineWidth = 3; c.beginPath(); c.arc(0, 14, 10, .2, Math.PI - .2); c.stroke();
+  },
+  weight(c) {
+    const g = c.createLinearGradient(-80, 0, 80, 0); g.addColorStop(0, '#2a2c33'); g.addColorStop(.4, '#5a5d68'); g.addColorStop(1, '#25272d'); c.fillStyle = g; c.fillRect(-100, -110, 200, 200);
+    c.fillStyle = '#121318'; c.beginPath(); c.arc(0, -78, 9, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.22)'; c.font = `700 ${EN ? 20 : 24}px ${BODY}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(L('五百克', '500 g'), 0, 26);
+    c.fillStyle = 'rgba(154,90,46,.4)'; c.beginPath(); c.ellipse(-46, 54, 14, 7, 0, 0, TAU); c.fill();
+  },
+});
 /* 芯的剖面图：画在壳的图案上面，坐标和 ART 一样是出厂时的坐标 */
 const CORE_ART = {
   coconut(c) { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(0, 0, 54, 0, TAU); c.fill(); c.fillStyle = '#d9eeee'; c.beginPath(); c.arc(0, 0, 40, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-14, -16, 14, 6, -.5, 0, TAU); c.fill(); },
@@ -1485,7 +1605,7 @@ function drawRoundBar() {
   ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), x0 + w, y + 51);
 }
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
-function layerTag(b) { const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? C.coin : C.dim]; }
+function layerTag(b) { if (!b.c) return [L('下限 +', 'Floor +') + Math.round(b.hardAdd), C.coin]; const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? C.coin : C.dim]; }
 function drawGauge() {
   const b = G.body, m = faceMat(b);
   const py = PORT ? 136 - TOP : 0;
@@ -1493,7 +1613,7 @@ function drawGauge() {
   if (PORT) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort
   const fz = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
-  if (b && b.c) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 10' : '13'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 76); }
+  if (b && (b.c || b.hardAdd)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 10' : '13'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 76); }
   ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(GX, GY0, GW, GY1 - GY0);
@@ -1542,7 +1662,7 @@ function drawGaugePort() {
   const b = G.body, m = faceMat(b), X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
   ctx.fillStyle = C.hull; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
-  if (b && b.c) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 12' : '15'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
+  if (b && (b.c || b.hardAdd)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 12' : '15'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
   ctx.save(); rr(ctx, X0, y, X1 - X0, h, h / 2); ctx.clip();
   ctx.fillStyle = '#3b3180'; ctx.fillRect(X0, y, X1 - X0, h);
   const g = ctx.createLinearGradient(gx(m.hard), 0, gx(m.brittle), 0); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(gx(m.hard), y, gx(m.brittle) - gx(m.hard), h);
@@ -1620,7 +1740,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
-  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 30-order whacking game.';
+  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 36-order whacking game.';
   document.getElementById('help').textContent = TOUCH
     ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
     : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
@@ -1650,7 +1770,11 @@ function boot(data) {
   else if (new URLSearchParams(location.search).get('lang')) showMenu();   // 刚切完语言就别再看一遍封面
   else showCover();
   requestAnimationFrame(now => { last = now; frame(now); });
+  let ref = ''; try { const r = document.referrer && new URL(document.referrer).hostname; if (r && r !== location.hostname) ref = r; } catch (e) {}
+  TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, delivered: Object.keys(SAVE.best).length });
 }
+/* 关页面时还在做的那一单，记成中途放弃 */
+addEventListener('pagehide', () => { if (G.state === 'play') TRACK('quit', roundInfo()); });
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state === 'cover' ? {} : { idx: G.idx, loop: G.loop, score: G.startScore, done: G.done })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
