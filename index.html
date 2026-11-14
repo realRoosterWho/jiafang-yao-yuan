@@ -472,7 +472,7 @@ const MATS = {
     } },
 };
 const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'octobear'];
-const PER = 6;   // 原来每班六单。现在只有成就里「某个班交齐」还按原来的班算（见 MAIN_ORDER）
+const PER = 6;   // 原来每班六单。现在只有成就里「某组交齐」还按原来的分组算（见 MAIN_ORDER、SHIFT_ACH）
 const CHAPS = [
   { name: '试用期', intro: '' },
   { name: '甲方的厨房', intro: '甲方饿了。可在他们的星球上，不圆的东西不许上桌。' },
@@ -1361,17 +1361,26 @@ async function setName(raw) {
 const sumBest = () => ORDER.reduce((a, id) => a + (SAVE.best[id] || 0), 0);
 const shiftIds = k => MAIN_ORDER.slice(k * PER, (k + 1) * PER);   // 原来的第 k 班（成就用）
 const FOOD = ['meat', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'coconut', 'walnut', 'bonbon', 'butter', 'jelly', 'choco', 'honey', 'salmiak'];
+/* 这几组是原来九个班的单（MAIN_ORDER 每六单一组）。班已经不在游戏里了，所以描述的第一句直接列出是哪几单，后面接一句笑话。
+   [[名字, 笑话], [Name, joke]] */
 const SHIFT_ACH = [
-  [['转正', '试用期六单交齐。转正的意思是不能走了。'], ['Hired', "Probation done. You're permanent now, which means you can't leave."]],
-  [['开饭了', '厨房六单交齐。甲方吃上了全圆的一顿饭，面条是一粒一粒的。'], ['Dinner Is Served', 'Kitchen done. The noodles came as beads.']],
-  [['清仓', '仓库六单交齐。再也没有棱角，甲方终于敢进去了。'], ['No Edges Left', 'Warehouse done. Not a corner left; the Client finally dares go in.']],
-  [['镇馆之宝', '收藏室六单交齐。甲方顺手把你也登记成了藏品。'], ['Museum Piece', 'Collection done. The Client catalogued you as an exhibit too.']],
-  [['表里如一', '「表里不一」六单交齐。壳和芯都圆了，甲方说这叫表里如一。'], ['Round to the Core', 'Shell-and-core shift done. Consistent, the Client calls it.']],
-  [['软硬兼施', '「软硬不吃」六单交齐。软的塌了，硬的服了。'], ['Hard and Soft', 'Stubborn Stuff done. The soft ones slumped; the hard ones gave in.']],
-  [['拿捏了', '「拿捏」六单交齐。甲方下意识把手揣进了兜里。'], ['Got a Grip', 'Handle With Care done. The Client quietly put their hands in their pockets.']],
-  [['Sisu', '芬兰特供交齐。芬兰人说这叫 sisu，甲方说这叫圆。'], ['Sisu', 'Finnish Specials done. The Finns call it sisu. The Client calls it round.']],
-  [['宾至如圆', '特邀嘉宾也弄圆了。宾至如归，在甲方这儿叫宾至如圆。'], ['Guest of Honour', 'The guest is round too. Nobody leaves here any other shape.']],
+  [['转正', '转正的意思是不能走了。'], ['Hired', "You're permanent now, which means you can't leave."]],
+  [['开饭了', '甲方吃上了全圆的一顿饭，面条是一粒一粒的。'], ['Dinner Is Served', 'The Client had a fully round meal. The noodles came as beads.']],
+  [['清仓', '仓库里再也没有棱角，甲方终于敢进去了。'], ['No Edges Left', 'Not a corner left in the warehouse; the Client finally dares go in.']],
+  [['镇馆之宝', '甲方顺手把你也登记成了藏品。'], ['Museum Piece', 'The Client catalogued you as an exhibit too.']],
+  [['表里如一', '壳和芯都圆了，甲方说这叫表里如一。'], ['Round to the Core', 'Shells and cores, all round. Consistent, the Client calls it.']],
+  [['软硬兼施', '软的塌了，硬的服了。'], ['Hard and Soft', 'The soft ones slumped; the hard ones gave in.']],
+  [['拿捏了', '甲方下意识把手揣进了兜里。'], ['Got a Grip', 'The Client quietly put their hands in their pockets.']],
+  [['Sisu', '芬兰人说这叫 sisu，甲方说这叫圆。'], ['Sisu', 'The Finns call it sisu. The Client calls it round.']],
+  [['宾至如圆', '宾至如归，在甲方这儿叫宾至如圆。'], ['Guest of Honour', 'Nobody leaves here any other shape.']],
 ];
+// 「某组交齐」的条件句：列出那几单。成就列表里没解锁时只显示第一句，所以单名里不能有「! 」这种会被当成句号的写法
+const groupDone = (k, en) => {
+  const ns = shiftIds(k).map(id => id === 'aalto' ? (en ? 'the Aalto standee' : 'A!立牌') : en ? (id === 'earth' ? 'Earth' : lc(MATS[id].name)) : MATS[id].name);
+  if (!en) return ns.join('、') + (ns.length > 1 ? '都交了。' : '交了。');
+  const t = ns.length > 1 ? ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1] : ns[0];
+  return t.charAt(0).toUpperCase() + t.slice(1) + (ns.length > 1 ? ', all delivered. ' : ', delivered. ');
+};
 const ACH_G = [['live', '现场', 'On the job'], ['prog', '进度', 'Progress'], ['craft', '手艺', 'Craft'], ['grit', '坚持', 'Grit'], ['odd', '怪癖', 'Quirks']];
 const ACH = [
   // 现场：一单之内发生的事
@@ -1412,8 +1421,8 @@ const ACH = [
   { id: 'stood_on_end', g: 'live', hid: 1, t: ['金鸡独立', '钢筋竖着落地，自己站住了。甲方觉得这样不圆，但很稳。', '有一单能立起来。'], e: ['Stood on End', 'The rebar landed on its end and stayed up. Not round, the Client notes, but very stable.', 'One order can stand up.'] },
   // 进度：从存档就能算出来，老玩家打开新版本会补发
   ...Array.from({ length: MAIN_SHIFTS }, (_, k) => {
-    const d = SHIFT_ACH[k] || [[`第 ${k + 1} 班交齐`, `第 ${k + 1} 班交齐了。`], [`Shift ${k + 1} Done`, `Shift ${k + 1} complete.`]];
-    return { id: 'shift_' + (k + 1), g: 'prog', goal: () => shiftIds(k).length, prog: () => shiftIds(k).filter(id => SAVE.best[id]).length, t: d[0], e: d[1] };
+    const d = SHIFT_ACH[k] || [[`第 ${k + 1} 组`, ''], [`Set ${k + 1}`, '']];
+    return { id: 'shift_' + (k + 1), g: 'prog', goal: () => shiftIds(k).length, prog: () => shiftIds(k).filter(id => SAVE.best[id]).length, t: [d[0][0], groupDone(k, false) + d[0][1]], e: [d[1][0], (groupDone(k, true) + d[1][1]).trim()] };
   }),
   { id: 'all_round', g: 'prog', goal: () => ORDER.length, prog: () => ORDER.filter(id => SAVE.best[id]).length, t: ['一切皆圆', `全部 ${ORDER.length} 单交付。墙上那句厂训，不再是口号了。`], e: ['All Is Round', `All ${ORDER.length} orders delivered. The motto on the wall is now just a fact.`] },
   { id: 'stars_all', g: 'prog', goal: () => ORDER.length * 3, prog: () => starTotal(), t: ['满天星', '每一单都拿满三星。甲方把这些星挂上了天，补上被砸碎的那颗。'], e: ['Full Sky', 'Three stars on every order. The Client hung them up to replace the one that got smashed.'] },
@@ -1423,7 +1432,7 @@ const ACH = [
   // 手艺
   { id: 'hat_trick', g: 'craft', goal: () => 3, prog: () => A.three.length, t: ['连中三圆', '连续 3 单三星。古人叫连中三元，甲方叫连中三圆。'], e: ['Hat Trick', 'Three three-star orders in a row. The Client offers you a hat. It is round.'] },
   { id: 'steady_10', g: 'craft', goal: () => 10, prog: () => A.clean.length, t: ['手稳', '连续 10 单一次没砸过头。甲方怀疑你根本不是地球人。'], e: ['Steady Hands', 'Ten orders in a row without a single overhit. The Client suspects you are not from Earth.'] },
-  { id: 'spotless_shift', g: 'craft', goal: () => PER, prog: () => Math.max(0, ...Array.from({ length: MAIN_SHIFTS }, (_, k) => shiftIds(k).length === PER ? shiftIds(k).filter(id => SAVE.stars[id] === 3).length : 0)), t: ['无可挑剔', '一个班六单全是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Shift', 'A whole shift at three stars. Finding nothing wrong, the Client criticised your hair.'] },
+  { id: 'spotless_shift', g: 'craft', goal: () => 6, prog: () => { let best = 0; for (let i = 0; i + 6 <= ORDER.length; i++) best = Math.max(best, ORDER.slice(i, i + 6).filter(id => SAVE.stars[id] === 3).length); return best; }, t: ['无可挑剔', '订单簿里连着六单都是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Six', 'Six orders in a row in the order book, all at three stars. Finding nothing wrong, the Client criticised your hair.'] },
   { id: 'banquet', g: 'craft', goal: () => FOOD.length, prog: () => FOOD.filter(id => SAVE.best[id]).length, t: ['满圆全席', '能吃的单全都交了。地球人叫满汉全席，甲方叫满圆全席。'], e: ['Balanced Diet', 'Every edible order delivered. A balanced diet, to the Client, means all of it round.'] },
   { id: 'marathon', g: 'craft', t: ['一条龙', `从第 1 单一口气做到第 ${ORDER.length} 单，中间没回过首页。甲方给你倒了杯水。圆的。`], e: ['Marathon', `Orders 1 to ${ORDER.length} in one go, never pressing Home. The Client poured you a glass of water. Round.`] },
   { id: 'zero_rework', g: 'craft', hid: 1, t: ['零返工', `${ORDER.length} 单一口气做完，一次没失败、一次没重来。甲方说了声谢谢，然后假装没说过。`, '一口气。不失手。不回头。'], e: ['Zero Rework', `All ${ORDER.length} in one go: no fails, no retries. The Client said thank you, then pretended they had not.`, 'One go. No slips. No do-overs.'] },
