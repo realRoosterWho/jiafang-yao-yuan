@@ -1280,14 +1280,27 @@ function setupRound() {
 }
 /* 存档只记每一单拿过的最高酬劳。不锁关：订单簿里哪一单都能直接开工 */
 /* stars：每单拿过的最高星数。没有星级以前交付的单，交付就意味着到了达标线，所以补成三星 */
-const SAVE = { best: {}, stars: {} };
+/* 每个名字一份本地存档，访客一份（沿用老的 key）。换成新名字 = 从头开始，不会把访客进度带过去 */
+let NAME = ''; try { NAME = localStorage.getItem('yuan.name') || ''; } catch (e) {}
+const slotKey = (base, name) => name ? base + '@' + name.normalize('NFKC').toLowerCase() : base;
+/* 老版本起了名字的玩家，进度存在访客的 key 里：挪到名字下面，访客那份就空出来了 */
 try {
-  const s = JSON.parse(localStorage.getItem('yuan.save.v2') || 'null');
-  if (s && s.best && typeof s.best === 'object') for (const id in MATS) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
-  if (s && s.stars && typeof s.stars === 'object') for (const id in MATS) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
+  if (NAME && localStorage.getItem(slotKey('yuan.save.v2', NAME)) === null) {
+    for (const b of ['yuan.save.v2', 'yuan.ach.v1']) { const v = localStorage.getItem(b); if (v !== null) { localStorage.setItem(slotKey(b, NAME), v); localStorage.removeItem(b); } }
+  }
 } catch (e) {}
+const SAVE = { best: {}, stars: {} };
+function loadSave() {
+  SAVE.best = {}; SAVE.stars = {};
+  try {
+    const s = JSON.parse(localStorage.getItem(slotKey('yuan.save.v2', NAME)) || 'null');
+    if (s && s.best && typeof s.best === 'object') for (const id in MATS) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
+    if (s && s.stars && typeof s.stars === 'object') for (const id in MATS) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
+  } catch (e) {}
+}
+loadSave();
 function backfillStars() { let ch = false; for (const id in SAVE.best) if (!SAVE.stars[id]) { SAVE.stars[id] = 3; ch = true; } return ch; }
-function persist() { try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} }
+function persist() { try { localStorage.setItem(slotKey('yuan.save.v2', NAME), JSON.stringify(SAVE)); } catch (e) {} }
 if (backfillStars()) persist();
 const starTotal = () => ORDER.reduce((a, id) => a + (SAVE.stars[id] || 0), 0);
 function saveBest(id, pay, stars) {
@@ -1322,7 +1335,6 @@ const CLOUD = (() => {
   const h = location.hostname;
   return h === 'fullcircle.roosterwho.com' || /^(localhost|127\.|\[::1\])/.test(h) ? '/api/save' : 'https://fullcircle.roosterwho.com/api/save';
 })();
-let NAME = ''; try { NAME = localStorage.getItem('yuan.name') || ''; } catch (e) {}
 const WHO = { busy: false, err: '' };
 const escH = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 function mergeBest(d) {
@@ -1349,8 +1361,11 @@ async function setName(raw) {
   const name = String(raw || '').trim().replace(/\s+/g, ' ');
   if (!name || WHO.busy) return;
   WHO.busy = true; WHO.err = ''; refreshCard();
-  try { const d = await cloudSync(name); NAME = d.name; try { localStorage.setItem('yuan.name', NAME); } catch (e) {} achUnlock('name_tag'); }
-  catch (e) { WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
+  const prev = NAME;
+  // 切到这个名字自己的存档（新名字就是空的），再跟云端合并；访客进度留在访客那份里
+  NAME = name; loadSave(); loadAch();
+  try { const d = await cloudSync(name); if (d.name !== NAME) { NAME = d.name; persist(); achSave(); } try { localStorage.setItem('yuan.name', NAME); } catch (e) {} achUnlock('name_tag'); }
+  catch (e) { NAME = prev; loadSave(); loadAch(); WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
   WHO.busy = false; refreshCard();
 }
 /* ---------- 成就 ----------
@@ -1460,15 +1475,21 @@ const achGot = () => achList().filter(a => A.got[a.id]).length;
 /* 存在 yuan.ach.v1：got 解锁时刻（unix 秒）；n 累计计数；failBy 每单失败次数；kinds 失败过的花样；lang 用哪种语言交过货；
    clean / three 正在进行的「连续不砸过头 / 连续三星」里的单（同一单不重复算，免得反复交唱片刷）；seen 上次看成就页的时刻 */
 const A = { v: 1, got: {}, n: { good: 0, over: 0, light: 0, deliver: 0, fail: 0, shatter: 0, timeout: 0, retry: 0, quit: 0 }, failBy: {}, kinds: {}, lang: {}, clean: [], three: [], seen: 0, bf: 0, bfN: 0 };
-try {
-  const s = JSON.parse(localStorage.getItem('yuan.ach.v1') || 'null');
-  if (s && typeof s === 'object') for (const k in A) {
-    const v = s[k]; if (v === undefined || v === null || typeof v !== typeof A[k] || Array.isArray(v) !== Array.isArray(A[k])) continue;
-    if (k === 'n') { for (const c in A.n) if (typeof v[c] === 'number') A.n[c] = v[c]; } else A[k] = v;
-  }
-  for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
-} catch (e) {}
-function achSave() { try { localStorage.setItem('yuan.ach.v1', JSON.stringify(A)); } catch (e) {} }
+const A0 = JSON.stringify(A);
+function loadAch(init) {
+  const s0 = JSON.parse(A0); for (const k in s0) A[k] = s0[k];
+  if (!init) A.bf = 1;   // 换存档时不再做旧存档补发
+  try {
+    const s = JSON.parse(localStorage.getItem(slotKey('yuan.ach.v1', NAME)) || 'null');
+    if (s && typeof s === 'object') for (const k in A) {
+      const v = s[k]; if (v === undefined || v === null || typeof v !== typeof A[k] || Array.isArray(v) !== Array.isArray(A[k])) continue;
+      if (k === 'n') { for (const c in A.n) if (typeof v[c] === 'number') A.n[c] = v[c]; } else A[k] = v;
+    }
+    for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
+  } catch (e) {}
+}
+loadAch(true);
+function achSave() { try { localStorage.setItem(slotKey('yuan.ach.v1', NAME), JSON.stringify(A)); } catch (e) {} }
 let achSyncT = 0;
 function achSyncSoon() { if (!NAME || !CLOUD) return; clearTimeout(achSyncT); achSyncT = setTimeout(() => cloudSync(NAME).catch(() => {}), 2500); }
 function achUnlock(id, quiet) {
@@ -1621,11 +1642,12 @@ function showBoard(refetch = true) {
 }
 function whoRow() {
   if (!CLOUD) return '';
-  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
+  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字 / 用访客玩', 'Switch name / play as guest')}</button></p>`;
   return `<form class="who" data-who autocomplete="off">
       <label class="note" for="who-name">${L('起个名字存档（可不填）：', 'Name to save progress (optional):')}</label>
       <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('你的名字', 'Your name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('存档', 'Save')}</button></span>
       ${WHO.err ? `<span class="note err" role="alert">${WHO.err}</span>` : ''}
+      <span class="note">${L('起新名字会从头开始；输以前用过的名字就接着那份进度。', 'A new name starts fresh; a name you used before picks up where it left off.')}${Object.keys(SAVE.best).length || achGot() ? ` <button class="link" type="button" data-act="wipe">${L('访客进度清空，从头开始', 'Wipe guest progress and start over')}</button>` : ''}</span>
     </form>`;
 }
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -1897,7 +1919,12 @@ function act(a) {
   else if (a === 'restart') showMenu();
   else if (a === 'home') { if (G.state === 'play') { TRACK('quit', roundInfo()); achRound('quit'); } showMenu(); }
   else if (a === 'board') showBoard();
-  else if (a === 'rename') { NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
+  else if (a === 'wipe') {
+    if (NAME || !confirm(L('访客的进度和成就都会清空，确定从头开始？', 'Wipe all guest progress and achievements and start over?'))) return;
+    try { localStorage.removeItem('yuan.save.v2'); localStorage.removeItem('yuan.ach.v1'); } catch (e) {}
+    loadSave(); loadAch(); persist(); achSave(); showMenu();
+  }
+  else if (a === 'rename') { clearTimeout(achSyncT); NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} loadSave(); loadAch(); showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
   else if (a === 'again') { G.loop++; G.idx = 0; G.slips = 0; showOrder(); }
   else if (a === 'ach') showAch();
 }
