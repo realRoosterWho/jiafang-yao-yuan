@@ -747,7 +747,12 @@ function rayFar(q, dx, dy) {
   const A = ux * ux + uy * uy, B = ox * ux + oy * uy, C = ox * ox + oy * oy - 1, d = B * B - A * C;
   return d < 0 ? 0 : Math.max(0, (-B + Math.sqrt(d)) / A);
 }
-function ptsFromR(r) { const p = new Array(N); for (let i = 0; i < N; i++) p[i] = [r[i] * COS[i], r[i] * SIN[i]]; return p; }
+function ptsFromR(r, out) {
+  if (out) { for (let i = 0; i < N; i++) { out[i][0] = r[i] * COS[i]; out[i][1] = r[i] * SIN[i]; } return out; }
+  const p = new Array(N); for (let i = 0; i < N; i++) p[i] = [r[i] * COS[i], r[i] * SIN[i]]; return p;
+}
+/* 每帧都要算的轮廓点（液面、画液体）用这一份，不每帧新建 144 个小数组。只在当场用完的地方用，别存起来 */
+const ptsBuf = Array.from({ length: N }, () => [0, 0]), cutBuf = [];
 function centroid(p) {
   let a = 0, cx = 0, cy = 0;
   for (let i = 0, n = p.length; i < n; i++) { const q = p[(i + 1) % n], k = p[i][0] * q[1] - q[0] * p[i][1]; a += k; cx += (p[i][0] + q[0]) * k; cy += (p[i][1] + q[1]) * k; }
@@ -874,10 +879,11 @@ function flowFill(b, dt) {
   const m = b.mat, tx = Math.sin(b.a), ty = Math.cos(b.a);
   let th = Math.atan2(b.sd[1], b.sd[0]); const d = wrapPi(Math.atan2(ty, tx) - th), st = m.flow * dt;
   th += Math.abs(d) < st ? d : Math.sign(d) * st; b.sd[0] = Math.cos(th); b.sd[1] = Math.sin(th);
-  const p = ptsFromR(b.r), sx = b.sd[0], sy = b.sd[1]; let lo = 1e9, hi = -1e9;
+  const p = ptsFromR(b.r, ptsBuf), sx = b.sd[0], sy = b.sd[1]; let lo = 1e9, hi = -1e9;
   for (const q of p) { const v = q[0] * sx + q[1] * sy; if (v < lo) lo = v; if (v > hi) hi = v; }
   const want = m.fill * b.area;
-  for (let k = 0; k < 16; k++) { const mid = (lo + hi) / 2; if (cutArea(p, sx, sy, mid) > want) lo = mid; else hi = mid; }
+  for (let k = 0; k < 16; k++) { const mid = (lo + hi) / 2; if (cutArea(p, sx, sy, mid, cutBuf) > want) lo = mid; else hi = mid; }
+  cutBuf.length = 0;
   b.lv = (lo + hi) / 2;
 }
 function backed(b, alpha) { if (!b.sd) return false; const i = ((Math.round(alpha / DPHI) % N) + N) % N; return b.r[i] * (COS[i] * b.sd[0] + SIN[i] * b.sd[1]) >= b.lv - 3; }
@@ -1821,9 +1827,7 @@ function leaveCover() { audioInit(); sfx.ui(); showMenu(); }
 function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#0c0922'); g.addColorStop(1, '#261b5c'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
-  ctx.fillStyle = '#fff';
-  for (const st of STARS) { ctx.globalAlpha = .25 + .45 * Math.abs(Math.sin(t * st.sp + st.ph)); ctx.beginPath(); ctx.arc(st.x % VW, st.y * VH / FLOOR, st.r, 0, TAU); ctx.fill(); }
-  ctx.globalAlpha = 1;
+  drawStars(t, VW, VH / FLOOR);
   const cx = VW / 2, R = Math.min(VW, VH) * (PORT ? .2 : .16), floorY = VH * (PORT ? .5 : .56);
   // 一个周期 3 次弹跳：每落一次就圆一点，圆满了停一拍再变回方的
   const per = 4.2, ph = REDUCED ? 3.5 : t % per, hop = Math.min(ph, 3) % 1, bounces = Math.min(3, Math.floor(ph));
@@ -2265,11 +2269,11 @@ function update(dt) {
   G.needle += (live - G.needle) * Math.min(1, dt * 30);
   G.shake *= Math.exp(-10 * dt);
   for (const p of parts) { p.t += dt; if (p.kind === 'confetti') { p.vy = Math.min(p.vy + p.g * dt, 150); p.vx *= 1 - 1.6 * dt; p.x += (p.vx + Math.sin(p.t * 5 + p.rot) * 40) * dt; p.y += p.vy * dt; p.rot += p.vr * dt; continue; } if (p.kind === 'dust') { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 3 * dt; } else { p.vy += (p.g === undefined ? 1500 : p.g) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > FLOOR - 2 && p.vy > 0) { p.y = FLOOR - 2; p.vy *= -.3; p.vx *= .6; } } }
-  parts = parts.filter(p => p.t < p.life);
+  { let n = 0; for (const p of parts) if (p.t < p.life) parts[n++] = p; parts.length = n; }   // 原地删掉烧完的，不每帧新建数组
   for (const f of frags) { f.vy += GRAV * .6 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.a += f.w * dt; if (f.y > FLOOR - 14 && f.vy > 0) { f.y = FLOOR - 14; f.vy *= -.3; f.vx *= .7; f.w *= .6; } if (f.x < 20 || f.x > WALL_R - 20) f.vx *= -.5; }
   for (const st of stains) st.t += dt;
   for (const f of floats) { f.t += dt; f.y -= 42 * dt; }
-  floats = floats.filter(f => f.t < 1.2);
+  { let n = 0; for (const f of floats) if (f.t < 1.2) floats[n++] = f; floats.length = n; }
   const d = G.doom;
   if (d) {
     d.vy += 2400 * dt; d.y += d.vy * dt; d.x += d.vx * dt; d.a += d.vx / 44 * dt;
@@ -2499,15 +2503,30 @@ function spark(c, x, y, s) { c.beginPath(); c.moveTo(x, y - s); c.quadraticCurve
 
 /* ---------- 绘制：场景 ---------- */
 const STARS = []; for (let k = 0; k < 90; k++) STARS.push({ x: Math.random() * WALL_R, y: Math.random() * (FLOOR - 40), r: rand(.5, 1.7), sp: rand(.5, 2), ph: rand(0, TAU) });
-function drawBg(t) {
-  const g = ctx.createLinearGradient(0, 0, 0, FLOOR); g.addColorStop(0, '#0c0922'); g.addColorStop(1, '#261b5c'); ctx.fillStyle = g; ctx.fillRect(0, -TOP, W, FLOOR + TOP);
+/* 星星一闪一闪：亮度分成 STAR_LV 档，同一档的一次 fill 画完（原来 90 颗各 fill 一次）。一档只差 0.03 的透明度，看不出来 */
+const STAR_LV = 16, starLv = new Uint8Array(STARS.length);
+function drawStars(t, sx, sy) {
+  let used = 0;
+  for (let k = 0; k < STARS.length; k++) { const s = STARS[k], q = Math.round(Math.abs(Math.sin(t * s.sp + s.ph)) * STAR_LV); starLv[k] = q; used |= 1 << q; }
   ctx.fillStyle = '#fff';
-  for (const s of STARS) { ctx.globalAlpha = .25 + .45 * Math.abs(Math.sin(t * s.sp + s.ph)); ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill(); }
+  for (let q = 0; q <= STAR_LV; q++) {
+    if (!(used & 1 << q)) continue;
+    ctx.globalAlpha = .25 + .45 * q / STAR_LV; ctx.beginPath();
+    for (let k = 0; k < STARS.length; k++) if (starLv[k] === q) { const s = STARS[k], x = sx ? s.x % sx : s.x, y = sy ? s.y * sy : s.y; ctx.moveTo(x + s.r, y); ctx.arc(x, y, s.r, 0, TAU); }
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
+}
+let bgGrad = null, planetGrad = null;   // 渐变跟变换无关，建一次反复用
+function drawBg(t) {
+  if (!bgGrad) { bgGrad = ctx.createLinearGradient(0, 0, 0, FLOOR); bgGrad.addColorStop(0, '#0c0922'); bgGrad.addColorStop(1, '#261b5c'); }
+  ctx.fillStyle = bgGrad; ctx.fillRect(0, -TOP, W, FLOOR + TOP);
+  drawStars(t);
   // 带环的行星
   const px = 742, py = 316, pr = 62; ctx.strokeStyle = 'rgba(169,161,214,.3)'; ctx.lineWidth = 7;
   ctx.beginPath(); ctx.ellipse(px, py, pr * 1.75, pr * .42, -.32, Math.PI, TAU); ctx.stroke();
-  const pg = ctx.createRadialGradient(px - 22, py - 24, 6, px, py, pr); pg.addColorStop(0, '#6a57c4'); pg.addColorStop(1, '#2a1f66'); ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
+  if (!planetGrad) { planetGrad = ctx.createRadialGradient(px - 22, py - 24, 6, px, py, pr); planetGrad.addColorStop(0, '#6a57c4'); planetGrad.addColorStop(1, '#2a1f66'); }
+  ctx.fillStyle = planetGrad; ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
   ctx.beginPath(); ctx.ellipse(px, py, pr * 1.75, pr * .42, -.32, 0, Math.PI); ctx.stroke();
   ctx.fillStyle = '#3a2d80'; ctx.beginPath(); ctx.arc(250, 404, 20, 0, TAU); ctx.fill();
   // 墙上的厂训
@@ -2515,7 +2534,7 @@ function drawBg(t) {
   ctx.fillStyle = 'rgba(147,232,90,.26)'; ctx.font = `22px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (EN) ctx.font = `15px ${DISPLAY}`; ctx.fillText(L('一切', 'ALL IS'), 0, -11); ctx.fillText(L('皆圆', 'ROUND'), 0, 11); ctx.restore();
   // 地板
   ctx.fillStyle = '#2a2166'; ctx.fillRect(0, FLOOR, W, H - FLOOR); ctx.fillStyle = '#7566db'; ctx.fillRect(0, FLOOR, W, 4); ctx.fillStyle = '#1e1747'; ctx.fillRect(0, FLOOR + 4, W, 5);
-  ctx.fillStyle = '#3d3190'; for (let x = 30; x < W; x += 64) { ctx.beginPath(); ctx.arc(x, FLOOR + 24, 4, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = '#3d3190'; ctx.beginPath(); for (let x = 30; x < W; x += 64) { ctx.moveTo(x + 4, FLOOR + 24); ctx.arc(x, FLOOR + 24, 4, 0, TAU); } ctx.fill();
 }
 Object.assign(ART, {
   coconut(c, b) {
@@ -2938,35 +2957,45 @@ const FILL_ART = {
 function drawCoinPile(b, t) {
   const sx = b.sd[0], sy = b.sd[1], nx = -sy, ny = sx, tx = Math.sin(b.a), ty = Math.cos(b.a);
   const moving = Math.min(1, Math.abs(wrapPi(Math.atan2(ty, tx) - Math.atan2(sy, sx))) * 3);
-  const reg = []; cutArea(ptsFromR(b.r), sx, sy, b.lv + 7, reg);   // 底色往下让一点，好让顶上那排硬币盖住直线
-  if (reg.length >= 3) { ctx.beginPath(); reg.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fillStyle = '#7a5a08'; ctx.fill(); }
-  const h = (i, j, k) => { const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5; return v - Math.floor(v); };
+  const reg = coinReg; cutArea(ptsFromR(b.r, ptsBuf), sx, sy, b.lv + 7, reg);   // 底色往下让一点，好让顶上那排硬币盖住直线
+  if (reg.length >= 3) { ctx.beginPath(); for (let i = 0; i < reg.length; i++) i ? ctx.lineTo(reg[i][0], reg[i][1]) : ctx.moveTo(reg[i][0], reg[i][1]); ctx.closePath(); ctx.fillStyle = '#7a5a08'; ctx.fill(); }
   const ang = Math.atan2(ny, nx), R = b.meanR * 1.4;
-  for (let j = 14; j >= 0; j--) {          // 从最底下那排往上画，上面的压住下面的
-    const dep = b.lv + 2 + j * 8;           // 离“币面”多深
-    for (let i = -14; i <= 14; i++) {
-      const top = j === 0 ? h(i, 0, 9) < .45 : false; if (top) continue;   // 顶排缺几枚，表面坑坑洼洼
-      const along = i * 19 + (j % 2) * 9.5 + (h(i, j, 1) - .5) * 6 + (moving ? Math.sin(t * 23 + i * 1.7 + j) * 2.5 * moving : 0);
-      const d = dep + (h(i, j, 2) - .5) * 4 - (j === 0 ? h(i, j, 8) * 5 : 0);
-      const x = sx * d + nx * along, y = sy * d + ny * along; if (x * x + y * y > R * R) continue;
-      const tilt = (h(i, j, 3) - .5) * .7 + (moving ? Math.sin(t * 17 + i + j * 2) * .15 * moving : 0), face = h(i, j, 4) < .18;
-      ctx.save(); ctx.translate(x, y); ctx.rotate(ang + tilt);
-      if (face) {   // 偶尔有一枚是正面朝外的，能看到中间的方孔
-        ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.fillStyle = '#ffd94a'; ctx.fill(); ctx.strokeStyle = '#8a6a00'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.strokeRect(-2.5, -2.5, 5, 5); ctx.beginPath(); ctx.arc(0, 0, 5.6, 0, TAU); ctx.strokeStyle = 'rgba(138,106,0,.5)'; ctx.stroke();
-      } else {      // 侧躺的硬币：一道厚边 + 一片椭圆币面
-        ctx.fillStyle = '#c99a10'; ctx.beginPath(); ctx.ellipse(0, 1.8, 10, 4, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = h(i, j, 5) < .5 ? '#ffe37a' : '#f2c230'; ctx.strokeStyle = '#8a6a00'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(0, 0, 10, 4, 0, 0, TAU); ctx.fill(); ctx.stroke();
-      }
-      if (h(i, j, 6) < .08) { ctx.fillStyle = `rgba(255,255,255,${.5 + .5 * Math.max(0, Math.sin(t * 3 + i * 2 + j))})`; spark(ctx, -4, -2, 3); }
-      ctx.restore();
+  // 一枚枚硬币的变换直接算成矩阵 setTransform，不再每枚 save/translate/rotate/restore（一堆有四百多枚）
+  const M = ctx.getTransform(), A = M.a, B = M.b, C = M.c, D = M.d, E = M.e, F = M.f;
+  for (const q of coinTable()) {          // 从最底下那排往上画，上面的压住下面的
+    const i = q.i, j = q.j;
+    const along = i * 19 + (j % 2) * 9.5 + (q.h1 - .5) * 6 + (moving ? Math.sin(t * 23 + i * 1.7 + j) * 2.5 * moving : 0);
+    const d = b.lv + 2 + j * 8 + (q.h2 - .5) * 4 - (j === 0 ? q.h8 * 5 : 0);   // 离“币面”多深
+    const x = sx * d + nx * along, y = sy * d + ny * along; if (x * x + y * y > R * R) continue;
+    const r = ang + (q.h3 - .5) * .7 + (moving ? Math.sin(t * 17 + i + j * 2) * .15 * moving : 0), c = Math.cos(r), s = Math.sin(r);
+    ctx.setTransform(A * c + C * s, B * c + D * s, C * c - A * s, D * c - B * s, A * x + C * y + E, B * x + D * y + F);
+    if (q.face) {   // 偶尔有一枚是正面朝外的，能看到中间的方孔
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.fillStyle = '#ffd94a'; ctx.fill(); ctx.strokeStyle = '#8a6a00'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeRect(-2.5, -2.5, 5, 5); ctx.beginPath(); ctx.arc(0, 0, 5.6, 0, TAU); ctx.strokeStyle = 'rgba(138,106,0,.5)'; ctx.stroke();
+    } else {      // 侧躺的硬币：一道厚边 + 一片椭圆币面
+      ctx.fillStyle = '#c99a10'; ctx.beginPath(); ctx.ellipse(0, 1.8, 10, 4, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = q.h5 < .5 ? '#ffe37a' : '#f2c230'; ctx.strokeStyle = '#8a6a00'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(0, 0, 10, 4, 0, 0, TAU); ctx.fill(); ctx.stroke();
     }
+    if (q.h6 < .08) { ctx.fillStyle = `rgba(255,255,255,${.5 + .5 * Math.max(0, Math.sin(t * 3 + i * 2 + j))})`; spark(ctx, -4, -2, 3); }
   }
+  ctx.setTransform(M);
+}
+/* 硬币堆里每一枚的随机数（位置抖动、倾斜、正反面、闪光）是按行列固定的：算一次存起来，按画的顺序排好；顶排缺的那几枚直接不放进来 */
+let COINS = null; const coinReg = [];
+function coinTable() {
+  if (COINS) return COINS;
+  const h = (i, j, k) => { const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5; return v - Math.floor(v); };
+  COINS = [];
+  for (let j = 14; j >= 0; j--) for (let i = -14; i <= 14; i++) {
+    if (j === 0 && h(i, 0, 9) < .45) continue;   // 顶排缺几枚，表面坑坑洼洼
+    COINS.push({ i, j, h1: h(i, j, 1), h2: h(i, j, 2), h3: h(i, j, 3), face: h(i, j, 4) < .18, h5: h(i, j, 5), h6: h(i, j, 6), h8: h(i, j, 8) });
+  }
+  return COINS;
 }
 function drawFill(b, t) {
   if (b.id === 'piggy') return drawCoinPile(b, t);
-  const k = b.mat.core, reg = []; cutArea(ptsFromR(b.r), b.sd[0], b.sd[1], b.lv, reg); if (reg.length < 3) return;
-  ctx.beginPath(); reg.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
+  const k = b.mat.core, reg = coinReg; cutArea(ptsFromR(b.r, ptsBuf), b.sd[0], b.sd[1], b.lv, reg); if (reg.length < 3) return;
+  ctx.beginPath(); for (let i = 0; i < reg.length; i++) i ? ctx.lineTo(reg[i][0], reg[i][1]) : ctx.moveTo(reg[i][0], reg[i][1]); ctx.closePath();
   ctx.fillStyle = k.base; ctx.fill();
   ctx.save(); ctx.clip(); if (FILL_ART[b.id]) FILL_ART[b.id](ctx, b, t); ctx.restore();
   const nx = -b.sd[1], ny = b.sd[0], cx = b.sd[0] * b.lv, cy = b.sd[1] * b.lv;   // 液面那条线
@@ -2978,7 +3007,8 @@ function drawCore(b, t) {
   ctx.save(); ctx.clip(); ctx.translate(b.artX, b.artY); if (CORE_ART[b.id]) CORE_ART[b.id](ctx, b, t); ctx.restore();
   corePath(b); ctx.strokeStyle = k.outline; ctx.lineWidth = 2.5; ctx.stroke();
 }
-function bodyPath(b) { ctx.beginPath(); for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i]; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); }
+/* 材料轮廓：一帧里要填、要裁、要描好几遍，建一次 Path2D 反复用 */
+function bodyPath(b) { const p = new Path2D(); for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i]; if (i) p.lineTo(x, y); else p.moveTo(x, y); } p.closePath(); return p; }
 function drawBody(b, t) {
   const m = b.mat, near = clamp(1 - b.clear / 320, .15, 1);
   ctx.fillStyle = `rgba(5,3,20,${.38 * near})`; ctx.beginPath(); ctx.ellipse(b.x, FLOOR + 6, b.meanR * (.6 + .4 * near), 7, 0, 0, TAU); ctx.fill();
@@ -2987,8 +3017,8 @@ function drawBody(b, t) {
     ctx.fillStyle = 'rgba(244,240,255,.6)'; ctx.beginPath(); ctx.moveTo(b.lowX - 6, FLOOR - 10); ctx.lineTo(b.lowX + 6, FLOOR - 10); ctx.lineTo(b.lowX, FLOOR - 1); ctx.closePath(); ctx.fill();
   }
   ctx.save(); ctx.translate(b.x, b.y + (b.clear < 6 ? b.jig * b.meanR * .8 : 0)); ctx.scale(1 + b.jig, 1 - b.jig); ctx.rotate(b.a); ctx.lineJoin = 'round';
-  bodyPath(b); ctx.fillStyle = m.base; if (m.glow) { ctx.shadowColor = m.glow; ctx.shadowBlur = 30; } ctx.fill(); ctx.shadowBlur = 0;
-  ctx.save(); ctx.clip();
+  const bp = bodyPath(b); ctx.fillStyle = m.base; if (m.glow) { ctx.shadowColor = m.glow; ctx.shadowBlur = 30; } ctx.fill(bp); ctx.shadowBlur = 0;
+  ctx.save(); ctx.clip(bp);
   ctx.save(); ctx.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; ctx.transform(M[0], M[1], M[2], M[3], 0, 0); } ART[b.id](ctx, b, t); ctx.restore();
   if (b.c) drawCore(b, t);
   if (b.sd) drawFill(b, t);
@@ -3001,10 +3031,10 @@ function drawBody(b, t) {
     }
     ctx.lineCap = 'butt';
   }
-  if (m.warm && b.heat > .02) { bodyPath(b); ctx.globalAlpha = .5 * b.heat; ctx.fillStyle = m.warm.glow; ctx.fill(); ctx.globalAlpha = 1; }   // 焐热了颜色变暖
-  if (m.rim) { bodyPath(b); ctx.strokeStyle = m.rim; ctx.lineWidth = 14; ctx.stroke(); }
+  if (m.warm && b.heat > .02) { ctx.globalAlpha = .5 * b.heat; ctx.fillStyle = m.warm.glow; ctx.fill(bp); ctx.globalAlpha = 1; }   // 焐热了颜色变暖
+  if (m.rim) { ctx.strokeStyle = m.rim; ctx.lineWidth = 14; ctx.stroke(bp); }
   ctx.restore();
-  bodyPath(b); ctx.strokeStyle = m.outline; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = m.outline; ctx.lineWidth = 3; ctx.stroke(bp);
   if (OVER[b.id]) {   // 戴在身上的配件和脸，按身体现在的形状摆；地板以下的部分剪掉，怎么躺都不会穿进地里
     ctx.save();
     const jy = b.y + (b.clear < 6 ? b.jig * b.meanR * .8 : 0), ca = Math.cos(b.a), sa = Math.sin(b.a), sx = 1 + b.jig, sy = 1 - b.jig;
@@ -3012,7 +3042,7 @@ function drawBody(b, t) {
     ctx.beginPath(); [[b.x - 900, jy - 900], [b.x + 900, jy - 900], [b.x + 900, FLOOR], [b.x - 900, FLOOR]].forEach(([x, y], i) => { const q = toBody(x, y); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.clip();
     OVER[b.id](ctx, b, t); ctx.restore();
   }
-  if (b.flash > 0) { bodyPath(b); ctx.fillStyle = `rgba(255,255,255,${b.flash})`; ctx.fill(); }
+  if (b.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${b.flash})`; ctx.fill(bp); }
   ctx.restore();
   if (b.held && m.hot && G.state === 'play') {   // 烫手：抓的地方画一圈倒计时
     const k = clamp(1 - (b.holdT || 0) / m.hot, 0, 1), ca = Math.cos(b.a), sa = Math.sin(b.a), hx = b.x + b.gx * ca - b.gy * sa, hy = b.y + b.gx * sa + b.gy * ca;
@@ -3034,23 +3064,26 @@ function drawTalk(b) {
   ctx.globalAlpha = 1;
 }
 function drawFx() {
+  // 碎块、碎片、彩纸要转着画：画完用 setTransform 直接回到原来的变换，不每个都 save/restore（庆祝时一下两百来片彩纸）
+  const M = ctx.getTransform(), lj = ctx.lineJoin;
   for (const f of frags) {
-    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.beginPath(); f.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
-    ctx.fillStyle = f.c; ctx.fill(); ctx.strokeStyle = f.o; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore();
+    ctx.translate(f.x, f.y); ctx.rotate(f.a); ctx.beginPath(); for (let i = 0; i < f.pts.length; i++) i ? ctx.lineTo(f.pts[i][0], f.pts[i][1]) : ctx.moveTo(f.pts[i][0], f.pts[i][1]); ctx.closePath();
+    ctx.fillStyle = f.c; ctx.fill(); ctx.strokeStyle = f.o; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke(); ctx.setTransform(M);
   }
+  ctx.lineJoin = lj;
   for (const p of parts) {
     const k = 1 - p.t / p.life;
     if (p.kind === 'dust') { ctx.globalAlpha = (p.a || .28) * k; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * (1.6 - k * .6), 0, TAU); ctx.fill(); }
     else if (p.kind === 'spark') { ctx.globalAlpha = Math.min(1, k * 2); ctx.strokeStyle = p.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .03, p.y - p.vy * .03); ctx.stroke(); }
     else if (p.kind === 'twinkle') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; spark(ctx, p.x, p.y, p.s * (.4 + .6 * Math.abs(Math.sin(p.t * 9 + p.rot)))); }
-    else if (p.kind === 'shard') { ctx.globalAlpha = Math.min(1, k * 2); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.beginPath(); ctx.moveTo(0, -p.s); ctx.lineTo(p.s * .6, p.s * .7); ctx.lineTo(-p.s * .5, p.s * .4); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else if (p.kind === 'shard') { ctx.globalAlpha = Math.min(1, k * 2); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.beginPath(); ctx.moveTo(0, -p.s); ctx.lineTo(p.s * .6, p.s * .7); ctx.lineTo(-p.s * .5, p.s * .4); ctx.closePath(); ctx.fill(); ctx.setTransform(M); }
     else if (p.kind === 'glyph') { ctx.globalAlpha = Math.min(1, k * 2.5); ctx.fillStyle = p.c; ctx.font = `700 ${p.s | 0}px ${NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.ch, p.x, p.y); }
     else if (p.kind === 'bubble') { ctx.globalAlpha = Math.min(.9, k * 2); ctx.strokeStyle = p.c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x + Math.sin(p.t * 8 + p.rot) * 3, p.y, p.s, 0, TAU); ctx.stroke(); }
     else if (p.kind === 'ring') { ctx.globalAlpha = k * .8; ctx.strokeStyle = p.c; ctx.lineWidth = 3; const w = p.s * (1.05 - k); ctx.beginPath(); ctx.ellipse(p.x, p.y, w, w * .16, 0, 0, TAU); ctx.stroke(); }
     else if (p.kind === 'slice') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, TAU); ctx.fill(); ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .5, 0, TAU); ctx.stroke(); }
-    else if (p.kind === 'confetti') { ctx.globalAlpha = Math.min(1, k * 3); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * .3); ctx.scale(1, Math.cos(p.rot)); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .3, p.s, p.s * .6); ctx.restore(); }
+    else if (p.kind === 'confetti') { ctx.globalAlpha = Math.min(1, k * 3); ctx.translate(p.x, p.y); ctx.rotate(p.rot * .3); ctx.scale(1, Math.cos(p.rot)); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .3, p.s, p.s * .6); ctx.setTransform(M); }
     else if (p.kind === 'drop') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .6, 0, TAU); ctx.fill(); }
-    else { ctx.globalAlpha = Math.min(1, k * 2); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .35, p.s, p.s * .7); ctx.restore(); }
+    else { ctx.globalAlpha = Math.min(1, k * 2); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .35, p.s, p.s * .7); ctx.setTransform(M); }
   }
   ctx.globalAlpha = 1; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   for (const f of floats) {
@@ -3315,7 +3348,8 @@ function fit() {
   let w = Math.floor(Math.min(aw, ah > 40 ? ah * VW / VH : aw, 1280)); if (!(w > 0)) w = 320;
   const h = Math.floor(w * VH / VW), dpr = Math.min(window.devicePixelRatio || 1, 2);
   stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / VW) + 'px'); stage.style.setProperty('--bot', BOT);
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); scale = cv.width / VW;
+  // 尺寸没变就别重设：给 canvas.width 赋值哪怕是同一个数也会清空、重新分配整块画布
+  const cw = Math.round(w * dpr), ch = Math.round(h * dpr); if (cv.width !== cw) cv.width = cw; if (cv.height !== ch) cv.height = ch; scale = cv.width / VW;
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
