@@ -2105,45 +2105,66 @@ Object.assign(ART, {
     // 头顶左上一大块柔光
     g = c.createRadialGradient(-38, -52, 4, -28, -40, 80); g.addColorStop(0, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(-110, -130, 170, 150);
     c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.ellipse(-44, -58, 10, 5, -.6, 0, TAU); c.fill();
-    // 脸：小小的，偏左上，头微微歪着。平时 ^ ^ 加一张黑色小嘴（原版那张脸）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪；够圆了笑得更开、加腮红
-    const play = G.state === 'play', happy = (play && G.round >= G.target) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
-      squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, held = b.held && !squish, ink = '#151517';
-    c.save(); c.translate(-6, -28); c.rotate(.1); c.scale(1.2, 1.2);
-    if (happy) { c.fillStyle = 'rgba(255,130,165,.5)'; c.beginPath(); c.ellipse(-34, 10, 10, 6, 0, 0, TAU); c.ellipse(34, 10, 10, 6, 0, 0, TAU); c.fill(); }
-    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3.6; c.lineCap = 'round'; c.lineJoin = 'round';
-    for (const s of [-1, 1]) {
-      const x = s * 19, y = 0;
-      if (squish) { c.beginPath(); c.moveTo(x - s * 6, y - 6.5); c.lineTo(x + s * 5, y); c.lineTo(x - s * 6, y + 6.5); c.stroke(); }
-      else if (held || hurt) { c.beginPath(); c.ellipse(x, y, 4.4, 6.4, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 1.3, y - 2.6, 1.6, 0, TAU); c.fill(); c.fillStyle = ink; }
-      else { c.beginPath(); c.arc(x, y + 5, 7.5, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }   // 眯眼笑
-      if (hurt) { const d = (t * 1.3 + (s > 0 ? .5 : 0)) % 1; c.fillStyle = `rgba(110,185,255,${1 - d * .8})`; c.beginPath(); c.ellipse(x + s * 3, y + 12 + d * 20, 4, 5.8, 0, 0, TAU); c.fill(); c.fillStyle = `rgba(255,255,255,${.8 - d * .6})`; c.beginPath(); c.arc(x + s * 3 - 1.2, y + 10.5 + d * 20, 1.3, 0, TAU); c.fill(); c.fillStyle = ink; }
-    }
-    if (hurt) { c.lineWidth = 2.6; c.beginPath(); c.moveTo(-8, 12); c.quadraticCurveTo(-4, 8, 0, 12); c.quadraticCurveTo(4, 16, 8, 12); c.stroke(); }
-    else if (held) { c.beginPath(); c.ellipse(-1, 13, 4.2, 5.2, 0, 0, TAU); c.fill(); }
-    else { const w = happy ? 8.5 : 6.5, h = happy ? 8 : 6.5; c.beginPath(); c.moveTo(-1 - w, 9); c.lineTo(-1 + w, 9); c.ellipse(-1, 9, w, h, 0, 0, Math.PI); c.closePath(); c.fill(); }   // 平顶圆底的小嘴
-    c.restore(); c.lineCap = 'butt'; c.lineJoin = 'miter';
   },
 });
-/* 戴在身上的配件：画在轮廓外面、不算形状、不会被砸扁，跟着料一起转。坐标和 ART 一样 */
+/* 章鱼熊的脸，画在原点上（外面已经挪到该放的位置）。平时 ^ ^ 加一张黑色小嘴（原版那张脸）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪；够圆了笑得更开、加腮红 */
+function octoFace(c, b, t) {
+  const play = G.state === 'play', happy = (play && G.round >= G.target) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
+    squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, held = b.held && !squish, ink = '#151517';
+  c.rotate(.1); c.scale(1.2, 1.2);
+  if (happy) { c.fillStyle = 'rgba(255,130,165,.5)'; c.beginPath(); c.ellipse(-34, 10, 10, 6, 0, 0, TAU); c.ellipse(34, 10, 10, 6, 0, 0, TAU); c.fill(); }
+  c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3.6; c.lineCap = 'round'; c.lineJoin = 'round';
+  for (const s of [-1, 1]) {
+    const x = s * 19, y = 0;
+    if (squish) { c.beginPath(); c.moveTo(x - s * 6, y - 6.5); c.lineTo(x + s * 5, y); c.lineTo(x - s * 6, y + 6.5); c.stroke(); }
+    else if (held || hurt) { c.beginPath(); c.ellipse(x, y, 4.4, 6.4, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 1.3, y - 2.6, 1.6, 0, TAU); c.fill(); c.fillStyle = ink; }
+    else { c.beginPath(); c.arc(x, y + 5, 7.5, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }   // 眯眼笑
+    if (hurt) { const d = (t * 1.3 + (s > 0 ? .5 : 0)) % 1; c.fillStyle = `rgba(110,185,255,${1 - d * .8})`; c.beginPath(); c.ellipse(x + s * 3, y + 12 + d * 20, 4, 5.8, 0, 0, TAU); c.fill(); c.fillStyle = `rgba(255,255,255,${.8 - d * .6})`; c.beginPath(); c.arc(x + s * 3 - 1.2, y + 10.5 + d * 20, 1.3, 0, TAU); c.fill(); c.fillStyle = ink; }
+  }
+  if (hurt) { c.lineWidth = 2.6; c.beginPath(); c.moveTo(-8, 12); c.quadraticCurveTo(-4, 8, 0, 12); c.quadraticCurveTo(4, 16, 8, 12); c.stroke(); }
+  else if (held) { c.beginPath(); c.ellipse(-1, 13, 4.2, 5.2, 0, 0, TAU); c.fill(); }
+  else { const w = happy ? 8.5 : 6.5, h = happy ? 8 : 6.5; c.beginPath(); c.moveTo(-1 - w, 9); c.lineTo(-1 + w, 9); c.ellipse(-1, 9, w, h, 0, 0, Math.PI); c.closePath(); c.fill(); }   // 平顶圆底的小嘴
+  c.lineCap = 'butt'; c.lineJoin = 'miter';
+}
+/* 戴在身上的配件（和脸）：画在轮廓外面、不算形状，在料自己的坐标系里画（原点是现在的质心，已经跟着料转了）。
+   每一帧按身体“现在”的轮廓重新摆：砸扁了、砸歪了也贴在身上；压着地板的那一侧往里收，不插进地里 */
+const surfR = (b, a) => { const f = ((a / DPHI) % N + N) % N, i = Math.floor(f) % N, u = f - Math.floor(f); return b.r[i] * (1 - u) + b.r[(i + 1) % N] * u; };
+const artToBody = (b, x, y) => { const M = b.artM || [1, 0, 0, 1]; return [M[0] * x + M[2] * y + b.artX, M[1] * x + M[3] * y + b.artY]; };
 const OVER = {
   octobear(c, b, t) {   // 粉色耳机：头梁从头顶上方拱过去，耳罩朝里一圈橙金，右边耳罩上一颗星
-    const [[lx, ly], [rx, ry]] = OCTO.cups;
+    const near = clamp(1 - (b.clear || 0) / 40, 0, 1), down = a => clamp((Math.sin(a + b.a) - .15) / .85, 0, 1) * near;   // 这个方向离地板多近、多朝下
+    // 脸：跟着原来那块料走，但永远留在身体里面
+    let [fx, fy] = artToBody(b, -6, -28); const fd = Math.hypot(fx, fy), lim = Math.max(0, surfR(b, Math.atan2(fy, fx)) - 34);
+    if (fd > lim) { fx *= lim / fd; fy *= lim / fd; }
+    c.save(); c.translate(fx, fy); octoFace(c, b, t); c.restore();
+    // 耳罩：贴在两侧现在的表面上，长轴顺着表面
+    const cups = OCTO.cups.map(([x, y], k) => {
+      const [bx, by] = artToBody(b, x, y), a = Math.atan2(by, bx), s = k ? 1 : -1, d = down(a), r = surfR(b, a) + 4 - 34 * d;
+      const cx = Math.cos(a) * r, cy = Math.sin(a) * r, rot = wrapPi(a - (s > 0 ? 0 : Math.PI)) * .35;   // 耳罩只跟着表面微微歪一点
+      return { cx, cy, rot, s, sq: 1 - .35 * d, top: [cx + 34 * Math.sin(rot), cy - 34 * Math.cos(rot)] };
+    });
+    // 头梁：从两只耳罩的上端拱到现在的头顶上方
+    let top = 0; for (let i = 0; i < N; i++) if (Math.abs(wrapPi(i * DPHI + Math.PI / 2)) < .8) top = Math.max(top, -b.r[i] * SIN[i]);
+    const [[x0, y0], [x3, y3]] = cups.map(q => q.top), apex = -(top + 20 - 40 * down(-Math.PI / 2)), cy = (apex - (y0 + y3) / 8) * 4 / 3;
+    const band = () => { c.beginPath(); c.moveTo(x0, y0); c.bezierCurveTo(x0 - 6, cy, x3 + 6, cy, x3, y3); };
     c.lineCap = 'round';
-    const band = () => { c.beginPath(); c.moveTo(lx + 2, ly - 34); c.bezierCurveTo(lx - 4, -128, rx + 4, -128, rx - 2, ry - 34); };
     c.strokeStyle = '#c4447c'; c.lineWidth = 19; band(); c.stroke();
-    let g = c.createLinearGradient(0, -116, 0, -50); g.addColorStop(0, '#ffa2c8'); g.addColorStop(1, '#ec66a0'); c.strokeStyle = g; c.lineWidth = 14; band(); c.stroke();
+    let g = c.createLinearGradient(0, apex - 8, 0, (y0 + y3) / 2); g.addColorStop(0, '#ffa2c8'); g.addColorStop(1, '#ec66a0'); c.strokeStyle = g; c.lineWidth = 14; band(); c.stroke();
     c.save(); c.translate(-1, -3); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 4; band(); c.stroke(); c.restore();
-    for (const [x, y, s] of [[lx, ly, -1], [rx, ry, 1]]) {
+    for (const q of cups) {
+      const s = q.s; c.save(); c.translate(q.cx, q.cy); c.rotate(q.rot); c.scale(q.sq, 1);
       // 朝里那一圈橙金
-      g = c.createLinearGradient(x - s * 18, y - 30, x + s * 6, y + 30); g.addColorStop(0, '#ffe08e'); g.addColorStop(.5, '#f5a443'); g.addColorStop(1, '#c86a1e'); c.fillStyle = g; c.beginPath(); c.ellipse(x - s * 9, y, 18, 38, 0, 0, TAU); c.fill();
+      g = c.createLinearGradient(-s * 18, -30, s * 6, 30); g.addColorStop(0, '#ffe08e'); g.addColorStop(.5, '#f5a443'); g.addColorStop(1, '#c86a1e'); c.fillStyle = g; c.beginPath(); c.ellipse(-s * 9, 0, 18, 38, 0, 0, TAU); c.fill();
       // 外面的粉色壳
-      g = c.createRadialGradient(x + s * 2, y - 14, 2, x + s * 6, y, 38); g.addColorStop(0, '#ffb0cf'); g.addColorStop(.6, '#ef6aa3'); g.addColorStop(1, '#cf4b86'); c.fillStyle = g; c.beginPath(); c.ellipse(x + s * 6, y + 1, 19, 37, 0, 0, TAU); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(x + s * 1, y - 17, 5, 12, 0, 0, TAU); c.fill();
+      g = c.createRadialGradient(s * 2, -14, 2, s * 6, 0, 38); g.addColorStop(0, '#ffb0cf'); g.addColorStop(.6, '#ef6aa3'); g.addColorStop(1, '#cf4b86'); c.fillStyle = g; c.beginPath(); c.ellipse(s * 6, 1, 19, 37, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(s * 1, -17, 5, 12, 0, 0, TAU); c.fill();
+      if (s > 0) {   // 右耳罩上的星星
+        c.save(); c.translate(9, 5); c.rotate(.2); c.beginPath();
+        for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 4.6 : 11; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+        c.closePath(); c.fillStyle = '#ffd35c'; c.fill(); c.strokeStyle = '#e8862a'; c.lineWidth = 1.5; c.stroke(); c.restore();
+      }
+      c.restore();
     }
-    // 右耳罩上的星星
-    c.save(); c.translate(rx + 9, ry + 5); c.rotate(.2); c.beginPath();
-    for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? 4.6 : 11; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); }
-    c.closePath(); c.fillStyle = '#ffd35c'; c.fill(); c.strokeStyle = '#e8862a'; c.lineWidth = 1.5; c.stroke(); c.restore();
     c.lineCap = 'butt';
   },
 };
@@ -2206,7 +2227,13 @@ function drawBody(b, t) {
   if (m.rim) { bodyPath(b); ctx.strokeStyle = m.rim; ctx.lineWidth = 14; ctx.stroke(); }
   ctx.restore();
   bodyPath(b); ctx.strokeStyle = m.outline; ctx.lineWidth = 3; ctx.stroke();
-  if (OVER[b.id]) { ctx.save(); ctx.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; ctx.transform(M[0], M[1], M[2], M[3], 0, 0); } OVER[b.id](ctx, b, t); ctx.restore(); }   // 戴在身上的配件
+  if (OVER[b.id]) {   // 戴在身上的配件和脸，按身体现在的形状摆；地板以下的部分剪掉，怎么躺都不会穿进地里
+    ctx.save();
+    const jy = b.y + (b.clear < 6 ? b.jig * b.meanR * .8 : 0), ca = Math.cos(b.a), sa = Math.sin(b.a), sx = 1 + b.jig, sy = 1 - b.jig;
+    const toBody = (wx, wy) => { const x = (wx - b.x) / sx, y = (wy - jy) / sy; return [x * ca + y * sa, -x * sa + y * ca]; };
+    ctx.beginPath(); [[b.x - 900, jy - 900], [b.x + 900, jy - 900], [b.x + 900, FLOOR], [b.x - 900, FLOOR]].forEach(([x, y], i) => { const q = toBody(x, y); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.clip();
+    OVER[b.id](ctx, b, t); ctx.restore();
+  }
   if (b.flash > 0) { bodyPath(b); ctx.fillStyle = `rgba(255,255,255,${b.flash})`; ctx.fill(); }
   ctx.restore();
   if (b.held && m.hot && G.state === 'play') {   // 烫手：抓的地方画一圈倒计时
