@@ -30,7 +30,7 @@ PORT = int(os.environ.get("FC_PORT", "2504"))
 PUBLIC = Path(os.environ.get("FC_PUBLIC", HERE / "public"))
 DB_PATH = Path(os.environ.get("FC_DB", HERE / "data" / "events.db"))
 
-EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win"}
+EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win", "endless_start", "endless_end"}
 MAX_BODY = 4096
 MAX_SAVE_BODY = 16384  # 云存档带着星级和成就，比事件大
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
@@ -259,7 +259,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204, extra=self._cors())
 
     def _save(self):
-        """云存档：{name, pid, best, stars, ach} -> 合并后的 {name, best, stars, ach}。"""
+        """云存档：{name, pid, best, stars, ach, endless} -> 合并后的 {name, best, stars, ach, endless}。"""
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
@@ -279,7 +279,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(400, b"bad json", extra=self._cors())
         with _db_lock:
             out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"),
-                             msg.get("stars"), msg.get("ach"))
+                             msg.get("stars"), msg.get("ach"), msg.get("endless"))
         if out is None:
             self._note = "save-bad-name"
             return self._send(422, json.dumps({"error": "bad-name"}).encode(), "application/json", self._cors())
@@ -315,6 +315,7 @@ def report():
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.used') END),
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.round') END)
         FROM events WHERE ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.loop')=0
+          AND json_extract(data,'$.mode') IS NULL
           AND json_extract(data,'$.order') IS NOT NULL
         GROUP BY o""")}
     for i, o in enumerate(order):

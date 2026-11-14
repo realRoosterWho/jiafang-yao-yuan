@@ -273,6 +273,30 @@ body {
 @keyframes achRow { from { opacity: 0; transform: translateY(.6em); } }
 .btn .cnt { font: 500 .7em var(--num); opacity: .75; }
 .btn .dot { display: inline-block; width: .42em; height: .42em; margin-left: .35em; vertical-align: .5em; border-radius: 50%; background: var(--alarm); }
+/* 首页右上角的外星人：连点 10 下打开开发者模式（订单簿） */
+.hero { display: flex; align-items: flex-start; justify-content: space-between; gap: .6em; }
+.hero > div { display: grid; gap: .7em; min-width: 0; }
+.alien-tap { flex: none; width: 3.4em; height: 3.4em; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; }
+.alien-tap svg { width: 100%; height: 100%; display: block; }
+.alien-tap.poke svg { animation: poke .28s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes poke { 40% { transform: scale(.86) rotate(-8deg); } }
+.alien-tap i { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); font: 500 .62em/1.2 var(--body); font-style: normal; color: var(--dim); white-space: nowrap; }
+.btn .sub { display: block; font: 400 .5em/1.2 var(--body); opacity: .8; margin-top: .25em; }
+/* 图鉴 */
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2em, 1fr)); gap: .35em; max-height: min(56vh, 30em); overflow-y: auto; margin: 0 -.3em; padding: 0 .3em; }
+.dx { display: grid; justify-items: center; gap: .15em; min-width: 0; padding: .35em .1em .4em; border: 0; border-radius: .8em; background: var(--hull-hi); color: var(--ink); font: inherit; cursor: pointer; }
+.dx img { width: 3.6em; height: 3.6em; display: block; }
+.dx span { font-size: .72em; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx i { font-style: normal; font-size: .62em; line-height: 1; color: var(--coin); min-height: 1em; }
+.dx.off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rim); color: var(--dim); }
+.dx:hover { filter: brightness(1.12); }
+.dx:focus-visible { outline: 3px solid var(--coin); outline-offset: 1px; }
+.dex-one { display: grid; grid-template-columns: auto 1fr; gap: 1em; align-items: center; }
+.dex-one img { width: 7.5em; height: 7.5em; }
+.newitems { display: flex; flex-wrap: wrap; gap: .5em; justify-content: center; }
+.newitems span { display: grid; justify-items: center; gap: .1em; font-size: .8em; }
+.newitems img { width: 3.4em; height: 3.4em; }
+@media (prefers-reduced-motion: reduce) { .alien-tap.poke svg { animation: none; } }
 @media (prefers-reduced-motion: reduce) { #deliver, .stars.big i.on, #card.win, .chip.gold, .spec .sum.done, #toast.in, #toast.out, #toast .medal, .ach-new .achs li, .ach-new .achs li .medal { animation: none; } }
 </style>
 </head>
@@ -604,6 +628,14 @@ CHAPS.splice(0, CHAPS.length, ...ADV_LIST.map(([, n, t], i) => ({ name: L(n[0], 
 if (REST_N) CHAPS.push({ name: L('剩下的关卡', 'More Orders'), from: ADV_N, to: ORDER.length,
   intro: L(`冒险模式做完了。甲方很满意，可仓库里还堆着 ${REST_N} 单。前面学过的花样这里都会再遇到，没有新规则，就是更多、更杂。`, `That's adventure mode done. The Client is pleased, but there are still ${REST_N} orders piled up in the warehouse. Every trick you've learned turns up again: no new rules, just more of them, all mixed up.`) });
 const PARTS = [{ name: L('冒险模式', 'Adventure'), from: 0, to: ADV_N }, { name: L('剩下的关卡', 'More orders'), from: ADV_N, to: ORDER.length }];
+/* 主线只有冒险模式：首页的进度、单号「第 x / 21 单」都只算这几单，做完就通关、解锁无尽模式。
+   剩下的关卡平时玩不到，只在无尽模式里随机抽到（交付一次就收进图鉴）；订单簿是藏起来的开发者入口（首页连点外星人 10 下）。
+   G.mode：main 冒险模式；book 从订单簿开工（老玩法，一路做到第 49 单）；endless 无尽模式。G.end：这一趟做到第几单为止 */
+const ADV_IDS = ADV_LIST.map(a => a[0]);
+/* 无尽模式：全部物品有放回地抽；每交一单，甲方耐心（限时）× 0.93，最低到原来的三成，砸一次就结束 */
+const ENDLESS = { decay: .93, floor: .3, minTime: 5 };
+const endlessPace = n => Math.max(ENDLESS.floor, Math.pow(ENDLESS.decay, n));
+let DEV = false; try { DEV = localStorage.getItem('yuan.dev') === '1'; } catch (e) {}
 const chapAt = i => { for (let k = CHAPS.length - 1; k > 0; k--) if (i >= CHAPS[k].from) return k; return 0; };
 const chapStart = i => CHAPS[chapAt(i)].from === i;
 
@@ -918,7 +950,7 @@ function lowest(b) {
 function snapToFloor(b) { const [maxY, lowX] = lowest(b); b.y += FLOOR - maxY; b.lowX = lowX; b.clear = 0; }
 
 /* ---------- 状态 ---------- */
-const G = { state: 'menu', idx: 0, loop: 0, score: 0, startScore: 0, done: 0, body: null, mat: MATS.wood, target: .78, timeLeft: 60, timeMax: 60,
+const G = { state: 'menu', mode: 'main', end: 0, runNew: [], idx: 0, loop: 0, score: 0, startScore: 0, done: 0, body: null, mat: MATS.wood, target: .78, timeLeft: 60, timeMax: 60,
   hp: 3, round: 0, shown: 0, started: false, time: 0, shake: 0, lastHit: null, stats: { good: 0, over: 0, light: 0 }, failT: 0, failReason: '',
   doom: null, bubble: null, mood: 'calm', moodT: 0, needle: 0, warned: false, lines: [.74, .77, .8], tier: 0, pay: null, slips: 0, newAch: [], collect: false, silent: false };
 const P = { x: W / 2, y: 200, k: 1 };   // k：一个屏幕像素等于多少世界单位
@@ -1282,14 +1314,15 @@ const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 function pips(v) { const k = clamp(Math.round(v), 1, 5); return '●'.repeat(k) + '○'.repeat(5 - k); }
 function setupRound() {
   const id = ORDER[G.idx], m = MATS[id];
-  G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = m.time; G.hp = m.hp;
+  G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = G.mode === 'endless' ? Math.max(ENDLESS.minTime, Math.round(m.time * endlessPace(G.done))) : m.time; G.hp = m.hp;
   G.stats = { good: 0, over: 0, light: 0, held: 0 }; G.acc = { good: 0, over: 0, light: 0 }; G.newAch = []; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
   G.lines = starLines(G.target, G.round); G.tier = 0; G.cele = null; G.resultT = 0; G.res = null;
   G.round0 = G.peak = G.round; G.lastUp = ''; G.readyBefore = 0;   // 成就用：接单时的圆度、本单最高圆度、最后一次升星是砸的还是塌的
   G.warned = false; G.startScore = G.score; G.bubble = null; G.talk = null; G.mood = 'calm'; G.moodT = 0;
   parts = []; frags = []; floats = []; stains = [];
 }
-/* 存档只记每一单拿过的最高酬劳。不锁关：订单簿里哪一单都能直接开工 */
+/* 存档只记每一单拿过的最高酬劳。交付过的就算收进了图鉴 */
+/* endless：无尽模式最好的一轮 { best: 酬劳, n: 交了几单 } */
 /* stars：每单拿过的最高星数。没有星级以前交付的单，交付就意味着到了达标线，所以补成三星 */
 /* 每个名字一份本地存档，访客一份（沿用老的 key）。换成新名字 = 从头开始，不会把访客进度带过去 */
 let NAME = ''; try { NAME = localStorage.getItem('yuan.name') || ''; } catch (e) {}
@@ -1300,13 +1333,14 @@ try {
     for (const b of ['yuan.save.v2', 'yuan.ach.v1']) { const v = localStorage.getItem(b); if (v !== null) { localStorage.setItem(slotKey(b, NAME), v); localStorage.removeItem(b); } }
   }
 } catch (e) {}
-const SAVE = { best: {}, stars: {} };
+const SAVE = { best: {}, stars: {}, endless: { best: 0, n: 0 } };
 function loadSave() {
-  SAVE.best = {}; SAVE.stars = {};
+  SAVE.best = {}; SAVE.stars = {}; SAVE.endless = { best: 0, n: 0 };
   try {
     const s = JSON.parse(localStorage.getItem(slotKey('yuan.save.v2', NAME)) || 'null');
     if (s && s.best && typeof s.best === 'object') for (const id in MATS) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
     if (s && s.stars && typeof s.stars === 'object') for (const id in MATS) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
+    if (s && s.endless && s.endless.best > 0) SAVE.endless = { best: +s.endless.best | 0, n: +s.endless.n | 0 };
   } catch (e) {}
 }
 loadSave();
@@ -1321,7 +1355,12 @@ function saveBest(id, pay, stars) {
   if (up) { persist(); if (NAME) cloudSync(NAME).catch(() => {}); }
   return old;
 }
-function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
+/* 冒险模式里第一单没交付过的；全交过了返回 0 */
+function firstOpen() { const i = ADV_IDS.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
+const advDone = () => ADV_IDS.every(id => SAVE.best[id]);
+const dexGot = () => ORDER.filter(id => SAVE.best[id]).length;
+/* 单号：冒险模式「第 x / 21 单」，无尽模式「无尽 · 第 x 单」 */
+const orderTag = (after = false) => G.mode === 'endless' ? L(`无尽模式 · 第 ${G.done + (after ? 0 : 1)} 单`, `Endless · order ${G.done + (after ? 0 : 1)}`) : L(`第 ${G.idx + 1} / ${G.end || ADV_N} 单`, `Order ${G.idx + 1} / ${G.end || ADV_N}`);
 /* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
    本地打开（file:// 或 localhost）不发，免得开发时弄脏数据。
    不看“请勿追踪”/GPC：数据匿名、不存 IP、不跨站，说明卡里写明了；Firefox 隐私模式默认开 GPC，看它会漏掉一大片玩家。 */
@@ -1354,6 +1393,7 @@ function mergeBest(d) {
     const v = +best[id] || 0; if (v > (SAVE.best[id] || 0)) { SAVE.best[id] = v; changed = true; }
     const n = stars[id] | 0; if (n >= 1 && n <= 3 && n > (SAVE.stars[id] || 0)) { SAVE.stars[id] = n; changed = true; }
   }
+  const e = d.endless; if (e && +e.best > SAVE.endless.best) { SAVE.endless = { best: +e.best | 0, n: +e.n | 0 }; changed = true; }
   if (backfillStars()) changed = true;   // 云端的老存档没有星级
   if (changed) persist();
   if (achMerge(d.ach) + achCheck(true)) changed = true;
@@ -1362,7 +1402,7 @@ function mergeBest(d) {
 async function cloudSync(name) {
   if (!CLOUD || !name) return null;
   // 字符串 body = text/plain，跨域也不用预检
-  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best, stars: SAVE.stars, ach: Object.keys(A.got) }), keepalive: true });
+  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best, stars: SAVE.stars, endless: SAVE.endless, ach: Object.keys(A.got) }), keepalive: true });
   if (r.status === 422) throw new Error('bad-name');
   if (!r.ok) throw new Error('http ' + r.status);
   const d = await r.json(); mergeBest(d); return d;
@@ -1452,18 +1492,20 @@ const ACH = [
     const d = SHIFT_ACH[k] || [[`第 ${k + 1} 组`, ''], [`Set ${k + 1}`, '']];
     return { id: 'shift_' + (k + 1), g: 'prog', goal: () => shiftIds(k).length, prog: () => shiftIds(k).filter(id => SAVE.best[id]).length, t: [d[0][0], groupDone(k, false) + d[0][1]], e: [d[1][0], (groupDone(k, true) + d[1][1]).trim()] };
   }),
-  { id: 'all_round', g: 'prog', goal: () => ORDER.length, prog: () => ORDER.filter(id => SAVE.best[id]).length, t: ['一切皆圆', `全部 ${ORDER.length} 单交付。墙上那句厂训，不再是口号了。`], e: ['All Is Round', `All ${ORDER.length} orders delivered. The motto on the wall is now just a fact.`] },
+  { id: 'all_round', g: 'prog', goal: () => ORDER.length, prog: () => ORDER.filter(id => SAVE.best[id]).length, t: ['一切皆圆', `图鉴里 ${ORDER.length} 样全都交付过。墙上那句厂训，不再是口号了。`], e: ['All Is Round', `All ${ORDER.length} items in the catalogue delivered. The motto on the wall is now just a fact.`] },
   { id: 'stars_all', g: 'prog', goal: () => ORDER.length * 3, prog: () => starTotal(), t: ['满天星', '每一单都拿满三星。甲方把这些星挂上了天，补上被砸碎的那颗。'], e: ['Full Sky', 'Three stars on every order. The Client hung them up to replace the one that got smashed.'] },
   { id: 'wan_yuan', g: 'prog', goal: () => 10000, prog: () => sumBest(), t: ['万圆户', '各单最高酬劳加起来过了 ◎ 10000。地球上叫万元户，这儿叫万圆户。'], e: ['Ten-Grand Club', 'Best pays add up to ◎ 10000. Nothing here to spend it on. Very round money, though.'] },
   { id: 'big_ticket', g: 'prog', goal: () => 3000, prog: () => Math.max(0, ...ORDER.map(id => SAVE.best[id] || 0)), t: ['开张吃三年', '一单拿了 ◎ 3000 以上。三年不开张，开张吃三年。'], e: ['Big Ticket', '◎ 3000 or more for one order. The Client paid in coins. Round ones, naturally.'] },
-  { id: 'ot_first', g: 'prog', t: ['自愿加班', '在加班里交了一单。甲方强调加班是自愿的。门是锁着的。'], e: ['Voluntary Overtime', 'Delivered an order on overtime. Strictly voluntary, the Client stresses. The door is locked.'] },
+  { id: 'ot_first', g: 'prog', t: ['自愿加班', '在无尽模式里交了一单。甲方强调加班是自愿的。门是锁着的。'], e: ['Voluntary Overtime', 'Delivered an order in endless mode. Strictly voluntary, the Client stresses. The door is locked.'] },
+  { id: 'endless_10', g: 'prog', goal: () => 10, prog: () => SAVE.endless.n, t: ['耐心减半', '无尽模式一轮交了 10 单。甲方的耐心只剩一半，你的还剩很多。'], e: ['Half the Patience', "Ten orders in one endless run. The Client's patience is down to half. Yours is not."] },
+  { id: 'endless_25', g: 'prog', goal: () => 25, prog: () => SAVE.endless.n, t: ['缩成一个点', '无尽模式一轮交了 25 单。甲方的耐心早就缩成了一个点，你还在。'], e: ['Down to a Dot', "Twenty-five orders in one endless run. The Client's patience shrank to a dot long ago. You are still here."] },
   // 手艺
   { id: 'hat_trick', g: 'craft', goal: () => 3, prog: () => A.three.length, t: ['连中三圆', '连续 3 单三星。古人叫连中三元，甲方叫连中三圆。'], e: ['Hat Trick', 'Three three-star orders in a row. The Client offers you a hat. It is round.'] },
   { id: 'steady_10', g: 'craft', goal: () => 10, prog: () => A.clean.length, t: ['手稳', '连续 10 单一次没砸过头。甲方怀疑你根本不是地球人。'], e: ['Steady Hands', 'Ten orders in a row without a single overhit. The Client suspects you are not from Earth.'] },
-  { id: 'spotless_shift', g: 'craft', goal: () => 6, prog: () => { let best = 0; for (let i = 0; i + 6 <= ORDER.length; i++) best = Math.max(best, ORDER.slice(i, i + 6).filter(id => SAVE.stars[id] === 3).length); return best; }, t: ['无可挑剔', '订单簿里连着六单都是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Six', 'Six orders in a row in the order book, all at three stars. Finding nothing wrong, the Client criticised your hair.'] },
+  { id: 'spotless_shift', g: 'craft', goal: () => 6, prog: () => { let best = 0; for (let i = 0; i + 6 <= ORDER.length; i++) best = Math.max(best, ORDER.slice(i, i + 6).filter(id => SAVE.stars[id] === 3).length); return best; }, t: ['无可挑剔', '图鉴里挨着的六样都是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Six', 'Six neighbours in the catalogue, all at three stars. Finding nothing wrong, the Client criticised your hair.'] },
   { id: 'banquet', g: 'craft', goal: () => FOOD.length, prog: () => FOOD.filter(id => SAVE.best[id]).length, t: ['满圆全席', '能吃的单全都交了。地球人叫满汉全席，甲方叫满圆全席。'], e: ['Balanced Diet', 'Every edible order delivered. A balanced diet, to the Client, means all of it round.'] },
-  { id: 'marathon', g: 'craft', t: ['一条龙', `从第 1 单一口气做到第 ${ORDER.length} 单，中间没回过首页。甲方给你倒了杯水。圆的。`], e: ['Marathon', `Orders 1 to ${ORDER.length} in one go, never pressing Home. The Client poured you a glass of water. Round.`] },
-  { id: 'zero_rework', g: 'craft', hid: 1, t: ['零返工', `${ORDER.length} 单一口气做完，一次没失败、一次没重来。甲方说了声谢谢，然后假装没说过。`, '一口气。不失手。不回头。'], e: ['Zero Rework', `All ${ORDER.length} in one go: no fails, no retries. The Client said thank you, then pretended they had not.`, 'One go. No slips. No do-overs.'] },
+  { id: 'marathon', g: 'craft', t: ['一条龙', `冒险模式从第 1 单一口气做到第 ${ADV_N} 单，中间没回过首页。甲方给你倒了杯水。圆的。`], e: ['Marathon', `Adventure orders 1 to ${ADV_N} in one go, never pressing Home. The Client poured you a glass of water. Round.`] },
+  { id: 'zero_rework', g: 'craft', hid: 1, t: ['零返工', `冒险模式 ${ADV_N} 单一口气做完，一次没失败、一次没重来。甲方说了声谢谢，然后假装没说过。`, '一口气。不失手。不回头。'], e: ['Zero Rework', `All ${ADV_N} adventure orders in one go: no fails, no retries. The Client said thank you, then pretended they had not.`, 'One go. No slips. No do-overs.'] },
   // 坚持
   { id: 'grudge', g: 'grit', t: ['杠上了', '同一单失败了 5 次。甲方开始怀疑是不是材料的问题。不是。'], e: ['Grudge Match', 'Failed the same order 5 times. The Client wonders if it is the material. It is not.'] },
   { id: 'at_last', g: 'grit', t: ['终于', '栽了 5 次的那一单，交了。甲方说从没怀疑过你。怀疑过。'], e: ['At Long Last', "Delivered an order you had failed 5 times. The Client says they never doubted you. They did."] },
@@ -1545,7 +1587,7 @@ function achRound(kind, reason) {
     if (b.c && !b.c.some((c, i) => b.r[i] - c < 2.5)) U('poker_face');
     if (id === 'octobear' && G.started && s.over === 0) U('gentle_octo');
     if (id === 'gpu' && G.started && s.over === 0) U('remember_roots');
-    if (G.loop >= 1) U('ot_first');
+    if (G.loop >= 1 || G.mode === 'endless') U('ot_first');
     if (id !== 'record' && (A.failBy[id] || 0) >= 5) U('at_last');
     if (new Date().getHours() < 5) U('night_shift');
     if (G.silent && muted) U('stealth');
@@ -1579,7 +1621,7 @@ function achRound(kind, reason) {
 /* 全部交付：一条龙、零返工 */
 function achWin() {
   G.newAch = []; G.collect = true;
-  if (G.loop === 0 && G.done >= ORDER.length) { achUnlock('marathon'); if (!G.slips) achUnlock('zero_rework'); }
+  if (G.mode !== 'endless' && G.loop === 0 && G.done >= (G.end || ADV_N)) { achUnlock('marathon'); if (!G.slips) achUnlock('zero_rework'); }
   achCheck(); G.collect = false;
 }
 /* 结算卡上的「新成就」：最多列 3 条；这一块里不能有 .btn，空格 / 回车按的是卡片里第一个 .btn */
@@ -1631,7 +1673,7 @@ function showAch() {
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   A.seen = Math.round(Date.now() / 1000); A.bfN = 0; achSave();
 }
-/* 排行榜：按每单最高酬劳的合计排，只有起了名字的玩家上榜 */
+/* 排行榜：无尽模式，每个名字取最好的一轮，按这一轮的总酬劳排；只有起了名字的玩家上榜 */
 const BOARD = { data: null, err: false, seq: 0 };
 function showBoard(refetch = true) {
   G.state = 'menu';
@@ -1639,14 +1681,15 @@ function showBoard(refetch = true) {
   const row = p => `<li class="${NAME && p.name.toLowerCase() === NAME.toLowerCase() ? 'me' : ''}"><b>${p.rank}</b><span class="nm">${escH(p.name)}</span><span class="dl">${L(`${p.delivered} 单`, `${p.delivered} orders`)}${p.stars != null ? ` · <span class="stars">★ ${p.stars}</span>` : ''}</span><span class="pt">◎ ${p.total}</span></li>`;
   let body;
   if (!d) body = `<p class="note">${BOARD.err ? L('排行榜连不上，过一会儿再试。', 'Could not load the leaderboard. Try again in a bit.') : L('加载中…', 'Loading…')}</p>`;
-  else if (!d.top.length) body = `<p class="note">${L('还没人上榜。交付一单你就是第一。', 'Nobody yet. Deliver an order to be first.')}</p>`;
+  else if (!d.top.length) body = `<p class="note">${L('还没人上榜。打一轮无尽模式，你就是第一。', 'Nobody yet. Play one endless run to be first.')}</p>`;
   else body = `<ol class="board">${d.top.map(row).join('')}</ol>` +
     (d.me && !d.top.some(p => p.rank === d.me.rank) ? `<ol class="board mine" start="${d.me.rank}">${row(d.me)}</ol>` : '') +
-    `<p class="note">${L(`共 ${d.players} 人，按各单最高酬劳总和排。`, `${d.players} players, ranked by total best pay.`)}${NAME ? '' : L('起了名字才会上榜。', ' Pick a name to get listed.')}</p>`;
+    `<p class="note">${L(`共 ${d.players} 人，按无尽模式最好的一轮的总酬劳排。`, `${d.players} players, ranked by total pay in their best endless run.`)}${NAME ? '' : L('起了名字才会上榜。', ' Pick a name to get listed.')}</p>`;
   setCard(`
-    <p class="eyebrow" data-board>${L('排行榜', 'Leaderboard')}</p>
+    <p class="eyebrow" data-board>${L('排行榜 · 无尽模式', 'Leaderboard · Endless')}</p>
     <h2>${L('谁最会弄圆', 'Who makes it roundest')}</h2>
     ${body}
+    ${advDone() ? '' : `<p class="note">${L('通关冒险模式解锁无尽模式，打一轮就能上榜。', 'Beat adventure mode to unlock endless, then one run gets you listed.')}</p>`}
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   if (!refetch || !CLOUD) return;
   const seq = ++BOARD.seq;
@@ -1668,14 +1711,18 @@ function whoRow() {
 const r3 = v => Math.round(v * 1000) / 1000;
 function roundInfo() {
   const b = G.body;
-  return { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round), used: G.started ? Math.round((G.timeMax - G.timeLeft) * 10) / 10 : 0,
+  return { ...(G.mode === 'endless' ? { mode: 'endless', n: G.done } : {}), order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round), used: G.started ? Math.round((G.timeMax - G.timeLeft) * 10) / 10 : 0,
     good: G.stats.good, over: G.stats.over, light: G.stats.light, keep: b && b.area0 ? r3(clamp(b.area / b.area0, 0, 1)) : null };
 }
-function startAt(i) {
-  G.idx = clamp(i | 0, 0, ORDER.length - 1); G.loop = 0; G.score = 0; G.done = 0; G.slips = 0;
+function startAt(i, mode = 'main') {
+  G.mode = mode; G.end = mode === 'book' ? ORDER.length : ADV_N;
+  G.idx = clamp(i | 0, 0, G.end - 1); G.loop = 0; G.score = 0; G.done = 0; G.slips = 0;
   if (G.idx && chapStart(G.idx)) showChapter(); else showOrder();
 }
-/* 订单簿分两档：冒险模式、剩下的关卡 */
+/* 无尽模式：从全部物品里有放回地抽，抽到没交付过的就是新物品 */
+function startEndless() { G.mode = 'endless'; G.end = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; G.runNew = []; TRACK('endless_start', {}); nextEndless(); }
+function nextEndless() { G.idx = Math.floor(Math.random() * ORDER.length); showOrder(); }
+/* 订单簿（开发者）：分两档，冒险模式、剩下的关卡；哪一单都能直接开工 */
 function showBook() {
   G.state = 'menu'; const at = firstOpen(); let html = '';
   for (const part of PARTS) {
@@ -1689,12 +1736,60 @@ function showBook() {
     html += '</div>';
   }
   setCard(`
-    <p class="eyebrow">${L('订单簿', 'Order book')}</p>
+    <p class="eyebrow">${L('订单簿 · 开发者', 'Order book · Developer')}</p>
     <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
     <p class="note">${L('星星', 'Stars')} <span class="stars">★ ${starTotal()}</span> / ${ORDER.length * 3}</p>
     ${html}
-    <p class="note">${L('绿色是交付过的，哪单都能开工。', 'Green = delivered. Start anywhere.')}</p>
+    <p class="note">${L('绿色是交付过的，哪单都能开工，从这里开工会一路做到第 ' + ORDER.length + ' 单。', 'Green = delivered. Start anywhere; from here you carry on through order ' + ORDER.length + '.')} <button class="link" type="button" data-act="devoff">${L('关掉开发者模式', 'Turn off developer mode')}</button></p>
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+}
+/* 图鉴：全部物品按游戏顺序排，没交付过的是黑剪影 + ？？？。缩略图用游戏里的形状和贴图画一张，画过就缓存 */
+const DEX_IMG = {};
+function dexImg(id, lit) {
+  const key = id + (lit ? '' : '~'); if (DEX_IMG[key]) return DEX_IMG[key];
+  const S = 96, px = 2, cv2 = document.createElement('canvas'); cv2.width = cv2.height = S * px; const c = cv2.getContext('2d'), m = MATS[id];
+  let b; try { b = makeBody(id); } catch (e) { return ''; }
+  const R = Math.max(...b.r) * (OVER[id] ? 1.22 : 1.04), k = S * .48 / R;
+  c.scale(px, px); c.translate(S / 2, S / 2); c.scale(k, k); c.lineJoin = 'round';
+  const path = () => { c.beginPath(); for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i]; if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.closePath(); };
+  if (!lit) { path(); c.fillStyle = '#0b0820'; c.fill(); c.strokeStyle = C.rim; c.lineWidth = 2.5 / k; c.stroke(); }
+  else {
+    try {
+      path(); c.fillStyle = m.base; c.fill(); c.save(); c.clip();
+      c.save(); c.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; c.transform(M[0], M[1], M[2], M[3], 0, 0); } ART[id](c, b, 0); c.restore();
+      if (m.rim) { path(); c.strokeStyle = m.rim; c.lineWidth = 14; c.stroke(); }
+      c.restore(); path(); c.strokeStyle = m.outline; c.lineWidth = 3; c.stroke();
+      if (OVER[id]) { const st = G.time; OVER[id](c, b, 0); G.time = st; }
+    } catch (e) {}
+  }
+  return DEX_IMG[key] = cv2.toDataURL();
+}
+function showDex() {
+  G.state = 'menu'; const got = dexGot();
+  const cells = ORDER.map(id => {
+    const on = !!SAVE.best[id], st = SAVE.stars[id] || 0;
+    return `<button class="dx${on ? '' : ' off'}" type="button" data-dex="${id}" aria-label="${on ? MATS[id].name + L(`，${st} 星`, `, ${st} star${st > 1 ? 's' : ''}`) : L('还没拿到', 'Not found yet')}"><img src="${dexImg(id, on)}" alt=""><span>${on ? MATS[id].name : L('？？？', '???')}</span><i aria-hidden="true">${on ? starStr(st) : ''}</i></button>`;
+  }).join('');
+  setCard(`
+    <p class="eyebrow">${L('图鉴', 'Catalogue')} · ${got} / ${ORDER.length}</p>
+    <h2>${got >= ORDER.length ? L('全都圆过了', 'Everything, made round') : L('甲方的仓库', "The Client's warehouse")}</h2>
+    <div class="window" role="img" aria-label="${L(`收集了 ${got} / ${ORDER.length}`, `${got} of ${ORDER.length} collected`)}"><i class="w-ok" style="width:${(got / ORDER.length * 100).toFixed(1)}%"></i><i class="w-light" style="flex:1"></i></div>
+    <div class="dex">${cells}</div>
+    <p class="note">${L(`交付过一次就收进图鉴。冒险模式里有 ${ADV_N} 样，其余的只会在无尽模式里随机送来。`, `Deliver something once and it goes in the catalogue. Adventure mode has ${ADV_N}; the rest only turn up at random in endless mode.`)}</p>
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+}
+function showDexItem(id) {
+  const m = MATS[id]; if (!m) return showDex();
+  const on = !!SAVE.best[id], st = SAVE.stars[id] || 0, adv = ADV_IDS.includes(id), i = ORDER.indexOf(id);
+  setCard(`
+    <p class="eyebrow">${L('图鉴', 'Catalogue')} · ${i + 1} / ${ORDER.length}</p>
+    <div class="dex-one"><img src="${dexImg(id, on)}" alt=""><div>
+      <h2>${on ? m.name : L('？？？', '???')}</h2>
+      ${on ? `<p><span class="stars">${starStr(st)}</span> · ${L('最高', 'Best')} <strong>◎ ${SAVE.best[id]}</strong></p>` : ''}
+      <p class="note">${adv ? L('冒险模式里会遇到。', 'Found in adventure mode.') : L('只在无尽模式里随机送来。', 'Only turns up in endless mode.')}</p>
+    </div></div>
+    ${on ? `<p>${m.blurb}</p>` : `<p class="note">${L('还没交付过。等它送上门、把它弄圆，就知道是什么了。', 'Not delivered yet. Wait for it to turn up, make it round, and you will find out.')}</p>`}
+    <div class="row"><button class="btn ghost" type="button" data-act="dex">${L('回图鉴', 'Back')}</button>${DEV ? `<button class="btn ghost" type="button" data-lv="${i}">${L('开工（开发者）', 'Play (developer)')}</button>` : ''}</div>`);
 }
 /* 章节卡：冒险模式里有说明的站开工前弹一张；做完冒险模式、进剩下的关卡前弹一张过渡卡 */
 function showChapter() {
@@ -1742,28 +1837,47 @@ function drawCover(t) {
   ctx.fillText(TOUCH ? L('点一下屏幕开始', 'Tap to start') : L('点击或按任意键开始', 'Click or press any key'), cx, VH * (PORT ? .88 : .9));
   ctx.globalAlpha = 1;
 }
-function showMenu() {
-  G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
-  const at = firstOpen();
+/* 首页右上角的小外星人（跟窗户里的甲方一个样） */
+const ALIEN_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 14 Q18 6 13 5" stroke="#93e85a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M42 14 Q46 6 51 5" stroke="#93e85a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="13" cy="5" r="3.6" fill="#ffd35c"/><circle cx="51" cy="5" r="3.6" fill="#ffd35c"/><ellipse cx="32" cy="35" rx="23" ry="25" fill="#93e85a"/><ellipse cx="22.5" cy="33" rx="7" ry="9.5" transform="rotate(-18 22.5 33)" fill="#110d2b"/><ellipse cx="41.5" cy="33" rx="7" ry="9.5" transform="rotate(18 41.5 33)" fill="#110d2b"/><circle cx="24.5" cy="29.5" r="2.2" fill="#fff"/><circle cx="43.5" cy="29.5" r="2.2" fill="#fff"/><path d="M27 48 Q32 51 37 48" stroke="#110d2b" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`;
+const POKE = { n: 0, t: 0 };
+function pokeAlien(el) {
+  const now = performance.now(); if (now - POKE.t > 2500) POKE.n = 0; POKE.t = now; POKE.n++;
+  el.classList.remove('poke'); void el.offsetWidth; el.classList.add('poke'); tone(520 + POKE.n * 60, .08, .12, 'square');
+  if (DEV) return;
+  const hint = el.querySelector('i'); if (hint) hint.textContent = POKE.n >= 5 && POKE.n < 10 ? L(`还差 ${10 - POKE.n} 下`, `${10 - POKE.n} more`) : '';
+  if (POKE.n >= 10) { DEV = true; POKE.n = 0; try { localStorage.setItem('yuan.dev', '1'); } catch (e) {} showMenu(L('开发者模式：订单簿已解锁。', 'Developer mode: order book unlocked.')); }
+}
+function showMenu(msg) {
+  G.mode = 'main'; G.end = ADV_N; G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
+  const at = firstOpen(), won = advDone(), eb = SAVE.endless;
+  const main = won
+    ? `<button class="btn" type="button" data-act="endless">${L('无尽模式', 'Endless')}</button><button class="btn ghost" type="button" data-act="start">${L('重玩冒险模式', 'Replay adventure')}</button>`
+    : `<button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开工', 'Start')}</button><button class="btn ghost" type="button" disabled>${L('无尽模式', 'Endless')}<span class="sub">${L('通关冒险模式解锁', 'Beat adventure to unlock')}</span></button>`;
   setCard(`
-    <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
-    <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
-    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`前 ${ADV_N} 单是冒险模式：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到；做完还有 ${REST_N} 单。`, ` The first ${ADV_N} orders are adventure mode: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. After that, ${REST_N} more.`)}</p>
+    <div class="hero"><div>
+      <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
+      <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
+    </div><button class="alien-tap" type="button" data-act="alien" aria-label="${L('外星甲方', 'The alien Client')}">${ALIEN_SVG}<i></i></button></div>
+    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`冒险模式 ${ADV_N} 单：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到。通关以后是无尽模式：${ORDER.length} 样东西随机来，甲方越来越没耐心。`, ` Adventure mode is ${ADV_N} orders: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. Beat it to unlock endless mode: ${ORDER.length} kinds of things at random, and the Client gets less patient every order.`)}</p>
     <ul class="how">
       <li><b>${L('拎', '1')}</b><span>${L('按住材料拎起来，抓哪头，对面那头朝下。', '<strong>Lift.</strong> Hold to pick it up; the far end points down.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。右边力度表绿区有效，红区会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    <div class="row">${main}</div>
+    <div class="row">${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="dex">${L('图鉴', 'Catalogue')} <span class="cnt">${dexGot()}/${ORDER.length}</span></button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}<button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    ${eb.best ? `<p class="note">${L(`无尽模式最好的一轮：交了 ${eb.n} 单，酬劳`, `Best endless run: ${eb.n} orders,`)} <strong>◎ ${eb.best}</strong>${L('。', '.')}</p>` : ''}
+    ${msg ? `<p class="note" role="status">${msg}</p>` : ''}
     ${A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
     ${whoRow()}
-    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars and achievements.')}</p>`);
+    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级、无尽模式纪录和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars, endless record and achievements.')}</p>`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
   const lines = G.lines.map((v, k) => `<span class="nw">${'★'.repeat(k + 1)} <strong>${pct(v)}</strong></span>`).join(' · ');
   setCard(`
-    <p class="eyebrow">${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)} · ${CHAPS[chapAt(G.idx)].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
+    <p class="eyebrow">${orderTag()}${G.mode === 'endless' ? '' : ' · ' + CHAPS[chapAt(G.idx)].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
+    ${best ? '' : `<p class="chips"><span class="chip gold">${L('新物品', 'New item')}</span></p>`}
     <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
     <p>${m.blurb}</p>
     <dl class="spec">
@@ -1777,8 +1891,9 @@ function showOrder() {
       <dt>${L('能失手', 'Slips')}</dt><dd>${m.flee ? L(`急 ${m.hp - 1} 次，再急就跑`, `${m.hp - 1}, then they run`) : m.floor ? L(`地板能裂 ${m.hp - 1} 次`, `Floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏', 'Unbreakable') : m.hp > 1 ? L(`${m.hp - 1} 次`, `${m.hp - 1}`) : L('<strong>0 次</strong>', '<strong>None</strong>')}</dd>
     </dl>
     <p>${lines}</p>
-    <p class="note">${L('一星就能交货，星越多酬劳越高', 'One star delivers; more stars, more pay')} · <strong>${m.time} ${L('秒', 's')}</strong>${best ? ` · ${L('最高', 'Best')} <span class="stars">${starStr(got)}</span> <strong>◎ ${best}</strong>` : ''}</p>
-    <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
+    <p class="note">${L('一星就能交货，星越多酬劳越高', 'One star delivers; more stars, more pay')} · <strong>${G.timeMax} ${L('秒', 's')}</strong>${G.timeMax < m.time ? L(`（甲方的耐心只剩平时的 ${Math.round(G.timeMax / m.time * 100)}%）`, ` (the Client has ${Math.round(G.timeMax / m.time * 100)}% of the usual patience)`) : ''}${best ? ` · ${L('最高', 'Best')} <span class="stars">${starStr(got)}</span> <strong>◎ ${best}</strong>` : ''}</p>
+    ${G.mode === 'endless' && !G.done ? `<p class="note">${L(`无尽模式：${ORDER.length} 样东西随机抽，交一单，甲方的耐心就短一截。失败一次就收工，按这一轮的总酬劳上排行榜。`, `Endless: random picks from all ${ORDER.length} items, and the Client's patience shrinks after every order. One failure ends the run; the run's total pay goes on the leaderboard.`)}</p>` : ''}
+    <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${G.mode === 'endless' && G.done ? L('收工结算', 'Clock out') : L('回首页', 'Home')}</button></div>`);
 }
 function computePay() {
   const m = G.mat, b = G.body, base = 100 * m.value * (1 + .5 * G.loop);
@@ -1794,6 +1909,7 @@ function deliver() {
   const id = ORDER[G.idx];
   G.res = { n, oldStars: SAVE.stars[id] || 0, old: 0 };
   G.res.old = saveBest(id, p.total, n);
+  if (!G.res.old && G.mode === 'endless') G.runNew.push(id);
   achRound('deliver');
   TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: G.res.old, stars: n, ach: G.newAch.join(',').slice(0, 64) }));
   celebrate(n);
@@ -1840,13 +1956,14 @@ function showResult() {
   const p = G.pay, m = G.mat, { n, oldStars, old } = G.res, rec = p.total > old;
   const head = n >= 3 ? L('甲方眼睛都亮了', "The Client's eyes light up") : n === 2 ? L('甲方点了点头', 'The Client nods') : L('甲方勉强收下了', 'The Client grudgingly accepts');
   const tips = [];
+  if (!old) tips.push(`<span class="chip gold">${L('新物品收进图鉴', 'New in the catalogue')} ${dexGot()}/${ORDER.length}</span>`);
   if (old && rec) tips.push(`<span class="chip gold">${L('新纪录', 'New best')}</span>`);
   if (oldStars && n > oldStars) tips.push(`<span class="chip">${'★'.repeat(oldStars)} → ${'★'.repeat(n)}</span>`);
   const more = n < 3 ? L(`再圆到 <strong>${pct(G.lines[n])}</strong> 就是 ${'★'.repeat(n + 1)}`, `Reach <strong>${pct(G.lines[n])}</strong> for ${'★'.repeat(n + 1)}`) : L('满星。甲方没什么可挑的了', 'Full marks. The Client has nothing to add');
-  const last = G.idx + 1 >= ORDER.length;
+  const endless = G.mode === 'endless', last = !endless && G.idx + 1 >= (G.end || ADV_N);
   setCard(`
     <div class="result">
-      <p class="eyebrow">${L('交货成功', 'Delivered')} · ${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)}</p>
+      <p class="eyebrow">${L('交货成功', 'Delivered')} · ${orderTag(true)}</p>
       <p class="stars big" role="img" aria-label="${L(`${n} 星`, `${n} star${n > 1 ? 's' : ''}`)}">${[1, 2, 3].map(k => `<i class="${k <= n ? 'on' : ''}" style="--k:${k}">★</i>`).join('')}</p>
       <p class="rnd">${L('圆度', 'Roundness')} <b>${pct(G.round)}</b></p>
       <h2>${head}</h2>
@@ -1862,7 +1979,8 @@ function showResult() {
       <dt>${L('剩余耐心', 'Patience left')} ${Math.ceil(Math.max(0, G.timeLeft))} ${L('秒', 's')}</dt><dd>+ ${p.timeBonus}</dd>
       <dt>${L('本单酬劳', 'Pay for this order')}</dt><dd class="sum" data-to="${p.total}">◎ 0</dd>
     </dl>
-    <div class="row"><button class="btn" type="button" data-act="next">${last ? L('看看甲方怎么说', 'Hear the verdict') : L('下一单', 'Next order')}</button><button class="btn ghost" type="button" data-act="redo">${n < 3 ? L('再来一次', 'Try again') : L('再做一次', 'Again')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
+    ${endless ? `<p class="note">${L(`这一轮已交 ${G.done} 单，累计`, `${G.done} delivered this run, total`)} <strong>◎ ${G.score}</strong>${L(`。下一单甲方的耐心只剩平时的 ${Math.round(endlessPace(G.done) * 100)}%。`, `. Next order, the Client has ${Math.round(endlessPace(G.done) * 100)}% of the usual patience.`)}</p>` : ''}
+    <div class="row"><button class="btn" type="button" data-act="next">${last ? L('看看甲方怎么说', 'Hear the verdict') : L('下一单', 'Next order')}</button>${endless ? `<button class="btn ghost" type="button" data-act="home">${L('收工结算', 'Clock out')}</button>` : `<button class="btn ghost" type="button" data-act="redo">${n < 3 ? L('再来一次', 'Try again') : L('再做一次', 'Again')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button>`}</div>`);
   card.classList.add('win');
   // 每颗星弹出来时响一声，音一颗比一颗高；全亮再来一个和弦
   for (let k = 0; k < n; k++) tone([784, 988, 1319][k], .22, .22, 'triangle', 0, .18 * (k + 1) + .05);
@@ -1892,8 +2010,10 @@ function overWhy() {
   return `<p class="why">${L(`最后一下力度 <strong>${F}</strong>，超过了${what}的上限 <strong>${lim}</strong>，落在力度表的<span class="red">红区</span>。`, `Last hit: <strong>${F}</strong>, above ${what} limit of <strong>${lim}</strong>: the <span class="red">red zone</span> on the gauge.`)}</p>`;
 }
 function showOver() {
-  G.state = 'over'; const m = G.mat; if (G.newAch.length) sfx.ach(.2);
+  const m = G.mat;
   const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，一星线是 ${pct(G.lines[0])}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; one star needed ${pct(G.lines[0])}.`);
+  if (G.mode === 'endless') return endEndless(`<p>${why}</p>${G.failReason === 'shatter' ? overWhy() : ''}`);
+  G.state = 'over'; if (G.newAch.length) sfx.ach(.2);
   setCard(`
     <p class="eyebrow">${L('交货失败', 'Delivery failed')}</p>
     <h2>${L('你被做成了圆形', 'You have been made round')}</h2>
@@ -1902,8 +2022,38 @@ function showOver() {
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
+/* 无尽模式收工：失败一次，或者自己点「收工结算」。最好的一轮记进存档、同步到云端排行榜 */
+function endEndless(why = '') {
+  G.state = 'over'; if (!why) G.newAch = [];
+  const eb = SAVE.endless, rec = G.score > eb.best, prev = eb.best;
+  if (rec) { SAVE.endless = { best: G.score, n: G.done }; persist(); achCheck(); if (NAME) cloudSync(NAME).catch(() => {}); }
+  TRACK('endless_end', { score: G.score, done: G.done, rec: rec ? 1 : 0, fail: why ? 1 : 0, ach: (G.newAch || []).join(',').slice(0, 64) });
+  if ((G.newAch || []).length) sfx.ach(.2);
+  const items = G.runNew.filter((id, i, a) => a.indexOf(id) === i);
+  setCard(`
+    <p class="eyebrow">${L('无尽模式 · 收工', 'Endless · Clocked out')}</p>
+    <h2>${rec && G.score ? L('新纪录！', 'New record!') : why ? L('你被做成了圆形', 'You have been made round') : L('今天就到这儿', 'That will do for today')}</h2>
+    ${why}
+    <dl class="spec tally">
+      <dt>${L('交付', 'Delivered')}</dt><dd>${L(`${G.done} 单`, `${G.done} orders`)}</dd>
+      <dt>${L('这一轮的酬劳', 'Pay this run')}</dt><dd class="sum done">◎ ${G.score}</dd>
+      <dt>${L('个人纪录', 'Personal best')}</dt><dd>◎ ${Math.max(prev, G.score)}</dd>
+    </dl>
+    ${items.length ? `<p class="eyebrow">${L(`这一轮收进图鉴的新物品 · ${dexGot()}/${ORDER.length}`, `New in the catalogue this run · ${dexGot()}/${ORDER.length}`)}</p><div class="newitems">${items.map(id => `<span><img src="${dexImg(id, true)}" alt="">${MATS[id].name}</span>`).join('')}</div>` : `<p class="note">${L(`这一轮没有新物品。图鉴 ${dexGot()}/${ORDER.length}。`, `No new items this run. Catalogue: ${dexGot()}/${ORDER.length}.`)}</p>`}
+    ${achNewHtml()}
+    ${CLOUD && !NAME && G.score ? `<p class="note">${L('回首页起个名字，纪录就能上排行榜。', 'Pick a name on the home screen to put your record on the leaderboard.')}</p>` : ''}
+    <div class="row"><button class="btn" type="button" data-act="endless">${L('再来一轮', 'Another run')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+  card.classList.add('win');
+}
 function showWin() {
   G.state = 'win'; achWin(); TRACK('win', { loop: G.loop, score: G.score, done: G.done, ach: G.newAch.join(',').slice(0, 64) }); if (G.newAch.length) sfx.ach(.3);
+  if (G.mode !== 'book') return setCard(`
+    <p class="eyebrow">${L('冒险模式通关', 'Adventure complete')}</p>
+    <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
+    <p>${L('所以他们决定不放你走了。这一趟累计酬劳', 'So they have decided to keep you. Total pay this trip:')} <strong>◎ ${G.score}</strong>${L('。', '.')}</p>
+    <p>${L(`<strong>无尽模式解锁了。</strong>甲方的仓库里堆着 ${ORDER.length} 样东西，随机送来，交一单，甲方的耐心就短一截，失败一次就收工。没见过的东西交付了就收进图鉴，这一轮的总酬劳上排行榜。`, `<strong>Endless mode unlocked.</strong> The Client's warehouse holds ${ORDER.length} kinds of things, sent at random. Every order, the Client gets less patient; one failure ends the run. Deliver something new and it goes in the catalogue. The run's total pay goes on the leaderboard.`)}</p>
+    ${achNewHtml()}
+    <div class="row"><button class="btn" type="button" data-act="endless">${L('进无尽模式', 'Start endless')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   setCard(`
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
@@ -1916,10 +2066,13 @@ function act(a) {
   if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
-  else if (a === 'book') showBook();
+  else if (a === 'endless') { if (advDone() || DEV) startEndless(); else showMenu(); }
+  else if (a === 'dex') showDex();
+  else if (a === 'book') { if (DEV) showBook(); else showMenu(); }
+  else if (a === 'devoff') { DEV = false; try { localStorage.removeItem('yuan.dev'); } catch (e) {} showMenu(); }
   else if (a === 'enter') showOrder();
-  else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
-  else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (chapStart(G.idx)) showChapter(); else showOrder(); } }
+  else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', Object.assign(G.mode === 'endless' ? { mode: 'endless', n: G.done } : {}, { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) })); }   // 本来就圆的那一单，一接单就能交货
+  else if (a === 'next') { if (G.mode === 'endless') nextEndless(); else if (G.idx + 1 >= (G.end || ADV_N)) showWin(); else { G.idx++; if (chapStart(G.idx)) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
   else if (a === 'redo') {   // 交货后再来一次：这一单的酬劳不算进这一趟，料和时间换新的，直接开工
     G.score = G.startScore; G.done = Math.max(0, G.done - 1);
@@ -1927,12 +2080,15 @@ function act(a) {
     TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round), redo: 1 });
   }
   else if (a === 'replay') {   // 干活途中直接重来：不弹订单卡，料和时间都换新的
-    if (G.state !== 'play') return;
+    if (G.state !== 'play' || G.mode === 'endless') return;
     TRACK('retry', roundInfo()); achRound('retry');
     G.score = G.startScore; setupRound(); G.state = 'play'; G.silent = muted; overlay.hidden = true; updateRoundness(); say('start', true); talk('start', true, 1.6);
   }
   else if (a === 'restart') showMenu();
-  else if (a === 'home') { if (G.state === 'play') { TRACK('quit', roundInfo()); achRound('quit'); } showMenu(); }
+  else if (a === 'home') {
+    if (G.state === 'play') { TRACK('quit', roundInfo()); achRound('quit'); }
+    if (G.mode === 'endless' && (G.done || G.state === 'play')) endEndless(); else showMenu();   // 无尽模式中途回首页 = 收工结算
+  }
   else if (a === 'board') showBoard();
   else if (a === 'wipe') {
     if (NAME || !confirm(L('访客的进度和成就都会清空，确定从头开始？', 'Wipe all guest progress and achievements and start over?'))) return;
@@ -1945,7 +2101,9 @@ function act(a) {
 }
 card.addEventListener('submit', e => { const f = e.target.closest('[data-who]'); if (!f) return; e.preventDefault(); audioInit(); sfx.ui(); setName(f.elements.who && f.elements.who.value); });
 card.addEventListener('click', e => {
-  const lv = e.target.closest('[data-lv]'); if (lv) { audioInit(); sfx.ui(); startAt(+lv.dataset.lv); return; }
+  const lv = e.target.closest('[data-lv]'); if (lv) { audioInit(); sfx.ui(); startAt(+lv.dataset.lv, 'book'); return; }
+  const dx = e.target.closest('[data-dex]'); if (dx) { audioInit(); sfx.ui(); showDexItem(dx.dataset.dex); return; }
+  const al = e.target.closest('.alien-tap'); if (al) { audioInit(); pokeAlien(al); return; }
   const t = e.target.closest('[data-act]'); if (t) act(t.dataset.act);
 });
 deliverBtn.addEventListener('click', e => { e.currentTarget.blur(); deliver(); });
@@ -2088,7 +2246,7 @@ function update(dt) {
   if (G.state === 'result' && G.resultT > 0) { G.resultT -= dt; if (G.resultT <= 0) showResult(); }
   if (G.state === 'cover') { if ((G.coverT = (G.coverT || 0) + dt) > 60) achUnlock('mesmerised'); }   // 切到后台 rAF 会停，开着走开不算
   toastTick();
-  if (replayBtn.hidden === (G.state === 'play')) replayBtn.hidden = G.state !== 'play';
+  { const rh = G.state !== 'play' || G.mode === 'endless'; if (replayBtn.hidden !== rh) replayBtn.hidden = rh; }   // 无尽模式不能中途重来
   if (homeBtn.hidden === (G.state === 'play')) homeBtn.hidden = G.state !== 'play';
   G.shown += (G.round - G.shown) * Math.min(1, dt * 10);
   let live = 0; if (b && !b.dead && (b.held || !b.sleeping)) live = clamp(b.vy / VMAX * 100, 0, 100);
@@ -2933,7 +3091,7 @@ function drawAlien(t) {
   // 窗下：耐心、单号、酬劳
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.font = `500 15px ${NUM}`; ctx.fillStyle = ringCol; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), cx, 204);
-  ctx.font = `13px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), cx, 228);
+  ctx.font = `13px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(orderTag() + (G.loop ? L(' · 加班', ' · OT') : ''), cx, 228);
   ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, cx, 256);
   // 气泡
   const bb = G.bubble;
@@ -3081,7 +3239,7 @@ function drawHudPort(t) {
   ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
-  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; if (!toastInPlay()) ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
+  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; if (!toastInPlay()) ctx.fillText(orderTag() + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
   ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {

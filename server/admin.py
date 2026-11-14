@@ -190,6 +190,7 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.pay') END),
           AVG(CASE WHEN ev='fail' THEN json_extract(data,'$.round') END)
         FROM events WHERE {W} AND ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.order') IS NOT NULL
+          AND json_extract(data,'$.mode') IS NULL   -- 无尽模式的单限时更短，不混进每单的统计
         GROUP BY o"""):
         per[row[0]] = dict(zip(["order", "starts", "players", "deliver", "deliver_players", "shatter", "time", "quit",
                            "avg_used", "avg_round", "avg_target", "avg_good", "avg_over", "avg_pay", "fail_round"], row))

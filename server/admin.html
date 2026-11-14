@@ -378,9 +378,9 @@ function render() {
 
   // 存档玩家
   const when = t => t ? new Date(t * 1000).toLocaleString('zh-CN', { hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
-  $('#t-saves').innerHTML = '<tr><th class="l">名字</th><th>交付过</th><th>星星</th><th>成就</th><th>最远</th><th>最高酬劳合计</th><th>设备数</th><th class="l">第一次存档</th><th class="l">最近活动</th><th></th></tr>' +
-    (d.saves.length ? d.saves.map(p => `<tr><td class="l">${esc(p.name)}</td><td>${p.delivered} / ${d.total_orders}</td><td>★ ${p.stars ?? '–'}</td><td>${p.ach ?? '–'}</td><td>${p.furthest == null ? '–' : '第 ' + (p.furthest + 1) + ' 单'}</td><td>◎ ${fmt(p.total)}</td><td>${p.devices}</td><td class="l">${when(p.created)}</td><td class="l">${when(p.last)}</td><td><button class="btn del" type="button" data-key="${esc(p.key)}" data-name="${esc(p.name)}">删除</button></td></tr>`).join('')
-      : '<tr><td colspan="8" class="empty">还没有人起名字</td></tr>');
+  $('#t-saves').innerHTML = '<tr><th class="l">名字</th><th>交付过</th><th>星星</th><th>成就</th><th>最远</th><th>最高酬劳合计</th><th>无尽纪录</th><th>设备数</th><th class="l">第一次存档</th><th class="l">最近活动</th><th></th></tr>' +
+    (d.saves.length ? d.saves.map(p => `<tr><td class="l">${esc(p.name)}</td><td>${p.delivered} / ${d.total_orders}</td><td>★ ${p.stars ?? '–'}</td><td>${p.ach ?? '–'}</td><td>${p.furthest == null ? '–' : '第 ' + (p.furthest + 1) + ' 单'}</td><td>◎ ${fmt(p.total)}</td><td>${p.endless ? '◎ ' + fmt(p.endless) : '–'}</td><td>${p.devices}</td><td class="l">${when(p.created)}</td><td class="l">${when(p.last)}</td><td><button class="btn del" type="button" data-key="${esc(p.key)}" data-name="${esc(p.name)}">删除</button></td></tr>`).join('')
+      : '<tr><td colspan="11" class="empty">还没有人起名字</td></tr>');
 
   $('#updated').textContent = '更新于 ' + new Date(d.generated * 1000).toLocaleTimeString('zh-CN', { hour12: false });
 }
