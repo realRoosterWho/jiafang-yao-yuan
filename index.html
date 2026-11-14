@@ -222,6 +222,9 @@ body {
 #stage.port #home { right: 2%; top: 14.8%; font-size: max(11px, calc(var(--u) * 17)); }   /* 竖屏：酬劳那行下面、甲方气泡右边 */
 .touch #deliver kbd { display: none; }
 #stage.cover #rot { display: none; }
+/* 触屏：小按钮至少 44 像素高，好按 */
+.touch #mute, .touch #replay, .touch #home { min-height: 44px; min-width: 44px; }
+.touch .lv { min-height: 44px; }
 @media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
 /* 成就：圆章没解锁是方的灰块，解锁了是圆的金章。提示条里那一下「方块被砸圆」就是解锁 */
 .medal { flex: none; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: .32em; font: 700 .9em/1 var(--num); color: var(--dim);
@@ -1946,20 +1949,20 @@ function setPointer(e) {
   const rc = cv.getBoundingClientRect(); if (!rc.width) return;
   P.k = VW / rc.width; P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6, FLOOR + 420);
 }
-function toLocal(b, px, py) {
+function toLocal(b, px, py, slop = 14) {
   const dx = px - b.x, dy = py - b.y, c = Math.cos(b.a), s = Math.sin(b.a);
   let x = dx * c + dy * s, y = -dx * s + dy * c;
   const d = Math.hypot(x, y); let ang = Math.atan2(y, x); if (ang < 0) ang += TAU;
   const f = ang / DPHI, i0 = Math.floor(f) % N, rr = b.r[i0] + (b.r[(i0 + 1) % N] - b.r[i0]) * (f - Math.floor(f));
   if (d > rr && d > 0) { x *= rr / d; y *= rr / d; }
-  return { x, y, inside: d <= rr + 14 };
+  return { x, y, inside: d <= rr + slop };
 }
 function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
-  const h = toLocal(b, P.x, P.y); if (!h.inside) return false;
+  const h = toLocal(b, P.x, P.y, TOUCH ? 30 * P.k : 14); if (!h.inside) return false;   // 触屏手指粗，料边外 30 像素内都算抓到
   b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
-  // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 34 像素（lift 为负 = 往下）
-  b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 34 * P.k) : 0;
+  // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 64 像素（lift 为负 = 往下）
+  b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; if (Math.random() < .35) talk('grab'); return true;
 }
