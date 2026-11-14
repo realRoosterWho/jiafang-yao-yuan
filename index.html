@@ -2188,10 +2188,10 @@ function tryGrab() {
 function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
 /* 第一根手指拎材料；拎着的时候第二根手指落在哪，哪里就出一根横向的摇杆（只有左右一个轴）。
    速率控制：钮推离中心越远转得越快，中间一小段是死区，推到头是 JOY_MAX 弧度/秒（A / D 是 2.4）；钮被限制在槽里。
-   往右推 = 顺时针，跟 D 键一样（JOY_DIR 改成 -1 就反过来）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
+   往右推 = 逆时针、往左推 = 顺时针（JOY_DIR = -1；试玩反馈说跟 D 键同向的那种是反的，改成 1 就回去）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
    尺寸按 CSS 像素算（槽的半长 ≈ 两个拇指宽），画的时候换成画面单位，所以不同屏幕上手感一样 */
 const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
-const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = 1;
+const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
 function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; }
 function joyMove(e) { JOY.x = joyAt(e).x; JOY.k = clamp((JOY.x - JOY.x0) / (JOY_R * JOY.s), -1, 1); }
@@ -3239,7 +3239,7 @@ function drawGauge() {
   const b = G.body, m = faceMat(b);
   const py = PORT ? 136 - TOP : 0;
   ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
-  if (PORT) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort
+  if (PORT || G.tutUI) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort；新手关不放力度表
   const fz = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
   if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 10' : '13'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 76); }
@@ -3283,14 +3283,7 @@ function drawRotHint() {
   ctx.strokeStyle = C.coin; ctx.lineWidth = 1.5; ctx.stroke();
   ctx.fillStyle = C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
 }
-/* 小的弯箭头，cw = 顺时针。缺口在左上（或右上），箭头在缺口一端 */
-function curlArrow(c, x, y, r, cw, lw) {
-  const d = cw ? 1 : -1, a0 = -Math.PI / 2 + d * .5, a1 = a0 + d * (TAU - 1.3);
-  c.lineWidth = lw; c.beginPath(); c.arc(x, y, r, a0, a1, !cw); c.stroke();
-  const ex = x + Math.cos(a1) * r, ey = y + Math.sin(a1) * r, tx = -Math.sin(a1) * d, ty = Math.cos(a1) * d, nx = Math.cos(a1), ny = Math.sin(a1), h = lw * 2.1;
-  c.beginPath(); c.moveTo(ex + tx * h, ey + ty * h); c.lineTo(ex - tx * h * .3 + nx * h * .9, ey - ty * h * .3 + ny * h * .9); c.lineTo(ex - tx * h * .3 - nx * h * .9, ey - ty * h * .3 - ny * h * .9); c.closePath(); c.fill();
-}
-/* 横向摇杆：半透明的槽 + 钮，槽两头上方是往那边推会怎么转。x0, y 中心（画面坐标），k 钮推了多少（-1…1），s 画面单位 / CSS 像素，a 整体不透明度。
+/* 横向摇杆：只有半透明的槽 + 钮，推出去的那一截亮起来，别的什么都不画。x0, y 中心（画面坐标），k 钮推了多少（-1…1），s 画面单位 / CSS 像素，a 整体不透明度。
    新手关（flow.js）也拿它画示范用的虚影 */
 function drawJoyAt(x0, y, k, s, a) {
   const R = JOY_R * s, kr = JOY_KNOB * s, h = kr * 1.3, kx = x0 + clamp(k, -1, 1) * R, on = Math.abs(k) > JOY_DEAD, dir = Math.sign(k);
@@ -3300,11 +3293,6 @@ function drawJoyAt(x0, y, k, s, a) {
   if (on) {   // 推出去的那一截亮起来，推得越远越亮
     const xa = x0 + dir * JOY_DEAD * R, w = Math.abs(kx - xa), hh = h * .44;
     ctx.globalAlpha = a * (.3 + .5 * Math.abs(k)); ctx.fillStyle = C.coin; rr(ctx, Math.min(xa, kx), y - hh / 2, w, hh, Math.min(hh / 2, w / 2)); ctx.fill(); ctx.globalAlpha = a;
-  }
-  ctx.fillStyle = 'rgba(244,240,255,.5)'; ctx.fillRect(x0 - s, y - h * .3, 2 * s, h * .6);   // 中间的刻度：钮在这附近不转
-  for (const d of [-1, 1]) {
-    const lit = on && dir === d; ctx.strokeStyle = ctx.fillStyle = lit ? C.coin : 'rgba(244,240,255,.62)';
-    curlArrow(ctx, x0 + d * R, y - h / 2 - 17 * s, 8 * s, d * JOY_DIR > 0, 2.4 * s);
   }
   ctx.beginPath(); ctx.arc(kx, y, kr, 0, TAU); ctx.fillStyle = on ? 'rgba(255,211,92,.5)' : 'rgba(244,240,255,.24)'; ctx.fill();
   ctx.strokeStyle = on ? C.coin : 'rgba(244,240,255,.85)'; ctx.lineWidth = 2.2 * s; ctx.stroke();
@@ -3317,7 +3305,7 @@ function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住
   drawJoyAt(JOY.x0, JOY.y, JOY.k, JOY.s * (.85 + .15 * pop), .5 + .45 * pop);
 }
 function drawHints() {
-  if (G.state !== 'play' || (!PORT && toastInPlay())) return;
+  if (G.state !== 'play' || G.tutUI || (!PORT && toastInPlay())) return;   // 新手关里不放底下这行轮换的提示
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`; ctx.fillStyle = C.dim;
   ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
@@ -3326,6 +3314,7 @@ function drawHints() {
 function drawGaugePort() {
   const b = G.body, m = faceMat(b), X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
   ctx.fillStyle = C.hull; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
+  if (G.tutUI) return;   // 新手关不放力度表：只靠拎多高、松手，界面越干净越好
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
   if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 12' : '15'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
   ctx.save(); rr(ctx, X0, y, X1 - X0, h, h / 2); ctx.clip();
@@ -3351,13 +3340,16 @@ function drawGaugePort() {
 function drawHudPort(t) {
   ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
   const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, ready = G.tier > 0, m = G.mat;
-  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
-  drawTier(x0 + ctx.measureText(L('圆形程度', 'Roundness')).width + 10, y - 9, 17);
+  const bare = G.tutUI;   // 新手关：只留甲方、圆度条和百分比，别的字一概不放
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  if (!bare) { ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9); drawTier(x0 + ctx.measureText(L('圆形程度', 'Roundness')).width + 10, y - 9, 17); }
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
   rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
-  drawStarLines(x0, w, y, h, `500 14px ${NUM}`, C.dim);
+  if (bare) { const tx = x0 + w * clamp(G.target, 0, 1); ctx.fillStyle = C.ink; ctx.fillRect(tx - 1.5, y - 5, 3, h + 10); }   // 只画一道达标线
+  else drawStarLines(x0, w, y, h, `500 14px ${NUM}`, C.dim);
   ctx.font = `40px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 12, y + 29);
+  if (!bare) {
   ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
   let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
@@ -3366,6 +3358,7 @@ function drawHudPort(t) {
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
   ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; if (!toastInPlay()) ctx.fillText(orderTag() + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
   ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
+  }
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
     ctx.font = `17px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, 400);
