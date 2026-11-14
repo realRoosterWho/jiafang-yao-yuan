@@ -82,10 +82,16 @@ body {
   padding: .5em .9em; border: 0; border-radius: 999px;
   background: transparent; color: var(--dim); box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer;
 }
-#replay kbd { font: 500 .85em var(--num); opacity: .7; margin-left: .4em; }
-.touch #replay kbd { display: none; }
-#replay:hover, #mute:hover { color: var(--ink); }
-#deliver:focus-visible, #replay:focus-visible, #mute:focus-visible, .btn:focus-visible { outline: 3px solid var(--coin); outline-offset: 3px; }
+#home {
+  position: absolute; right: 10%; top: 16%;   /* 右上：圆度数字下面、力度表左边的空地。底部那排会被轮换的提示文字压到，顶部会碰到圆度数字 */
+  font: 500 max(10px, calc(var(--u) * 13))/1 var(--body);
+  padding: .5em .9em; border: 0; border-radius: 999px;
+  background: transparent; color: var(--dim); box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer;
+}
+#replay kbd, #home kbd { font: 500 .85em var(--num); opacity: .7; margin-left: .4em; }
+.touch #replay kbd, .touch #home kbd { display: none; }
+#replay:hover, #mute:hover, #home:hover { color: var(--ink); }
+#deliver:focus-visible, #replay:focus-visible, #mute:focus-visible, #home:focus-visible, .btn:focus-visible { outline: 3px solid var(--coin); outline-offset: 3px; }
 
 /* 卡片铺满整个视口而不是只铺舞台：窄屏时舞台很矮，卡片不能被舞台裁掉 */
 #overlay {
@@ -132,6 +138,16 @@ body {
 .w-break { background: var(--alarm); }
 .pips { letter-spacing: .15em; color: var(--coin); margin-right: .5em; }
 .note { font-size: .85em; color: var(--dim); }
+/* 排行榜 */
+.board { margin: 0; padding: 0; list-style: none; display: grid; gap: .2em; max-height: min(52vh, 24em); overflow-y: auto; }
+.board li { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto auto; gap: .8em; align-items: center; padding: .45em .8em; border-radius: .8em; background: var(--hull-hi); font-variant-numeric: tabular-nums; }
+.board li b { font: 400 1.15em/1 var(--display); color: var(--coin); text-align: center; }
+.board li:nth-child(-n+3) b { font-size: 1.4em; }
+.board .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .dl { color: var(--dim); font-size: .85em; }
+.board .pt { font-family: var(--num); color: var(--coin); }
+.board li.me { box-shadow: inset 0 0 0 2px var(--alien); }
+.board.mine { max-height: none; }
 /* 云存档 */
 .who { display: grid; gap: .45em; margin: 0; }
 .who-row { display: flex; gap: .5em; align-items: center; }
@@ -164,7 +180,6 @@ body {
 .lv:focus-visible { outline: 3px solid var(--coin); outline-offset: 1px; }
 /* 触屏的微调角度：一只手拎着材料，另一只手按这两个键（或者在画面上左右滑） */
 #rot { display: none; position: absolute; left: 2%; top: 56%; flex-direction: column; gap: calc(var(--u) * 14); }
-.touch #rot { display: flex; }
 #rot button {
   width: max(44px, calc(var(--u) * 64)); height: max(44px, calc(var(--u) * 64)); border-radius: 50%; border: 0; padding: 0;
   font: 400 max(22px, calc(var(--u) * 34))/1 var(--body); color: var(--ink); background: rgb(17 13 43 / .55);
@@ -176,6 +191,7 @@ body {
 #stage.port #deliver { right: 17%; bottom: calc(var(--u) * (var(--bot) + 8)); font-size: max(15px, calc(var(--u) * 30)); }
 #stage.port #mute { bottom: calc(var(--u) * (var(--bot) + 10)); font-size: max(11px, calc(var(--u) * 17)); }
 #stage.port #replay { left: 24%; bottom: calc(var(--u) * (var(--bot) + 10)); font-size: max(11px, calc(var(--u) * 17)); }
+#stage.port #home { right: 2%; top: 14.8%; font-size: max(11px, calc(var(--u) * 17)); }   /* 竖屏：酬劳那行下面、甲方气泡右边 */
 .touch #deliver kbd { display: none; }
 #stage.cover #rot { display: none; }
 @media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
@@ -191,6 +207,7 @@ body {
       <button id="deliver" type="button" hidden>交货<kbd>空格</kbd></button>
       <button id="mute" type="button" aria-pressed="false">声音 开</button>
       <button id="replay" type="button" hidden>重来<kbd>R</kbd></button>
+      <button id="home" type="button" hidden>主页<kbd>Esc</kbd></button>
       <div id="rot"><button id="rotL" type="button" aria-label="向左转">↺</button><button id="rotR" type="button" aria-label="向右转">↻</button></div>
       <div id="overlay" hidden><section id="card"></section></div>
     </div>
@@ -752,7 +769,7 @@ function snapToFloor(b) { const [maxY, lowX] = lowest(b); b.y += FLOOR - maxY; b
 const G = { state: 'menu', idx: 0, loop: 0, score: 0, startScore: 0, done: 0, body: null, mat: MATS.wood, target: .78, timeLeft: 60, timeMax: 60,
   hp: 3, round: 0, shown: 0, started: false, time: 0, shake: 0, lastHit: null, stats: { good: 0, over: 0, light: 0 }, failT: 0, failReason: '',
   doom: null, bubble: null, mood: 'calm', moodT: 0, needle: 0, warned: false, wasReady: false, pay: null };
-const P = { x: W / 2, y: 200 };
+const P = { x: W / 2, y: 200, k: 1 };   // k：一个屏幕像素等于多少世界单位
 const keys = { left: false, right: false };
 let parts = [], frags = [], floats = [], stains = [];
 
@@ -852,7 +869,8 @@ function stepBody(b, dt) {
     // 手握：角度和位置都跟着手走，材料越沉跟得越慢
     b.w = clamp((b.targetA + b.userRot - b.a) * 16, -14, 14); b.a += b.w * dt;
     const c = Math.cos(b.a), s = Math.sin(b.a);
-    let dvx = (P.x - (b.gx * c - b.gy * s) - b.x) * FOLLOW, dvy = (P.y - (b.gx * s + b.gy * c) - b.y) * FOLLOW;
+    b.lift = (b.lift || 0) + ((b.liftTo || 0) - (b.lift || 0)) * Math.min(1, dt * 9);
+    let dvx = (P.x - (b.gx * c - b.gy * s) - b.x) * FOLLOW, dvy = (P.y - b.lift - (b.gx * s + b.gy * c) - b.y) * FOLLOW;
     const sp = Math.hypot(dvx, dvy); if (sp > VMAX) { dvx *= VMAX / sp; dvy *= VMAX / sp; }
     let ax = dvx - b.vx, ay = dvy - b.vy; const al = Math.hypot(ax, ay), mx = m.accel * dt;
     if (al > mx) { ax *= mx / al; ay *= mx / al; }
@@ -1067,7 +1085,7 @@ function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L +
 
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute'), replayBtn = document.getElementById('replay');
+const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute'), homeBtn = document.getElementById('home'), replayBtn = document.getElementById('replay');
 function setCard(html) { stage.classList.remove('cover'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
 function pips(v) { const k = clamp(Math.round(v), 1, 5); return '●'.repeat(k) + '○'.repeat(5 - k); }
 function setupRound() {
@@ -1136,6 +1154,30 @@ async function setName(raw) {
   catch (e) { WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
   WHO.busy = false; refreshCard();
 }
+/* 排行榜：按每单最高酬劳的合计排，只有起了名字的玩家上榜 */
+const BOARD = { data: null, err: false, seq: 0 };
+function showBoard(refetch = true) {
+  G.state = 'menu';
+  const d = BOARD.data;
+  const row = p => `<li class="${NAME && p.name.toLowerCase() === NAME.toLowerCase() ? 'me' : ''}"><b>${p.rank}</b><span class="nm">${escH(p.name)}</span><span class="dl">${L(`${p.delivered} 单`, `${p.delivered} orders`)}</span><span class="pt">◎ ${p.total}</span></li>`;
+  let body;
+  if (!d) body = `<p class="note">${BOARD.err ? L('排行榜连不上，过一会儿再试。', 'Could not load the leaderboard. Try again in a bit.') : L('加载中…', 'Loading…')}</p>`;
+  else if (!d.top.length) body = `<p class="note">${L('还没有人上榜。起个名字，交付一单，你就是第一名。', 'Nobody here yet. Pick a name and deliver an order to take first place.')}</p>`;
+  else body = `<ol class="board">${d.top.map(row).join('')}</ol>` +
+    (d.me && !d.top.some(p => p.rank === d.me.rank) ? `<ol class="board mine" start="${d.me.rank}">${row(d.me)}</ol>` : '') +
+    `<p class="note">${L(`共 ${d.players} 位起了名字的玩家，按每一单拿过的最高酬劳加起来排。`, `${d.players} named players, ranked by the sum of best pay on each order.`)}${NAME ? '' : L('你还没起名字，回首页起个名字才会上榜。', ' Pick a name on the home screen to get on the board.')}</p>`;
+  setCard(`
+    <p class="eyebrow" data-board>${L('排行榜', 'Leaderboard')}</p>
+    <h2>${L('谁最会弄圆', 'Who makes it roundest')}</h2>
+    ${body}
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('返回', 'Back')}</button></div>`);
+  if (!refetch || !CLOUD) return;
+  const seq = ++BOARD.seq;
+  fetch(CLOUD.replace(/save$/, 'leaderboard') + (NAME ? '?name=' + encodeURIComponent(NAME) : ''))
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(j => { BOARD.data = j; BOARD.err = false; }, () => { BOARD.err = true; })
+    .then(() => { if (seq === BOARD.seq && card.querySelector('[data-board]') && !overlay.hidden) showBoard(false); });
+}
 function whoRow() {
   if (!CLOUD) return '';
   if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。进度自动存到云端，换设备输同一个名字就能接着玩。', '. Progress syncs to the cloud; enter the same name on another device to continue.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
@@ -1179,7 +1221,7 @@ function showChapter() {
     <h2>${ch.name}</h2>
     <p>${ch.intro}</p>
     <p class="note">${L('这一班六单：', 'Six orders this shift: ')}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
-    <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
 function showCover() { G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }
@@ -1225,9 +1267,9 @@ function showMenu() {
     <ul class="how">
       <li><b>${L('拎', '1')}</b><span>${L('按住材料把它拎起来。抓住哪一头，对面那头就朝下。', '<strong>Lift.</strong> Press and hold the material to pick it up. Whichever end you grab, the opposite end points down.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。', '<strong>Slam.</strong> Smash it on the floor, or lift it high and let go. Watch the force gauge on the right: green works, too soft does nothing, red breaks it.')}</span></li>
-      <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候按左边的 ↺ ↻ 可以微调角度。', 'While holding, press ↺ ↻ on the left to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
+      <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候另一根手指左右滑可以微调角度。', 'While holding, slide a second finger left or right to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button><button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
     ${whoRow()}
     <p class="note">${L('会匿名记录每一单的圆度、用时和成败，用来调难度。起了名字的话，名字和每单最高酬劳会存在服务器上。', 'Anonymous gameplay stats (roundness, time, pass/fail per order) are recorded to tune difficulty. If you pick a name, it is stored with your best pay per order.')}</p>`);
 }
@@ -1251,7 +1293,7 @@ function showOrder() {
       <dt>${L('价值', 'Value')}</dt><dd>× ${m.value.toFixed(1)}</dd>
     </dl>
     <p>${EN ? `Target <strong>${pct(G.target)}</strong>. The Client's patience: <strong>${m.time} s</strong>, counted from your first lift.${best ? ` Your best on this order: <strong>◎ ${best}</strong>.` : ''}` : `达标线 <strong>${pct(G.target)}</strong>，甲方耐心 <strong>${m.time} 秒</strong>，从你第一次拎起材料开始算。${best ? `这一单你拿过最高 <strong>◎ ${best}</strong>。` : ''}`}</p>
-    <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 function computePay() {
   const m = G.mat, b = G.body, base = 100 * m.value * (1 + .5 * G.loop);
@@ -1276,7 +1318,7 @@ function deliver() {
       <dt>${L('剩余耐心', 'Patience left')} ${Math.ceil(Math.max(0, G.timeLeft))} ${L('秒', 's')}</dt><dd>+ ${p.timeBonus}</dd>
       <dt>${L('本单酬劳', 'Pay for this order')}${old && p.total > old ? L(' · 新纪录', ' · New best') : ''}</dt><dd class="sum">◎ ${p.total}</dd>
     </dl>
-    <div class="row"><button class="btn" type="button" data-act="next">${G.idx + 1 < ORDER.length ? L('下一单', 'Next order') : L('看看甲方怎么说', 'Hear the verdict')}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="next">${G.idx + 1 < ORDER.length ? L('下一单', 'Next order') : L('看看甲方怎么说', 'Hear the verdict')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 function fail(reason) {
   if (G.state !== 'play') return;
@@ -1320,6 +1362,8 @@ function act(a) {
     G.score = G.startScore; setupRound(); G.state = 'play'; overlay.hidden = true; updateRoundness(); say('start', true);
   }
   else if (a === 'restart') showMenu();
+  else if (a === 'home') { if (G.state === 'play') TRACK('quit', roundInfo()); showMenu(); }
+  else if (a === 'board') showBoard();
   else if (a === 'rename') { NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
   else if (a === 'again') { G.loop++; G.idx = 0; showOrder(); }
 }
@@ -1330,6 +1374,7 @@ card.addEventListener('click', e => {
 });
 deliverBtn.addEventListener('click', e => { e.currentTarget.blur(); deliver(); });
 replayBtn.addEventListener('click', e => { e.currentTarget.blur(); act('replay'); });
+homeBtn.addEventListener('click', e => { e.currentTarget.blur(); act('home'); });
 muteBtn.addEventListener('click', e => {
   audioInit(); muted = !muted; muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
 });
@@ -1337,7 +1382,7 @@ muteBtn.addEventListener('click', e => {
 /* ---------- 输入 ---------- */
 function setPointer(e) {
   const rc = cv.getBoundingClientRect(); if (!rc.width) return;
-  P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6, FLOOR + 420);
+  P.k = VW / rc.width; P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6, FLOOR + 420);
 }
 function toLocal(b, px, py) {
   const dx = px - b.x, dy = py - b.y, c = Math.cos(b.a), s = Math.sin(b.a);
@@ -1351,6 +1396,8 @@ function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
   const h = toLocal(b, P.x, P.y); if (!h.inside) return false;
   b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
+  // 触屏：手指会挡住挂在下面的料，拎起来时把它升到手指上方（抓点到最低点的距离 + 留给手指的 34 像素，最多 190）
+  b.lift = 0; b.liftTo = TOUCH ? Math.min(Math.hypot(h.x, h.y) + b.meanR, 190) + 34 * P.k : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; return true;
 }
@@ -1388,6 +1435,7 @@ window.addEventListener('keydown', e => {
   if (G.state === 'cover' && !e.metaKey && !e.ctrlKey && !e.altKey && document.activeElement !== muteBtn) { e.preventDefault(); leaveCover(); return; }
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
   else if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
+  else if (e.code === 'Escape' && (G.state === 'play' || (!overlay.hidden && !card.querySelector('[data-who]')))) { e.preventDefault(); act('home'); }
   else if (e.code === 'KeyR' && !e.metaKey && !e.ctrlKey && !e.altKey && G.state === 'play') { e.preventDefault(); act('replay'); }
   else if (e.code === 'Space' || e.code === 'Enter') {
     const el = document.activeElement; if (el && el.tagName === 'BUTTON') return;
@@ -1445,6 +1493,7 @@ function update(dt) {
   }
   if (G.state === 'failing') { G.failT -= dt; if (G.failT <= 0) showOver(); }
   if (replayBtn.hidden === (G.state === 'play')) replayBtn.hidden = G.state !== 'play';
+  if (homeBtn.hidden === (G.state === 'play')) homeBtn.hidden = G.state !== 'play';
   G.shown += (G.round - G.shown) * Math.min(1, dt * 10);
   let live = 0; if (b && !b.dead && (b.held || !b.sleeping)) live = clamp(b.vy / VMAX * 100, 0, 100);
   G.needle += (live - G.needle) * Math.min(1, dt * 30);
@@ -2199,8 +2248,8 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: press ↺ ↻ or slide a second finger (right = counter-clockwise)' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
-  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时按 ↺ ↻，或另一根手指左右滑（往右 = 逆时针）' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: slide a second finger to turn (right = counter-clockwise)' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
+  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时另一根手指左右滑来转（往右 = 逆时针）' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
 /* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
 function drawRotHint() {
   const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held) return;
@@ -2271,6 +2320,14 @@ function drawHudPort(t) {
     ctx.globalAlpha = 1;
   }
 }
+/* 触屏把料升到手指上方时，从手指到抓点画一根虚线，看得出是谁拎着它 */
+function drawLiftLine(b) {
+  if (!b.held || !(b.lift > 8)) return;
+  const c = Math.cos(b.a), s = Math.sin(b.a), hx = b.x + b.gx * c - b.gy * s, hy = b.y + b.gx * s + b.gy * c;
+  ctx.save(); ctx.globalAlpha = .55; ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([5, 6]);
+  ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(hx, hy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.globalAlpha = .8; ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(P.x, P.y, 5, 0, TAU); ctx.fill(); ctx.restore();
+}
 function draw() {
   const t = G.time; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, VW, VH);
   if (G.state === 'cover') { drawCover(t); return; }
@@ -2278,7 +2335,7 @@ function draw() {
   ctx.save(); if (!REDUCED && G.shake > .4) ctx.translate(rand(-1, 1) * G.shake, rand(-1, 1) * G.shake);
   drawBg(t); for (const st of stains) { ctx.fillStyle = st.c; ctx.beginPath(); ctx.ellipse(st.x, FLOOR + 2, st.w * Math.min(1, .3 + st.t * 3), st.h, 0, st.h > 6 ? Math.PI : 0, st.h > 6 ? TAU : TAU); ctx.fill(); }
   if (!PORT) drawAlien(t);
-  if (G.body && !G.body.dead) drawBody(G.body, t);
+  if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); }
   if (G.doom) drawDoom(G.doom);
   drawFx(); drawRotHint(); ctx.restore();
   drawGauge(); drawHints();
@@ -2299,14 +2356,14 @@ function fit() {
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
-if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时按 ↺ ↻ 微调角度。'; }
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时另一根手指左右滑微调角度。'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
   document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 48-order whacking game.';
   document.getElementById('help').textContent = TOUCH
-    ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, press ↺ ↻ to fine-tune the angle.'
+    ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, slide a second finger to fine-tune the angle.'
     : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
-  deliverBtn.innerHTML = 'Deliver<kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; muteBtn.textContent = 'Sound on';
+  deliverBtn.innerHTML = 'Deliver<kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
 }

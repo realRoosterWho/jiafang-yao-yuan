@@ -190,6 +190,13 @@ class Handler(BaseHTTPRequestHandler):
         path, _, query = self.path.partition("?")
         if path == "/admin" or path.startswith("/admin/"):
             return self._admin_get(path, query)
+        if path == "/api/leaderboard":
+            from urllib.parse import parse_qs
+            me = parse_qs(query).get("name", [None])[0]
+            with _db_lock:
+                out = saves.leaderboard(CON, admin.order_names(PUBLIC)[0], me)
+            return self._send(200, json.dumps(out, ensure_ascii=False).encode(), "application/json; charset=utf-8",
+                              {**self._cors(), "Cache-Control": "no-store"})
         if path == "/healthz":
             return self._send(200, b"ok")
         hit = STATIC.get(path)

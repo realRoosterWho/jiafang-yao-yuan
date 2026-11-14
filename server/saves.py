@@ -118,3 +118,20 @@ def delete(con, key: str) -> bool:
     con.execute("DELETE FROM save_pids WHERE key = ?", (key,))
     con.commit()
     return n > 0
+
+
+def leaderboard(con, order: list[str], me=None, limit: int = 50) -> dict:
+    """公开排行榜：按每单最高酬劳的合计排，同分看交付单数，再看谁先存的。只给名字和成绩。"""
+    known = set(order)
+    rows = []
+    for key, name, best, created in con.execute("SELECT key, name, best, created FROM saves"):
+        b = {k: v for k, v in json.loads(best).items() if k in known and v > 0}
+        if b:
+            rows.append((sum(b.values()), len(b), -created, key, name))
+    rows.sort(reverse=True)
+    board = [{"rank": i + 1, "name": r[4], "total": r[0], "delivered": r[1], "_key": r[3]} for i, r in enumerate(rows)]
+    nk = clean_name(me) if me else None
+    mine = next((dict(p) for p in board if nk and p["_key"] == nk[1]), None)
+    strip = lambda p: {k: v for k, v in p.items() if k != "_key"}
+    return {"top": [strip(p) for p in board[:limit]], "me": strip(mine) if mine else None,
+            "players": len(board), "total_orders": len(order)}
