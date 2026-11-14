@@ -1396,8 +1396,8 @@ function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
   const h = toLocal(b, P.x, P.y); if (!h.inside) return false;
   b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
-  // 触屏：手指会挡住挂在下面的料，拎起来时把它升到手指上方（抓点到最低点的距离 + 留给手指的 34 像素，最多 190）
-  b.lift = 0; b.liftTo = TOUCH ? Math.min(Math.hypot(h.x, h.y) + b.meanR, 190) + 34 * P.k : 0;
+  // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 34 像素（lift 为负 = 往下）
+  b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 34 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; return true;
 }
@@ -2320,9 +2320,9 @@ function drawHudPort(t) {
     ctx.globalAlpha = 1;
   }
 }
-/* 触屏把料升到手指上方时，从手指到抓点画一根虚线，看得出是谁拎着它 */
+/* 触屏把料挂到手指下方时，从手指到抓点画一根虚线，看得出是谁拎着它 */
 function drawLiftLine(b) {
-  if (!b.held || !(b.lift > 8)) return;
+  if (!b.held || !(Math.abs(b.lift) > 8)) return;
   const c = Math.cos(b.a), s = Math.sin(b.a), hx = b.x + b.gx * c - b.gy * s, hy = b.y + b.gx * s + b.gy * c;
   ctx.save(); ctx.globalAlpha = .55; ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([5, 6]);
   ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(hx, hy); ctx.stroke(); ctx.setLineDash([]);
