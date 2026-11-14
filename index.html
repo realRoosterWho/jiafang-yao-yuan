@@ -315,7 +315,7 @@ body {
       <div id="overlay" hidden><section id="card"></section></div>
     </div>
   </div>
-  <p id="help">按住拎起来砸地板 · A / D 转 · 空格交货</p>
+  <p id="help">按住拎高、松手让它掉 · A / D 转 · 空格交货</p>
 </main>
 
 <script>
@@ -1876,9 +1876,9 @@ function showMenu(msg) {
     </div><button class="alien-tap" type="button" data-act="alien" aria-label="${L('外星甲方', 'The alien Client')}">${ALIEN_SVG}<i></i></button></div>
     <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`冒险模式 ${ADV_N} 单：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到。通关以后是无尽模式：${ORDER.length} 样东西随机来，甲方越来越没耐心。`, ` Adventure mode is ${ADV_N} orders: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. Beat it to unlock endless mode: ${ORDER.length} kinds of things at random, and the Client gets less patient every order.`)}</p>
     <ul class="how">
-      <li><b>${L('拎', '1')}</b><span>${L('按住材料拎起来，抓哪头，对面那头朝下。', '<strong>Lift.</strong> Hold to pick it up; the far end points down.')}</span></li>
-      <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。右边力度表绿区有效，红区会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green on the gauge works, red breaks.')}</span></li>
-      <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来，另一根手指左右滑调角度。', '<strong>Lift.</strong> One finger holds it up; a second finger slides to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
+      <li><b>${L('砸', '2')}</b><span>${L('举高松手，让它自己掉下去；拿着往下砸是进阶手法。右边力度表绿区有效，红区会碎。', '<strong>Drop.</strong> Lift it high and let go; slamming while holding is the advanced move. Green on the gauge works, red breaks.')}</span></li>
+      <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
     </ul>
     <div class="row">${main}</div>
     <div class="row">${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="dex">${L('图鉴', 'Catalogue')} <span class="cnt">${dexGot()}/${ORDER.length}</span></button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}<button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
@@ -3222,11 +3222,11 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Hold to lift, slam it on the floor', TOUCH ? 'Second finger slides to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
-  : ['按住拎起来，往地板上砸', TOUCH ? '另一根手指左右滑来转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
+  ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger slides to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
+  : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指左右滑来转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
 /* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
 function drawRotHint() {
-  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held) return;
+  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor') return;   // 新手关（flow.js）自己画第二根手指的提示
   const on = rotId !== null, x = PORT ? midX() : 440, y = 30, fs = PORT ? 18 : 15;
   const txt = on ? L('← 顺时针 · 逆时针 →', '← clockwise · counter →') : L('另一根手指 ← 左右滑 → 转', 'Second finger: ← slide → to turn');
   ctx.font = `${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3353,13 +3353,13 @@ function fit() {
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
-if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住拎起来砸地板 · 另一根手指滑动来转'; }
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 另一根手指滑动来转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
   document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 49-order whacking game.';
   document.getElementById('help').textContent = TOUCH
-    ? 'Hold to lift, slam on the floor · Second finger slides to turn'
-    : 'Hold to lift, slam on the floor · A / D to turn · Space delivers';
+    ? 'Lift with one finger, let go to drop · Second finger slides to turn'
+    : 'Hold to lift, let go to drop · A / D to turn · Space delivers';
   deliverBtn.innerHTML = 'Deliver<span class="st"></span><kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
