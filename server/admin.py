@@ -164,6 +164,37 @@ def parse_filters(query: str) -> tuple[float, str]:
     return max(0.0, min(days, 3650)), loops
 
 
+INTRO_STEPS = [
+    ("new", "打开游戏"), ("lang", "选语言"), ("begin", "点开封面"), ("cut_end", "播片放完"), ("tut", "进新手关"),
+    ("tut_lift", "按住石头"), ("tut_turn", "拎过虚线"), ("tut_drop", "转好朝下"), ("tut_hit", "砸中凸起"), ("tut_ready", "够圆了"),
+    ("tut_done", "交了新手关"), ("contract", "看到合同"), ("signed", "签了合同"), ("first_start", "开第 1 单"), ("first_deliver", "交了第 1 单"),
+]
+INTRO_AT = {"lang": "选语言", "cutscene": "播片", "tutorial": "新手关", "handoff": "过场", "contract": "合同"}
+INTRO_ST = {"press": "还没按住", "lift": "没拎过线", "turn": "没转好", "drop": "转好了没松手", "ready": "够圆了没交"}
+
+
+def intro_funnel(con, where: str = "1=1", args: tuple = ()) -> dict:
+    """新玩家（打开时一单都没交过）的开场流程：每一步有多少不重复玩家走到。重看开场（replay=1）不算。
+    第 1 单只算这些新玩家里开过 / 交过冒险模式第一单（idx 0）的。"""
+    q = lambda sql: con.execute(sql.replace("{W}", where), args).fetchall()
+    new = {r[0] for r in q("SELECT DISTINCT pid FROM events WHERE {W} AND ev='open' AND json_extract(data,'$.delivered')=0")}
+    by: dict[str, set] = {}
+    for pid, s in q("SELECT pid, json_extract(data,'$.s') FROM events WHERE {W} AND ev='intro' AND COALESCE(json_extract(data,'$.replay'),0)=0"):
+        by.setdefault(s, set()).add(pid)
+    for ev, key in (("start", "first_start"), ("deliver", "first_deliver")):
+        by[key] = {r[0] for r in q(f"SELECT DISTINCT pid FROM events WHERE {{W}} AND ev='{ev}' AND json_extract(data,'$.idx')=0 "
+                                   "AND json_extract(data,'$.mode') IS NULL")} & new
+    by["new"] = new
+    steps = [{"k": k, "label": label, "n": len(by.get(k, ()))} for k, label in INTRO_STEPS]
+    leave: dict[str, int] = {}
+    for at, st in q("SELECT json_extract(data,'$.at'), json_extract(data,'$.st') FROM events WHERE {W} AND ev='intro' "
+                    "AND json_extract(data,'$.s')='leave' AND COALESCE(json_extract(data,'$.replay'),0)=0"):
+        k = INTRO_AT.get(at, at or "?") + (f"·{INTRO_ST.get(st, st)}" if st else "")
+        leave[k] = leave.get(k, 0) + 1
+    skips = q("SELECT COUNT(*) FROM events WHERE {W} AND ev='intro' AND json_extract(data,'$.s')='cut_end' AND json_extract(data,'$.skip')=1")[0][0]
+    return {"steps": steps, "leave": [{"k": k, "n": n} for k, n in sorted(leave.items(), key=lambda x: -x[1])], "cut_skips": skips}
+
+
 def stats(con, public: Path, days: float, loops: str) -> dict:
     where, args = _where(days, loops)
     q = lambda sql, *extra: con.execute(sql.replace("{W}", where), (*args, *extra)).fetchall()
@@ -219,6 +250,7 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
     far = [{"k": k, "n": n} for k, n in sorted(far_n.items())]
     names = saves.names_by_pid(con)
     named = saves.players(con, order)
+    iw, ia = _where(days, "all")   # 开场流程的事件不带轮次，不按轮次筛
     recent = [{"ts": r[0], "pid": r[1][:6], "name": names.get(r[1]), "ev": r[2], "country": r[3], "data": json.loads(r[4])}
               for r in q("SELECT ts, pid, ev, country, data FROM events WHERE {W} ORDER BY id DESC LIMIT 40")]
 
@@ -240,6 +272,10 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
             "ref": split("CASE WHEN COALESCE(json_extract(data,'$.ref'),'')='' THEN '直接打开' ELSE json_extract(data,'$.ref') END"),
         },
         "recent": recent,
+        "intro": intro_funnel(con, iw, tuple(ia)),
+        "extend": dict(zip(["n", "players", "delivered"], q(
+            "SELECT SUM(ev='extend'), COUNT(DISTINCT CASE WHEN ev='extend' THEN pid END), "
+            "SUM(ev='deliver' AND json_extract(data,'$.ext')=1) FROM events WHERE {W}")[0])),
     }
 
 

@@ -52,6 +52,12 @@ const FORCED = QUERY === '1', OFF = QUERY === '0';
 const hasProgress = () => Object.keys(Y.SAVE.best).length > 0;
 let ran = false;         // 这次打开页面已经走过一遍了
 let phase = 'idle';      // idle | cutscene | tutorial | handoff | contract
+/* 上报：开场流程每走一步发一条 intro 事件 { s: 哪一步, replay: 是不是重看 }，后台据此看新玩家在哪一步走掉。
+   新手关里每个阶段（tut_lift 按住了 / tut_turn 拎过虚线 / tut_drop 转好了 / tut_hit 砸中凸起 / tut_ready 够圆了）每次开场只发一次。
+   关页面时发 leave { at: 当时在哪一段, st: 新手关卡在哪一步 }。本地打开时游戏的 TRACK 什么都不发 */
+let replaying = 0, tutSeen = {}, tutT0 = 0, leaving = false;
+const track = (s, d) => { try { if (X.TRACK) X.TRACK('intro', Object.assign({ s, replay: replaying }, d || {})); } catch (e) {} };
+const tutOnce = (s, d) => { if (tutSeen[s]) return; tutSeen[s] = 1; track(s, Object.assign({ sec: Math.round((performance.now() - tutT0) / 100) / 10 }, d || {})); };
 const wantIntro = () => !OFF && !ran && (FORCED || (!FL.signed && !hasProgress()));
 
 /* ---------- 样式 ---------- */
@@ -216,11 +222,11 @@ function newStone() {
   const b = G.body; let armed = !!b.armed;
   Object.defineProperty(b, 'armed', { configurable: true, enumerable: true, get() { return armed && !this.held; }, set(v) { armed = !!v && !this.held; } });
   T = { grabbed: false, hit: null, before: G.round, note: null, keyL: false, keyR: false,
-    held: false, holdT0: 0, preHeld: false, rot: 0, rotT: -9, prevVy: 0, prevClear: 0, slamT: -9, high: false };
+    held: false, holdT0: 0, preHeld: false, rot: 0, rotT: -9, prevVy: 0, prevClear: 0, slamT: -9, high: false, stage: '' };
 }
 const note = text => { T.note = { text, t: G.time }; };
 function startTutorial() {
-  phase = 'tutorial'; newStone(); G.state = 'play';
+  phase = 'tutorial'; newStone(); G.state = 'play'; tutSeen = {}; tutT0 = performance.now(); track('tut');
   stage.classList.add('flow-tut'); stage.classList.toggle('flow-lock', !(FL.signed || hasProgress()));   // 第一次来不给回首页，重看的时候可以走
   G.mood = 'calm'; G.moodT = 0;
   G.bubble = { text: L('先试工。拎高，把凸起转到朝下，松手让它掉下去。', 'A trial first. Lift it, turn the bump down, and let it drop.'), t0: G.time, dur: 6, lines: null };
@@ -238,7 +244,7 @@ function tryFinish() {
   stopTutorial(); phase = 'handoff'; G.state = 'flow'; deliverBtn.hidden = true;
   X.sfx.win(); G.mood = 'happy'; G.moodT = G.time + 8;
   G.bubble = { text: L('做得不错，地球人。我们决定雇你。', 'Not bad, Earthling. We are hiring you.'), t0: G.time, dur: 3.6, lines: null };
-  FL.tut = 1; saveFL();
+  FL.tut = 1; saveFL(); track('tut_done', { sec: Math.round((performance.now() - tutT0) / 100) / 10 });
   setTimeout(() => openContract(round), 1900);
 }
 
@@ -410,9 +416,12 @@ function tutFrame() {
       T.hit = G.lastHit; const gain = G.round - T.before;
       if (T.hit.kind === 'light') { if (!ready) note(TXT.low); }
       else if (!ready && gain < .006) note(TXT.miss);
-      else if (!ready && gain > .02) note(TXT.good);
+      else if (!ready && gain > .02) { note(TXT.good); tutOnce('tut_hit'); }
     }
     T.before = G.round;
+    // 现在卡在哪一步（press 没拎 / lift 拎着没过线 / turn 过线没转好 / drop 转好了该松手 / '' 够圆了），第一次走到就上报
+    const st = ready ? '' : !b.held ? 'press' : !T.high ? 'lift' : !aligned ? 'turn' : 'drop';
+    if (st !== T.stage) { T.stage = st; if (st && st !== 'press') tutOnce('tut_' + st); else if (!st) tutOnce('tut_ready'); }
     tuneStone(b, g); drawHints(b, g, ready);
   } catch (e) { console.error('[flow] tutorial frame', e); }
 }
@@ -433,12 +442,14 @@ function playCutscene(done) {
   el.innerHTML = `<button class="fc-skip" type="button">${L('跳过', 'Skip')}<kbd>Esc</kbd></button>`;
   stage.appendChild(el);
   const timers = [], t0 = performance.now(); let over = false, video = null;
+  let skipped = false;
   const end = () => {
     if (over) return; over = true; cutSkip = null; timers.forEach(clearTimeout);
+    track('cut_end', { skip: skipped ? 1 : 0, sec: Math.round((performance.now() - t0) / 100) / 10 });
     if (video) { try { video.pause(); } catch (e) {} }
     el.classList.add('out'); setTimeout(() => el.remove(), 320); done();
   };
-  cutSkip = () => { if (performance.now() - t0 > 350) { X.sfx.ui(); end(); } };   // 刚点完封面的那一下不算跳过
+  cutSkip = () => { if (performance.now() - t0 > 350) { X.sfx.ui(); skipped = true; end(); } };   // 刚点完封面的那一下不算跳过
   el.querySelector('.fc-skip').addEventListener('click', cutSkip);
   const placeholder = () => {
     if (video) { video.remove(); video = null; }
@@ -487,7 +498,7 @@ const HANDSVG = `<svg class="fd-hand" viewBox="0 0 120 104" aria-hidden="true"><
 // 游戏顺序是「冒险模式 + 剩下的关卡」（index.html 里的 PARTS）；老版本没有 PARTS 时全算冒险模式
 const parts = () => { const p = X.PARTS && X.PARTS[0], n = Y.ORDER.length, a = p ? p.to - p.from : n; return { advN: a, restN: n - a }; };
 function openContract(round) {
-  phase = 'contract';
+  phase = 'contract'; track('contract');
   const no = contractNo(), now = new Date(), orders = Y.ORDER.length, name0 = X.NAME || FL.name || '';
   const { advN, restN } = parts();
   const date = EN ? now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
@@ -560,7 +571,7 @@ function openContract(round) {
     try { input.focus(); } catch (e) {}
   };
   const finish = (name, how) => {
-    signedOff = true; FL.signed = 1; FL.name = name; saveFL();
+    signedOff = true; FL.signed = 1; FL.name = name; saveFL(); track('signed', { how });
     input.value = name; mirror.textContent = name; fit(); input.disabled = true; thumb.disabled = true; thumb.classList.add('done'); flag.remove(); if (more) { more.remove(); more = null; }
     msg.textContent = '';
     X.sfx.thud(1); setTimeout(() => { X.sfx.thud(1); X.sfx.win(); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); }, 380);
@@ -600,19 +611,21 @@ function showChoice(name, how, no) {
   X.setCard(`
     <p class="eyebrow">${L('合同生效 · 圆字第 ' + no + ' 号', 'Contract R-' + no + ' in effect')}</p>
     <h2>${L(`签好了，${escH(name)}。开工吧`, `Signed, ${escH(name)}. Get to work`)}</h2>
-    <p>${(({ advN, restN }) => L(`冒险模式一共 <strong>${advN} 单</strong>，做完了还有无尽模式。完不成会怎样，合同第四条写着。`, `Adventure mode is <strong>${advN} orders</strong>, and after that comes endless mode. What happens if you fail is in clause 4.`))(parts())}</p>
+    <p>${(({ advN, restN }) => L(`冒险模式一共 <strong>${advN} 单</strong>，做完前 ${Y.ENDLESS.unlock} 单就解锁无尽模式。完不成会怎样，合同第四条写着。`, `Adventure mode is <strong>${advN} orders</strong>; finish the first ${Y.ENDLESS.unlock} to unlock endless mode. What happens if you fail is in clause 4.`))(parts())}</p>
     <div class="flow-go">
       <button class="btn flow-big" type="button" data-act="resume">${L('下一关', 'Next level')}<small>${L(`第 ${at + 1} 单 · ${mat ? mat.name : ''}`, `Order ${at + 1} · ${mat ? mat.name : ''}`)}</small></button>
       <button class="btn ghost" type="button" data-act="${escH(CONFIG.collectionAct)}">${L('去收藏室看看', 'Collection room')}</button>
     </div>
     ${note ? `<p class="note">${note}</p>` : ''}`);
+  const go = card.querySelector('.flow-go');
+  if (go) go.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) track('choice', { act: b.dataset.act }); });
 }
 
 /* ---------- 开始 ---------- */
 /* 第一次来、还没选过语言：先选。浏览器语言那个排前面、高亮。选了就记在 yuan.lang，以后不再问 */
 const langChosen = () => { try { return !!localStorage.getItem('yuan.lang') || !!new URLSearchParams(location.search).get('lang'); } catch (e) { return true; } };
 function pickLang(then) {
-  phase = 'lang';
+  phase = 'lang'; track('lang');
   const browserZh = /^zh/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
   const opts = browserZh ? [['zh', '中文'], ['en', 'English']] : [['en', 'English'], ['zh', '中文']];
   X.setCard(`<p class="eyebrow">语言 · Language</p>
@@ -622,15 +635,16 @@ function pickLang(then) {
     const to = btn.dataset.lang;
     try { localStorage.setItem('yuan.lang', to); } catch (e) {}
     if ((to === 'en') === EN) { phase = 'idle'; then(); return; }
-    location.href = location.pathname + '?lang=' + to;   // 换语言要重新加载；回来是封面，再点一下就开场（声音要这一下）
+    leaving = true; location.href = location.pathname + '?lang=' + to;   // 换语言要重新加载；回来是封面，再点一下就开场（声音要这一下）
   }));
 }
 function begin(replay) {
   if (!replay && !langChosen()) { X.audioInit(); X.sfx.ui(); pickLang(() => begin(replay)); return; }
-  ran = true;
+  ran = true; replaying = replay ? 1 : 0;
   X.audioInit(); X.sfx.ui();
   card.innerHTML = ''; overlay.hidden = true; stage.classList.remove('cover'); deliverBtn.hidden = true;
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; X.setupRound(); G.state = 'flow';   // 游戏不认识的状态：照常画场景，但不能拎、不计时
+  track('begin', { resume: !replay && !FORCED && FL.tut && !FL.signed ? 1 : 0 });
   if (!replay && !FORCED && FL.tut && !FL.signed) {   // 上次过了新手关没签字就走了：直接接着签
     phase = 'handoff';
     G.bubble = { text: L('合同还没签呢，地球人。', 'You have not signed yet, Earthling.'), t0: G.time, dur: 3, lines: null };
@@ -695,7 +709,12 @@ stage.addEventListener('click', e => {   // 新手关里的 交货 / 重来 / �
   e.preventDefault(); e.stopImmediatePropagation(); t.blur(); X.audioInit();
   if (t.id === 'deliver') tryFinish(); else if (t.id === 'replay') { X.sfx.ui(); newStone(); } else quitTutorial();
 }, true);
+window.addEventListener('pagehide', () => {   // 开场流程走到一半关掉了：记下停在哪（要排在下面那个拦截前面）
+  if (phase === 'idle' || leaving) return; leaving = true;
+  track('leave', { at: phase, st: phase === 'tutorial' && T ? T.stage || 'ready' : '' });
+}, true);
 window.addEventListener('pagehide', e => { if (phase === 'tutorial') e.stopImmediatePropagation(); }, true);   // 新手关不算“中途放弃了一单”
+window.addEventListener('pageshow', e => { if (e.persisted) leaving = false; });   // 从往返缓存里回来：下次关页面还要记
 
 /* ---------- 首页卡片上的「重看」，封面上的语言切换 ---------- */
 const addReplayLink = () => {

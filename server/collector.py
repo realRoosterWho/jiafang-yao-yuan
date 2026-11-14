@@ -30,7 +30,7 @@ PORT = int(os.environ.get("FC_PORT", "2504"))
 PUBLIC = Path(os.environ.get("FC_PUBLIC", HERE / "public"))
 DB_PATH = Path(os.environ.get("FC_DB", HERE / "data" / "events.db"))
 
-EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win", "endless_start", "endless_end"}
+EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win", "endless_start", "endless_end", "intro", "extend"}
 MAX_BODY = 4096
 MAX_SAVE_BODY = 16384  # 云存档带着星级和成就，比事件大
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
@@ -325,6 +325,18 @@ def report():
         rate = f"{d / st:5.0%}" if st else "   - "
         print(f"  #{i + 1:<3}{o:<10} {st:>4} / {d:>4} / {fs:>3}+{ft:<3} / {qu:>3}   通过率 {rate}"
               f"   {used or 0:5.1f}s   {rnd or 0:.3f}")
+    f = admin.intro_funnel(con)
+    if f["steps"][0]["n"] or any(x["n"] for x in f["steps"][1:]):
+        print("\n新玩家的开场流程（打开时一单都没交过的玩家，不算重看）：")
+        base = f["steps"][0]["n"] or 1
+        for x in f["steps"]:
+            print(f"  {x['label']:<10} {x['n']:>4} 人  {x['n'] / base:5.0%}")
+        if f["leave"]:
+            print("  中途关掉页面时停在：" + "，".join(f"{x['k']} {x['n']}" for x in f["leave"]))
+    ext = q("SELECT COUNT(*), COUNT(DISTINCT pid) FROM events WHERE ev='extend'")[0]
+    if ext[0]:
+        ext_ok = q("SELECT COUNT(*) FROM events WHERE ev='deliver' AND json_extract(data,'$.ext')=1")[0][0]
+        print(f"\n超时后求甲方再等 20 秒：{ext[0]} 次（{ext[1]} 人），之后交上货的 {ext_ok} 次")
     print("\n最远打到第几单（每个玩家，按游戏现在的顺序）：")
     far: dict[str, int] = {}
     for pid, o in q("SELECT pid, json_extract(data,'$.order') FROM events WHERE ev='deliver'"):

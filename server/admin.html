@@ -113,6 +113,12 @@ details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-
   <section class="kpis" id="kpis"></section>
 
   <section class="card">
+    <h2>新玩家的开场流程</h2>
+    <p class="desc">打开时一单都没交过的玩家，从打开游戏到交出第 1 单，每一步还剩多少人（重看开场的不算）。新手关里的几步不一定都会经过：拎起来时凸起刚好朝下，就跳过「拎过虚线」。</p>
+    <div id="c-intro"></div>
+  </section>
+
+  <section class="card">
     <h2>每一单有多少玩家走到</h2>
     <p class="desc">接过这一单的不重复玩家数。断崖在哪，玩家就是在哪放弃的。</p>
     <div class="chart" id="c-reach"></div>
@@ -180,7 +186,7 @@ const OUT = [
   { key: 'time', label: '超时', v: '--s3' },
   { key: 'quit', label: '中途关掉', v: '--s4' },
 ];
-const EVN = { open: '打开', start: '接单', deliver: '交付', fail: '失败', quit: '中途走', retry: '重来', win: '全通' };
+const EVN = { open: '打开', start: '接单', deliver: '交付', fail: '失败', quit: '中途走', retry: '重来', win: '全通', intro: '开场', extend: '求宽限', endless_start: '无尽开始', endless_end: '无尽收工' };
 
 let state = { days: '0', loops: 'first' };
 try { const s = JSON.parse(localStorage.getItem('fc.admin.filters') || 'null'); if (s) state = Object.assign(state, s); } catch (e) {}
@@ -352,6 +358,14 @@ function render() {
   });
   $('#t-orders').innerHTML = rows;
 
+  // 开场流程
+  const I = d.intro;
+  if (I && I.steps && I.steps.some(x => x.n)) {
+    const base = I.steps[0].n || Math.max(...I.steps.map(x => x.n)) || 1;
+    $('#c-intro').innerHTML = I.steps.map(x => `<div class="split-row"><span class="name">${esc(x.label)}</span><span>${x.n} · ${pct(x.n, base)}</span><div class="track"><span style="width:${Math.min(100, x.n / base * 100)}%"></span></div></div>`).join('')
+      + `<p class="desc">播片被跳过 ${I.cut_skips} 次。${I.leave.length ? '中途关掉页面时停在：' + I.leave.map(x => `${esc(x.k)} ${x.n}`).join('，') + '。' : ''}${d.extend && d.extend.n ? ` 超时后求甲方再等 20 秒：${d.extend.n} 次（${d.extend.players} 人），之后交上货 ${d.extend.delivered || 0} 次。` : ''}</p>`;
+  } else $('#c-intro').innerHTML = '<p class="muted">还没有开场流程的数据（新版上线以后才开始记）。</p>';
+
   // 来源与设备
   const S = d.devices, groups = [['输入方式', S.input], ['屏幕方向', S.orient], ['语言', S.lang], ['国家/地区', S.country], ['来源网站', S.ref]];
   $('#splits').innerHTML = groups.map(([t, arr]) => {
@@ -362,6 +376,7 @@ function render() {
   // 最近事件
   const evDesc = e => {
     const x = e.data || {}, nm = x.order ? (d.orders.find(o => o.order === x.order) || {}).name || x.order : '';
+    if (e.ev === 'intro') return [x.s, x.at, x.st, x.how, x.act, x.skip ? '跳过' : '', x.sec != null ? x.sec + ' 秒' : '', x.replay ? '重看' : ''].filter(Boolean).join(' · ');
     if (e.ev === 'open') return [x.touch ? '触屏' : '鼠标', x.port ? '竖屏' : '横屏', x.lang, x.ref ? '来自 ' + x.ref : ''].filter(Boolean).join(' · ');
     if (e.ev === 'win') return `酬劳 ◎ ${x.score ?? '–'}${x.loop ? ' · 加班第 ' + x.loop + ' 轮' : ''}`;
     const parts = [`第 ${(x.idx ?? 0) + 1} 单 ${nm}`];
