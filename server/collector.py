@@ -151,14 +151,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body, "text/html; charset=utf-8", noindex)
         if not ok:
             return self._send(401, b"login required", extra=noindex)
-        days, loops = admin.parse_filters(query)
+        days, loops, mode = admin.parse_filters(query)
         if path == "/admin/api/stats":
             with _db_lock:
-                data = admin.stats(CON, PUBLIC, days, loops)
+                data = admin.stats(CON, PUBLIC, days, loops, mode)
             return self._send(200, json.dumps(data, ensure_ascii=False).encode(), "application/json; charset=utf-8", noindex)
         if path == "/admin/api/events.csv":
             with _db_lock:
-                body = admin.events_csv(CON, days, loops)
+                body = admin.events_csv(CON, days, loops, mode)
             return self._send(200, body, "text/csv; charset=utf-8",
                               {**noindex, "Content-Disposition": 'attachment; filename="fullcircle-events.csv"'})
         return self._send(404, b"not found", extra=noindex)
@@ -312,6 +312,7 @@ def report():
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.used') END),
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.round') END)
         FROM events WHERE ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.loop')=0
+          AND json_extract(data,'$.mode') IS NULL
         GROUP BY i ORDER BY i""")
     for i, o, st, d, fs, ft, qu, used, rnd in rows:
         rate = f"{d / st:5.0%}" if st else "   - "
@@ -319,7 +320,7 @@ def report():
               f"   {used or 0:5.1f}s   {rnd or 0:.3f}")
     print("\n最远打到第几单（每个玩家）：")
     for far, n in q("""SELECT far, COUNT(*) FROM (SELECT pid, MAX(json_extract(data,'$.idx')) far FROM events
-                       WHERE ev='deliver' GROUP BY pid) GROUP BY far ORDER BY far"""):
+                       WHERE ev='deliver' AND json_extract(data,'$.mode') IS NULL GROUP BY pid) GROUP BY far ORDER BY far"""):
         print(f"  第 {far + 1:>2} 单  {n} 人")
 
 

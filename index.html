@@ -305,6 +305,8 @@ const mq = q => !!(window.matchMedia && matchMedia(q).matches);
 const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
+// 冒险模式：网址带 ?mode=adventure 时只玩精选的十单（见 ADVENTURE）
+const ADV = (() => { try { return new URLSearchParams(location.search).get('mode') === 'adventure'; } catch (e) { return false; } })();
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
@@ -472,7 +474,7 @@ const MATS = {
     } },
 };
 const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'octobear'];
-const PER = 6;   // 每班六单
+const PER = ADV ? 1 : 6;   // 每班六单（冒险模式每一站一单）
 const CHAPS = [
   { name: '试用期', intro: '' },
   { name: '甲方的厨房', intro: '甲方饿了。可在他们的星球上，不圆的东西不许上桌。' },
@@ -551,6 +553,46 @@ const CHAPS_EN = [
 if (EN) {
   for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
   CHAPS.forEach((c, i) => { c.name = CHAPS_EN[i][0]; c.intro = CHAPS_EN[i][1]; });
+}
+
+/* ---------- 冒险模式 ----------
+   给试玩准备的精选路线：每种花样都有一单，再加上故事里最有名的几单，普通的、重复的留给完整版。
+   打开方式：网址加 ?mode=adventure。ORDER / CHAPS 原地换成下面这套，PER 变成 1（一站一单）。
+   每站 [单子, 站名, 开工前的说明]：说明是空的就直接弹订单卡；说明只讲这一站新出现的机制，或者换场景时交代一句。
+   存档和完整版共用（同一单的最高酬劳、星级），上报的数据都带 mode: 'adv'，成就在冒险模式里不算。 */
+const ADVENTURE = [
+  // 地球上的东西：基础和手感
+  ['wood', ['上工', 'Clocking In'], ['', '']],
+  ['meat', ['软的', 'Squishy'], ['', '']],
+  ['egg', ['一次机会', 'One Chance'], ['', '']],
+  ['cone', ['会蹦的', 'Bouncy'], ['', '']],
+  ['ice', ['会化的', 'Melting'], ['', '']],
+  // 甲方的收藏室
+  ['record', ['甲方的收藏室', "The Client's Collection"], ['接下来几单是甲方的私人收藏，件件价值连城，砸坏哪件你都赔不起。', "The next few orders come from the Client's private collection. Every piece is priceless, and you can't afford to break any of them."]],
+  ['crown', ['软金子', 'Soft Gold'], ['', '']],
+  ['star', ['天上摘的', 'Picked From the Sky'], ['', '']],
+  ['ufo', ['甲方的座驾', "The Client's Ride"], ['', '']],
+  // 表里不一
+  ['coconut', ['表里不一', 'More Than Skin Deep'], ['从这一单开始，有的东西有两层：外面一层壳，里面一层芯，脾气不一样。壳砸穿了，力度表会跟着变成芯的。看清楚现在是哪一层朝下。', 'From here on, some things have two layers: a shell outside and a core inside, each with its own temper. Break through the shell and the force gauge switches to the core. Watch which layer is facing down.']],
+  ['earth', ['老家', 'Home'], ['', '']],
+  // 脾气怪
+  ['copper', ['越砸越硬', 'Work-Hardening'], ['金属越砸越硬：每砸好一下，力度下限都会往上抬。浪费一下，后面就更难砸动，专挑最凸的角砸。', 'Metal hardens as you hit it: every good hit raises the minimum force. Waste a hit and the rest get harder, so only hit the biggest corners.']],
+  ['butter', ['放着别管', 'Leave It Be'], ['软的东西放在地上不管就会塌，压在底下的那面慢慢变平。塌也能帮你：把尖角朝下放着，让它自己塌圆。', 'Soft things slump if you leave them on the floor, flattening whatever side is underneath. That can help: set a corner down and let it sag round on its own.']],
+  ['clay', ['焐一焐', 'Warm It Up'], ['有的东西拎在手里会被焐软：越拎越软，一下砸得越多，放下又慢慢凉回来。这块橡皮泥冻得砸不动，先拎着焐一会儿。', 'Some things soften in your warm hand: the longer you hold them, the more each hit changes them, and they cool again once you put them down. This clay is too cold to dent, so hold it for a while first.']],
+  ['piggy', ['里面会流', 'Shifting Contents'], ['存钱罐里的硬币会慢慢往下流：有硬币垫着的那面扛得住重砸，空着的那面一碰就裂。翻过来以后，等硬币流到底再砸。', 'The coins inside this piggy bank slide downward. The side with coins behind it can take a heavy hit; the hollow side cracks at a touch. After a flip, wait for the coins to settle before you hit.']],
+  // 芬兰特供
+  ['salmiak', ['芬兰特供', 'Finnish Specials'], ['甲方的飞碟追着极光一路飞到了芬兰，装了一飞碟的特产回来。芬兰人做东西结实、实用，就是不圆。', "The Client's saucer chased the northern lights all the way to Finland and came back loaded with local specialities. Finns make things sturdy and practical, just not round."]],
+  ['aalto', ['阿尔托', 'Aalto'], ['', '']],
+  ['sauna', ['烫手', 'Too Hot'], ['桑拿石刚从炉子里拿出来，烫手：每次只能拎一小会儿，到点你会自己撒手。抓起来，举高，松手，让它自己砸下去。', 'This sauna stone just came off the stove. You can only hold it for a moment before you have to let go. Grab it, lift it high, let it drop.']],
+  ['santa', ['活的', 'Alive'], ['圣诞老人也被请上了飞碟。活的东西砸过头不会碎，但会急：急够三次，他就坐上雪橇走了。', "Santa came along on the saucer too. Living things don't break when you hit too hard, but they get upset, and after three times he leaves on his sleigh."]],
+  ['oldphone', ['小心地板', 'Mind the Floor'], ['这部老手机砸不坏。砸过头裂的是甲方的地板，地板裂到第三次就穿了。得抡起来砸。', "This old phone can't break. Hit too hard and it's the Client's floor that cracks, and the third crack goes right through. You'll need to swing it."]],
+  // 收尾
+  ['octobear', ['特邀嘉宾', 'Special Guest'], ['最后一位客人：芬兰游戏社区 Games Now! 的吉祥物章鱼熊。一见面甲方就说：可爱是可爱，就是不够圆。它也是活的，拍太狠会疼。', "One last guest: the octo-bear, mascot of the Finnish games community Games Now!. The moment they met, the Client said: adorable, but not round enough. It's alive too, so don't hit it too hard."]],
+];
+const MAIN_COUNT = ORDER.length;
+if (ADV) {
+  ORDER.splice(0, ORDER.length, ...ADVENTURE.map(a => a[0]));
+  CHAPS.splice(0, CHAPS.length, ...ADVENTURE.map(([, n, t]) => ({ name: L(n[0], n[1]), intro: L(t[0], t[1]) })));
 }
 
 /* ---------- 形状：以质心为原点的极坐标半径数组 ---------- */
@@ -1237,8 +1279,8 @@ function setupRound() {
 const SAVE = { best: {}, stars: {} };
 try {
   const s = JSON.parse(localStorage.getItem('yuan.save.v2') || 'null');
-  if (s && s.best && typeof s.best === 'object') for (const id of ORDER) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
-  if (s && s.stars && typeof s.stars === 'object') for (const id of ORDER) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
+  if (s && s.best && typeof s.best === 'object') for (const id in MATS) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
+  if (s && s.stars && typeof s.stars === 'object') for (const id in MATS) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
 } catch (e) {}
 function backfillStars() { let ch = false; for (const id in SAVE.best) if (!SAVE.stars[id]) { SAVE.stars[id] = 3; ch = true; } return ch; }
 function persist() { try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} }
@@ -1251,7 +1293,8 @@ function saveBest(id, pay, stars) {
   if (up) { persist(); if (NAME) cloudSync(NAME).catch(() => {}); }
   return old;
 }
-function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
+let ADV_AT = 0; if (ADV) try { ADV_AT = clamp(parseInt(localStorage.getItem('yuan.adv.at'), 10) || 0, 0, ORDER.length); } catch (e) {}
+function firstOpen() { if (ADV) return ADV_AT >= ORDER.length ? 0 : ADV_AT; const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
 /* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
    本地打开（file:// 或 localhost）不发，免得开发时弄脏数据。
    不看“请勿追踪”/GPC：数据匿名、不存 IP、不跨站，说明卡里写明了；Firefox 隐私模式默认开 GPC，看它会漏掉一大片玩家。 */
@@ -1264,7 +1307,7 @@ const TRACK = (() => {
   const sid = rid(), t0 = performance.now(); let seq = 0;
   return (ev, data) => {
     try {
-      const body = JSON.stringify({ v: 1, pid, sid, seq: seq++, ev, ms: Math.round(performance.now() - t0), data: data || {} });
+      const body = JSON.stringify({ v: 1, pid, sid, seq: seq++, ev, ms: Math.round(performance.now() - t0), data: ADV ? Object.assign({ mode: 'adv' }, data) : (data || {}) });
       if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, body))) fetch(URL_, { method: 'POST', body, mode: 'no-cors', keepalive: true }).catch(() => {});
     } catch (e) {}
   };
@@ -1281,7 +1324,7 @@ const WHO = { busy: false, err: '' };
 const escH = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 function mergeBest(d) {
   let changed = false; const best = d.best || {}, stars = d.stars || {};
-  for (const id of ORDER) {
+  for (const id in MATS) {
     const v = +best[id] || 0; if (v > (SAVE.best[id] || 0)) { SAVE.best[id] = v; changed = true; }
     const n = stars[id] | 0; if (n >= 1 && n <= 3 && n > (SAVE.stars[id] || 0)) { SAVE.stars[id] = n; changed = true; }
   }
@@ -1398,7 +1441,7 @@ const ACH = [
   { id: 'mesmerised', g: 'odd', hid: 1, t: ['看呆了', '盯着封面看了一分钟。那块木头圆了又方，方了又圆。你看懂了：这就是上班。', '开工之前，先看看那块木头是怎么干活的。'], e: ['Mesmerised', 'Watched the title screen for a minute. Round, square, round again. You get it now: that is the job.', 'Before you start, watch how the block does it.'] },
 ];
 const ACH_BY = {}; for (const a of ACH) ACH_BY[a.id] = a;
-const achOn = a => !a.cloud || !!CLOUD;
+const achOn = a => !ADV && (!a.cloud || !!CLOUD);
 const achText = a => EN ? a.e : a.t;
 const achList = () => ACH.filter(achOn);
 const achGot = () => achList().filter(a => A.got[a.id]).length;
@@ -1411,7 +1454,7 @@ try {
     const v = s[k]; if (v === undefined || v === null || typeof v !== typeof A[k] || Array.isArray(v) !== Array.isArray(A[k])) continue;
     if (k === 'n') { for (const c in A.n) if (typeof v[c] === 'number') A.n[c] = v[c]; } else A[k] = v;
   }
-  for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
+  if (!ADV) for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
 } catch (e) {}
 function achSave() { try { localStorage.setItem('yuan.ach.v1', JSON.stringify(A)); } catch (e) {} }
 let achSyncT = 0;
@@ -1586,13 +1629,13 @@ function startAt(i) {
 function showBook() {
   G.state = 'menu'; const at = firstOpen(); let html = '';
   CHAPS.forEach((ch, k) => {
-    html += `<p class="chap">${L(`第 ${k + 1} 班`, `Shift ${k + 1}`)} · ${ch.name}</p><div class="grid">`;
+    if (!ADV || !k) html += `<p class="chap">${ADV ? L(`冒险模式 · ${ORDER.length} 站`, `Adventure · ${ORDER.length} stops`) : `${L(`第 ${k + 1} 班`, `Shift ${k + 1}`)} · ${ch.name}`}</p><div class="grid">`;
     for (let i = k * PER; i < Math.min((k + 1) * PER, ORDER.length); i++) {
       const id = ORDER[i], best = SAVE.best[id] || 0;
       const st = SAVE.stars[id] || 0;
       html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="${L(`第 ${i + 1} 单`, `Order ${i + 1}`)} ${MATS[id].name}${best ? L(`，${st} 星，最高酬劳 `, `, ${st} star${st > 1 ? 's' : ''}, best pay `) + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span><i class="${st ? '' : 'dim'}" aria-hidden="true">${best ? starStr(st) : ''}</i></button>`;
     }
-    html += '</div>';
+    if (!ADV || k === CHAPS.length - 1) html += '</div>';
   });
   setCard(`
     <p class="eyebrow">${L('订单簿', 'Order book')}</p>
@@ -1603,12 +1646,13 @@ function showBook() {
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showChapter() {
+  if (ADV && !CHAPS[G.idx].intro) return showOrder();
   setupRound(); const k = G.idx / PER | 0, ch = CHAPS[k]; G.state = 'chapter';
   setCard(`
-    <p class="eyebrow">${L(`第 ${k + 1} 班 · 共 ${CHAPS.length} 班`, `Shift ${k + 1} of ${CHAPS.length}`)}</p>
+    <p class="eyebrow">${ADV ? L(`第 ${k + 1} 站 · 共 ${CHAPS.length} 站 · 新花样`, `Stop ${k + 1} of ${CHAPS.length} · Something new`) : L(`第 ${k + 1} 班 · 共 ${CHAPS.length} 班`, `Shift ${k + 1} of ${CHAPS.length}`)}</p>
     <h2>${ch.name}</h2>
     <p>${ch.intro}</p>
-    <p class="note">${(n => n === 1 ? L('这一班只有一单：', 'Just one order this shift: ') : n === PER ? L('这一班六单：', 'Six orders this shift: ') : L(`这一班 ${n} 单：`, `${n} orders this shift: `))(ORDER.slice(k * PER, (k + 1) * PER).length)}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
+    <p class="note">${(n => n === 1 ? (ADV ? L('这一站：', 'This stop: ') : L('这一班只有一单：', 'Just one order this shift: ')) : n === PER ? L('这一班六单：', 'Six orders this shift: ') : L(`这一班 ${n} 单：`, `${n} orders this shift: `))(ORDER.slice(k * PER, (k + 1) * PER).length)}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
@@ -1649,16 +1693,17 @@ function showMenu() {
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
   const at = firstOpen();
   setCard(`
-    <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
+    <p class="eyebrow">${ADV ? L(`冒险模式 · ${ORDER.length} 单精选`, `Adventure mode · ${ORDER.length} picked orders`) : L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
     <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
-    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}</p>
+    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${ADV ? L(`这一趟精选 ${ORDER.length} 单，每种花样都有，从一块木头一路做到 Games Now! 的章鱼熊。`, ` This run is ${ORDER.length} picked orders with every kind of trick, from a block of wood all the way to the Games Now! octo-bear.`) : ''}</p>
     <ul class="how">
       <li><b>${L('拎', '1')}</b><span>${L('按住材料拎起来，抓哪头，对面那头朝下。', '<strong>Lift.</strong> Hold to pick it up; the far end points down.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。右边力度表绿区有效，红区会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
-    ${A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>${ADV ? '' : `<button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button>`}<button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    ${ADV ? `<p class="note">${L('冒险模式和完整版共用存档：每单的最高酬劳和星级是同一份。成就只在完整版里算。', 'Adventure mode shares your save with the full game: best pay and stars per order are the same. Achievements only count in the full game.')} <a class="link" href="${location.pathname}${EN ? '?lang=en' : ''}">${L('去玩完整版', 'Play the full game')}</a></p>` : ''}
+    ${!ADV && A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
     ${whoRow()}
     <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars and achievements.')}</p>`);
 }
@@ -1697,6 +1742,7 @@ function deliver() {
   const id = ORDER[G.idx];
   G.res = { n, oldStars: SAVE.stars[id] || 0, old: 0 };
   G.res.old = saveBest(id, p.total, n);
+  if (ADV && G.idx + 1 > ADV_AT) { ADV_AT = G.idx + 1; try { localStorage.setItem('yuan.adv.at', ADV_AT); } catch (e) {} }
   achRound('deliver');
   TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: G.res.old, stars: n, ach: G.newAch.join(',').slice(0, 64) }));
   celebrate(n);
@@ -1811,12 +1857,13 @@ function showWin() {
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
     <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的星线都会再高一点。', '. Next round, every star line goes a little higher.')}</p>
+    ${ADV ? `<p class="note">${L(`冒险模式到这里就做完了，谢谢试玩！完整版一共 ${MAIN_COUNT} 单。`, `That's the end of adventure mode. Thanks for playing! The full game has ${MAIN_COUNT} orders.`)} <a class="link" href="${location.pathname}${EN ? '?lang=en' : ''}">${L('去玩完整版', 'Play the full game')}</a></p>` : ''}
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function act(a) {
   audioInit(); sfx.ui();
-  if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
+  if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to + (ADV ? '&mode=adventure' : ''); return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();

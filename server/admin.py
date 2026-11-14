@@ -123,8 +123,23 @@ def order_names(public: Path) -> tuple[list[str], dict[str, str]]:
     return order, names
 
 
-def _where(days: float, loops: str) -> tuple[str, list]:
+def adventure_order(public: Path) -> list[str]:
+    """冒险模式的单子顺序：index.html 里 const ADVENTURE = [ ['wood', ...], ... ] 每行第一个 id。"""
+    try:
+        src = (public / "index.html").read_text("utf-8")
+    except OSError:
+        return []
+    start = src.find("const ADVENTURE = [")
+    if start < 0:
+        return []
+    block = src[start:src.find("\n];", start)]
+    return re.findall(r"^\s+\['([a-z]+)',", block, re.M)
+
+
+def _where(days: float, loops: str, mode: str = "main") -> tuple[str, list]:
     w, a = ["1=1"], []
+    # 冒险模式（?mode=adventure）的事件带 mode='adv'，和完整版分开看，不然按序号统计会混在一起
+    w.append("json_extract(data,'$.mode') = 'adv'" if mode == "adv" else "json_extract(data,'$.mode') IS NULL")
     if days > 0:
         w.append("ts >= ?")
         a.append(time.time() - days * 86400)
@@ -133,20 +148,22 @@ def _where(days: float, loops: str) -> tuple[str, list]:
     return " AND ".join(w), a
 
 
-def parse_filters(query: str) -> tuple[float, str]:
+def parse_filters(query: str) -> tuple[float, str, str]:
     q = parse_qs(query)
     try:
         days = float(q.get("days", ["0"])[0])
     except ValueError:
         days = 0
     loops = "all" if q.get("loops", ["first"])[0] == "all" else "first"
-    return max(0.0, min(days, 3650)), loops
+    mode = "adv" if q.get("mode", ["main"])[0] == "adv" else "main"
+    return max(0.0, min(days, 3650)), loops, mode
 
 
-def stats(con, public: Path, days: float, loops: str) -> dict:
-    where, args = _where(days, loops)
+def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dict:
+    where, args = _where(days, loops, mode)
     q = lambda sql, *extra: con.execute(sql.replace("{W}", where), (*args, *extra)).fetchall()
-    order, names = order_names(public)
+    main_order, names = order_names(public)
+    order = adventure_order(public) if mode == "adv" else main_order
 
     players, sessions = q("SELECT COUNT(DISTINCT pid), COUNT(DISTINCT sid) FROM events WHERE {W}")[0]
     durs = [r[0] / 1000 for r in q("SELECT MAX(ms) FROM events WHERE {W} AND ms IS NOT NULL GROUP BY sid") if r[0]]
@@ -190,12 +207,13 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
     far = [{"k": r[0], "n": r[1]} for r in q("""SELECT far, COUNT(*) FROM (SELECT pid, MAX(json_extract(data,'$.idx')) far
            FROM events WHERE {W} AND ev='deliver' GROUP BY pid) GROUP BY far ORDER BY far""")]
     names = saves.names_by_pid(con)
-    named = saves.players(con, order)
+    named = saves.players(con, main_order)
     recent = [{"ts": r[0], "pid": r[1][:6], "name": names.get(r[1]), "ev": r[2], "country": r[3], "data": json.loads(r[4])}
               for r in q("SELECT ts, pid, ev, country, data FROM events WHERE {W} ORDER BY id DESC LIMIT 40")]
 
     return {
-        "generated": time.time(), "filters": {"days": days, "loops": loops}, "total_orders": len(order),
+        "generated": time.time(), "filters": {"days": days, "loops": loops, "mode": mode}, "total_orders": len(main_order),
+        "mode": mode, "per": 1 if mode == "adv" else 6,
         "kpi": {"players": players, "sessions": sessions, "starts": ev.get("start", 0), "delivers": ev.get("deliver", 0),
                 "fails": ev.get("fail", 0), "quits": ev.get("quit", 0), "wins": ev.get("win", 0),
                 "winners": q("SELECT COUNT(DISTINCT pid) FROM events WHERE {W} AND ev='win'")[0][0],
@@ -214,8 +232,8 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
     }
 
 
-def events_csv(con, days: float, loops: str) -> bytes:
-    where, args = _where(days, loops)
+def events_csv(con, days: float, loops: str, mode: str = "main") -> bytes:
+    where, args = _where(days, loops, mode)
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["time_utc", "player", "session", "seq", "event", "ms", "country", "data"])
