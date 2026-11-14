@@ -355,8 +355,8 @@ const MATS = {
     base: '#f0484e', outline: '#5c1018', chips: ['#ff5a5f', '#ffd0d0', '#1f7a34', '#2a1414'], over: '瓜裂了！', dead: '西瓜炸成了一地瓜瓤。', blurb: '先收拾两个尖角。' },
   carrot: { name: '胡萝卜', unit: '根', hard: 16, brittle: 58, loose: 1.6, plastic: 0, smooth: 0, passes: 0, value: 2, hp: 3, rest: .25, fric: .6, accel: 32000, jig: .03, target: .78, time: 110, snd: 'snap',
     base: '#f08a24', outline: '#7a3a06', chips: ['#f08a24', '#ffb563', '#c96a10'], over: '断了一截！', dead: '胡萝卜断成了一盘萝卜丁。', blurb: '抓粗头，把尖头一截截砸短。' },
-  ice: { name: '冰块', unit: '块', hard: 28, brittle: 58, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 2.4, hp: 2, rest: .3, fric: .1, accel: 28000, jig: 0, target: .86, time: 45, snd: 'glass',
-    base: '#bfe9fb', outline: '#3f86b3', chips: ['#eaffff', '#bfe9fb', '#8fd0f0'], over: '冰裂了！', dead: '冰块碎成了一杯刨冰。', blurb: '冰在化，时间短；松手会在地上溜。' },
+  ice: { name: '冰块', unit: '块', hard: 28, brittle: 58, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 2.4, hp: 2, rest: .3, fric: .1, accel: 28000, jig: 0, target: .86, time: 45, melt: .5, snd: 'glass',
+    base: '#bfe9fb', outline: '#3f86b3', chips: ['#eaffff', '#bfe9fb', '#8fd0f0'], over: '冰裂了！', dead: '冰块碎成了一杯刨冰。', blurb: '冰一直在化，越磨越小；松手会在地上溜。' },
   egg: { name: '鸡蛋', unit: '颗', hard: 6, brittle: 30, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 3.5, hp: 1, rest: .1, fric: .6, accel: 30000, jig: .02, target: .86, time: 90, snd: 'egg',
     base: '#f6ead2', outline: '#9a7d55', chips: ['#fffaf0', '#f6ead2', '#ffcf40'], over: '蛋碎了！', dead: '蛋黄流了一地。甲方说这个形状最不圆。', blurb: '<strong>一次都碎不起</strong>。离地一拃高松手就够。' },
 
@@ -497,7 +497,7 @@ const MATS_EN = {
   cheese: ['Cheese', 'Crumbled!', 'The cheese crumbled into a plate of parmesan.', 'Three points, crumbly. Go easy.'],
   melon: ['Melon', 'Cracked!', 'The watermelon exploded all over the floor.', 'Deal with the two corners first.'],
   carrot: ['Carrot', 'Snapped!', 'The carrot is now diced carrot.', 'Hold the thick end; shorten the tip bit by bit.'],
-  ice: ['Ice', 'Cracked!', 'The ice is now a cup of shaved ice.', 'Melting fast, and it slides when you let go.'],
+  ice: ['Ice', 'Cracked!', 'The ice is now a cup of shaved ice.', 'It keeps melting smaller; it slides when you let go.'],
   egg: ['Egg', 'Cracked!', 'Yolk everywhere. The Client says this is the least round shape of all.', "<strong>No breaks allowed.</strong> Drop it from a hand's width."],
   brick: ['Brick', 'Chipped!', 'The brick crumbled into rubble.', 'Shorten both ends first.'],
   cone: ['Cone', 'Squashed!', 'The traffic cone is now a rubber mat.', 'Rubber: it bounces again, and every bounce counts.'],
@@ -2047,6 +2047,13 @@ function update(dt) {
       if (h0 < soft && b.heat >= soft && (b.warmMsg || 0) < 2) { b.warmMsg = (b.warmMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('焐软了', 'Softened'), C.coin, 20); }
       if (h0 < hot && b.heat >= hot && (b.hotMsg || 0) < 3) { b.hotMsg = (b.hotMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('太热了，要化了！放下凉一凉', 'Too hot, melting! Put it down to cool'), C.alarm, 20); }
       if (b.heat >= hot && b.held && Math.random() < dt * 8) fxp(b.lowX + rand(-12, 12), FLOOR - b.clear - 2, 1, 'drop', b.mat.chips, { up: 0, g: 900 });   // 化得往下滴
+    }
+    if (b.mat.melt && G.state === 'play' && G.started) {   // 冰一直在化：整块等比缩小，形状不变，但留下的越来越少
+      const k = Math.exp(Math.log(1 - b.mat.melt) * dt / b.mat.time);
+      for (let i = 0; i < N; i++) b.r[i] *= k; if (b.c) for (let i = 0; i < N; i++) b.c[i] *= k;
+      props(b);
+      if (Math.random() < dt * 3) fxp(b.x + rand(-b.meanR * .6, b.meanR * .6), b.y + b.meanR * .5, 1, 'drop', b.mat.chips, { up: 0, g: 900 });
+      if (Math.random() < dt) stain(b.x, 18 + 30 * (1 - b.area / b.area0), 'rgba(160,220,250,.22)');
     }
     const sagNow = b.mat.warm ? (b.mat.warm.sag || 0) * (b.heat || 0) : b.mat.sag;
     if (sagNow && G.state === 'play' && G.started) {
