@@ -274,6 +274,89 @@ body {
 .btn .cnt { font: 500 .7em var(--num); opacity: .75; }
 .btn .dot { display: inline-block; width: .42em; height: .42em; margin-left: .35em; vertical-align: .5em; border-radius: 50%; background: var(--alarm); }
 @media (prefers-reduced-motion: reduce) { #deliver, .stars.big i.on, #card.win, .chip.gold, .spec .sum.done, #toast.in, #toast.out, #toast .medal, .ach-new .achs li, .ach-new .achs li .medal { animation: none; } }
+/* ================= CrispKit 界面（ui-crispkit 分支）=================
+   上面的规则一条没动，这一段把外观换成 CrispKit 素材包（薄荷绿主题）。素材是脚本里的 KIT_SVG，开局时由 kitBoot 塞进 --k-名字 这些变量。
+   卡片是素材包的「窗口」：上面一条薄荷绿的标题栏（卡片第一行小标题就坐在里面），下面是白底。
+   卡片里把颜色变量换成白底深字那一套，原有的规则（星级、成就、订单簿……）就都跟着变了。舞台上（深色底）的变量不动，flow.js 也在用。 */
+:root { --navy: #2b3245; --slate: #6b7390; --mint: #22c58a; --mint-lo: #14966a; --amber-lo: #b96f00; }
+/* 按钮：素材包的中号按钮，九宫格拉伸。边框宽度用 em，跟着字号缩放 */
+.btn, #mute, #replay, #home, #deliver {
+  background: none; box-shadow: none; border-style: solid; border-color: transparent; border-width: .7em .75em .8em;
+  border-image: var(--k-btn) 16 17 18 17 fill / .7em .75em .8em stretch; border-radius: .6em;
+  color: #fff; text-shadow: 0 .07em 0 rgb(13 115 82 / .75);
+}
+.btn { padding: 0 .75em; }
+.btn.small { padding: 0 .45em; }
+.btn:hover, #mute:hover, #replay:hover, #home:hover { border-image-source: var(--k-btnHover); color: #fff; }
+.btn:active, #mute:active, #replay:active, #home:active { border-image-source: var(--k-btnDown); }
+.btn:disabled { border-image-source: var(--k-btnOff); color: #8a93a8; text-shadow: none; }
+.btn.ghost { border-image: var(--k-flat) 16 fill / .7em .75em .8em stretch; color: var(--mint-lo); text-shadow: none; box-shadow: none; }
+.btn.ghost:hover { filter: brightness(.97); }
+#mute, #replay, #home { font-weight: 700; padding: 0 .3em; }
+#mute::before, #replay::before, #home::before { content: ""; display: inline-block; width: 1.25em; height: 1.25em; margin-right: .35em; vertical-align: -.26em; background: center / contain no-repeat; }
+#mute::before { background-image: var(--k-icoSound); }
+#mute[aria-pressed="true"]::before { background-image: var(--k-icoMute); }
+#replay::before { background-image: var(--k-icoRestart); }
+#home::before { background-image: var(--k-icoHome); }
+/* 交货：同一个按钮改成琥珀色，呼吸的光圈照旧 */
+#deliver { border-image-source: var(--k-btnGo); padding: 0 .5em; color: #fff; text-shadow: 0 .07em 0 rgb(185 111 0 / .8); }
+#deliver:hover { border-image-source: var(--k-btnGoHover); }
+#deliver:active { border-image-source: var(--k-btnGoDown); }
+@keyframes pulse { to { box-shadow: 0 0 0 calc(var(--u) * 9) rgb(255 200 60 / .3); } }
+#deliver:focus-visible, #replay:focus-visible, #mute:focus-visible, #home:focus-visible, .btn:focus-visible { outline-color: #fff; }
+#rot button { color: #fff; background: var(--k-badge) center / 100% 100% no-repeat; box-shadow: none; }
+/* 卡片：素材包的窗口。四条边是边框图，白底那块填在中间 */
+#overlay { background: rgb(16 14 46 / .8); }
+#card, #card.win {
+  --hull: #ffffff; --hull-hi: #e9edf5; --rim: #c3cad8; --ink: var(--navy); --dim: var(--slate); --coin: #e08f00; --alien: #17a877; --alarm: #e5486d; --space: #ffffff;
+  color: var(--ink); background: none; border-radius: 0; box-shadow: none; filter: drop-shadow(0 .9em 1.3em rgb(8 6 40 / .5));
+  border-style: solid; border-color: transparent; border-width: 4.25em 1.75em 1.9em;
+  border-image: var(--k-window) 68 28 30 28 fill / 4.25em 1.75em 1.9em stretch;
+  padding: 0 .15em .1em;
+}
+/* 第一行小标题坐进标题栏里 */
+#card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
+  margin: -3.9em 0 .55em; min-height: 2.6em; display: flex; align-items: center; font-size: 1em; font-weight: 700; letter-spacing: .14em;
+  color: #fff; text-shadow: 0 .08em 0 rgb(13 115 82 / .7);
+}
+#card > .result:first-child > .eyebrow:first-child { justify-content: center; margin-bottom: 1em; }
+#card h1 { color: var(--mint); text-shadow: 0 .055em 0 var(--mint-lo); }
+#card strong { font-weight: 700; }
+.how b { color: #fff; background: var(--k-badge) center / 100% 100% no-repeat; text-shadow: 0 .06em 0 rgb(13 115 82 / .7); }
+.row { gap: .7em; padding-top: .15em; }
+/* 内嵌面板、输入框 */
+.spec { background: none; border-radius: 0; border-style: solid; border-color: transparent; border-width: .9em; border-image: var(--k-inset) 16 fill / .9em stretch; padding: 0 .15em; }
+.who input { background: none; box-shadow: none; border-radius: .8em; border-style: solid; border-color: transparent; border-width: .7em .85em; border-image: var(--k-input) 16 fill / .8em stretch; padding: 0 .15em; }
+.who input:focus { box-shadow: none; outline: 3px solid var(--mint); outline-offset: -1px; }
+.window { box-shadow: 0 2px 0 #bfc7d8 inset; background: #d8dde8; }
+.w-light { background: #d8dde8; }
+.w-ok { background: linear-gradient(#4fe0a6, #22c58a); }
+.w-break { background: linear-gradient(#ff8a96, #f0506e); }
+/* 星星：素材包的金星和灰星。结算卡上那三颗原来的弹出动画照旧 */
+.stars.big i { color: transparent; -webkit-text-stroke: 0; background: var(--k-star0) center / 100% 100% no-repeat; width: 1em; height: 1em; overflow: hidden; }
+.stars.big i.on { color: transparent; text-shadow: none; background-image: var(--k-star); filter: drop-shadow(0 0 .12em rgb(255 200 60 / .7)); }
+.rnd b { color: var(--mint); }
+.chip { background: var(--navy); color: #ffd95c; box-shadow: none; }
+.chip.gold { background: linear-gradient(#ffd95c, #ffb720); color: #5a3a00; }
+/* 订单簿：每一单是素材包的一块关卡格。交付过的是薄荷绿，该做的下一单是琥珀色，其余是灰的（不是锁，哪一单都能点） */
+.lv b { width: 2.5em; height: 2.75em; padding-bottom: .28em; box-sizing: border-box; border-radius: 0; box-shadow: none; color: #5a6380; background: var(--k-tile) center / 100% 100% no-repeat; filter: grayscale(1) brightness(1.32); }
+.lv.done b { color: #fff; background: var(--k-tile) center / 100% 100% no-repeat; box-shadow: none; filter: none; text-shadow: 0 .07em 0 rgb(13 115 82 / .7); }
+.lv.now b { color: #fff; background-image: var(--k-tileAmber); box-shadow: none; filter: none; text-shadow: 0 .07em 0 rgb(185 111 0 / .8); }
+.lv:hover b { transform: translateY(-.08em); }
+/* 成就提示条：素材包的深色提示框 */
+#toast { background: none; box-shadow: none; border-radius: .7em; border-style: solid; border-color: transparent; border-width: .6em; border-image: var(--k-tip) 14 fill / .7em stretch; padding: 0 .55em 0 0; filter: drop-shadow(0 6px 12px rgb(0 0 0 / .35)); }
+#stage #toast.menu, #stage.port #toast.menu { padding: .1em .7em .1em .1em; border-radius: .7em; }
+/* 三颗星到手：舞台外面泛一圈彩虹光（画面里面那圈是画布上画的，见 drawEdgeGlow） */
+#stage.star3 { animation: halo 3s linear infinite; }
+@keyframes halo {
+  0%, 100% { box-shadow: 0 0 0 2px #ff5f7e, 0 0 calc(var(--u) * 36) calc(var(--u) * 6) rgb(255 95 126 / .7); }
+  17% { box-shadow: 0 0 0 2px #ffa94d, 0 0 calc(var(--u) * 44) calc(var(--u) * 8) rgb(255 169 77 / .7); }
+  33% { box-shadow: 0 0 0 2px #ffe066, 0 0 calc(var(--u) * 36) calc(var(--u) * 6) rgb(255 224 102 / .7); }
+  50% { box-shadow: 0 0 0 2px #5fe3a1, 0 0 calc(var(--u) * 44) calc(var(--u) * 8) rgb(95 227 161 / .7); }
+  67% { box-shadow: 0 0 0 2px #5ab8ff, 0 0 calc(var(--u) * 36) calc(var(--u) * 6) rgb(90 184 255 / .7); }
+  83% { box-shadow: 0 0 0 2px #b28cff, 0 0 calc(var(--u) * 44) calc(var(--u) * 8) rgb(178 140 255 / .7); }
+}
+@media (prefers-reduced-motion: reduce) { #stage.star3 { animation: none; box-shadow: 0 0 0 2px #ffe066, 0 0 calc(var(--u) * 36) calc(var(--u) * 6) rgb(255 224 102 / .6); } }
 </style>
 </head>
 <body>
@@ -1733,13 +1816,17 @@ function drawCover(t) {
   ctx.restore();
   ctx.strokeStyle = 'rgba(244,240,255,.45)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(cx, floorY - R - lift, R * 1.04, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.font = `${PORT ? 20 : 17}px ${BODY}`; ctx.fillStyle = C.coin; ctx.fillText(L('地球工匠 · 外星订单', 'Earth artisan · Alien orders'), cx, floorY + R * .75);
+  ctx.font = `700 ${PORT ? 19 : 16}px ${BODY}`;
+  { const sub = L('地球工匠 · 外星订单', 'Earth artisan · Alien orders'), rw = ctx.measureText(sub).width + 112, ry = floorY + R * .75 - 40;   // 小标题：素材包的绶带
+    kit9('ribbon', cx - rw / 2, ry, rw, 46, 46 / 64); ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(sub, cx, ry + 18.5); ctx.textBaseline = 'alphabetic'; }
   const ts = EN ? (PORT ? 50 : 62) : (PORT ? 84 : 96);
-  ctx.font = `${ts}px ${DISPLAY}`; ctx.fillStyle = C.alien; ctx.fillText(L('甲方要圆', EN && PORT ? 'The Client' : 'The Client Wants It Round'), cx, floorY + R * .75 + ts * 1.05);
-  if (EN && PORT) ctx.fillText('Wants It Round', cx, floorY + R * .75 + ts * 2.1);
+  ctx.font = `${ts}px ${DISPLAY}`;
+  for (const [line, ty] of EN && PORT ? [['The Client', floorY + R * .75 + ts * 1.02], ['Wants It Round', floorY + R * .75 + ts * 2.07]] : [[L('甲方要圆', 'The Client Wants It Round'), floorY + R * .75 + ts * 1.02]]) {
+    ctx.fillStyle = '#14966a'; ctx.fillText(line, cx, ty + ts * .055); ctx.fillStyle = '#4fe0a6'; ctx.fillText(line, cx, ty);   // 标题：薄荷绿，底下一道深色的厚边
+  }
   ctx.globalAlpha = REDUCED ? 1 : .45 + .55 * Math.abs(Math.sin(t * 2.2));
   ctx.font = `${PORT ? 22 : 18}px ${BODY}`; ctx.fillStyle = C.ink;
-  ctx.fillText(TOUCH ? L('点一下屏幕开始', 'Tap to start') : L('点击或按任意键开始', 'Click or press any key'), cx, VH * (PORT ? .88 : .9));
+  ctx.fillText(TOUCH ? L('点一下屏幕开始', 'Tap to start') : L('点击或按任意键开始', 'Click or press any key'), cx, VH * (PORT ? .9 : .94));
   ctx.globalAlpha = 1;
 }
 function showMenu() {
@@ -2906,16 +2993,110 @@ function drawDoom(d) {
   ctx.restore();
 }
 
+/* ---------- CrispKit 界面素材 ----------
+   界面上的按钮、面板、窗口、进度条、关卡格、星星、金币、图标、按键提示都来自 CrispKit 素材包（免费试用包，薄荷绿主题）。
+   授权：可以用在游戏里、可以改色；不能把素材单独拿出来再分发。所以只内嵌了用到的这三十来个，原样的 SVG 文本。
+   用法：CSS 里写 var(--k-名字)；画布上用 kit(名字, x, y, w, h) 整张贴，或 kit9(名字, x, y, w, h) 九宫格贴。 */
+const KIT_SVG = {
+  btn: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="52" viewBox="0 0 144 52"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><rect x="0" y="0" width="144" height="52" rx="13" fill="#14966a"/><rect x="0" y="0" width="144" height="47" rx="13" fill="#9eeece"/><rect x="0" y="1.5" width="144" height="45.5" rx="13" fill="url(#g1)"/></svg>',
+  btnHover: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="52" viewBox="0 0 144 52"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#68e4b2"/><stop offset="1" stop-color="#41cd9a"/></linearGradient></defs><rect x="0" y="0" width="144" height="52" rx="13" fill="#35a57f"/><rect x="0" y="0" width="144" height="47" rx="13" fill="#acf0d5"/><rect x="0" y="1.5" width="144" height="45.5" rx="13" fill="url(#g1)"/></svg>',
+  btnDown: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="52" viewBox="0 0 144 52"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#49d09a"/><stop offset="1" stop-color="#20b780"/></linearGradient></defs><rect x="0" y="3" width="144" height="49" rx="13" fill="#138c63"/><rect x="0" y="3" width="144" height="47" rx="13" fill="#93ddc0"/><rect x="0" y="4.5" width="144" height="45.5" rx="13" fill="url(#g1)"/></svg>',
+  btnOff: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="52" viewBox="0 0 144 52"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6dbe5"/><stop offset="1" stop-color="#c8ced9"/></linearGradient></defs><rect x="0" y="0" width="144" height="52" rx="13" fill="#a9b1c2"/><rect x="0" y="0" width="144" height="47" rx="13" fill="#e8ebf1"/><rect x="0" y="1.5" width="144" height="45.5" rx="13" fill="url(#g1)"/></svg>',
+  flat: '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="48" viewBox="0 0 144 48"><rect x="0" y="0" width="144" height="48" rx="12" fill="#22c58a"/><rect x="3" y="3" width="138" height="42" rx="9" fill="#ffffff"/></svg>',
+  panel: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f3f5fa"/></linearGradient></defs><rect x="0" y="0" width="96" height="96" rx="16" fill="#c0d7df"/><rect x="2" y="2" width="92" height="88" rx="14" fill="url(#g1)"/></svg>',
+  inset: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect x="0" y="0" width="96" height="96" rx="12" fill="#d0d7e5"/><rect x="0" y="2" width="96" height="94" rx="12" fill="#e7ebf3"/></svg>',
+  window: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180" viewBox="0 0 240 180"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f3f5fa"/></linearGradient></defs><rect x="0" y="0" width="240" height="180" rx="20" fill="#14966a"/><rect x="0" y="0" width="240" height="174" rx="20" fill="#9eeece"/><rect x="0" y="1.5" width="240" height="172.5" rx="20" fill="url(#g1)"/><rect x="8" y="52" width="224" height="114" rx="12" fill="#14966a"/><rect x="8" y="54" width="224" height="112" rx="12" fill="url(#g2)"/></svg>',
+  tip: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="44" viewBox="0 0 120 44"><rect x="0" y="0" width="120" height="44" rx="10" fill="#2b3245"/></svg>',
+  track: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="24" viewBox="0 0 160 24"><rect x="0" y="0" width="160" height="24" rx="12" fill="#bfc7d8"/><rect x="0" y="2" width="160" height="22" rx="11" fill="#d8dde8"/></svg>',
+  fill: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="24" viewBox="0 0 48 24"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><rect x="3" y="3" width="42" height="18" rx="9" fill="#14966a"/><rect x="3" y="3" width="42" height="16.5" rx="8.25" fill="url(#g1)"/><rect x="9" y="6" width="30" height="3.5" rx="1.75" fill="#ffffff" opacity="0.4"/></svg>',
+  input: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="48" viewBox="0 0 160 48"><rect x="0" y="0" width="160" height="48" rx="12" fill="#b4bdd0"/><rect x="2" y="3.5" width="156" height="42.5" rx="10" fill="#ffffff"/></svg>',
+  tile: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="88" viewBox="0 0 80 88"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><rect x="0" y="0" width="80" height="88" rx="18" fill="#14966a"/><rect x="0" y="0" width="80" height="81" rx="18" fill="#9eeece"/><rect x="0" y="1.5" width="80" height="79.5" rx="18" fill="url(#g1)"/><rect x="6" y="7" width="68" height="68" rx="12" fill="#ffffff" opacity="0.14"/></svg>',
+  pill: '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 120 40"><defs><mask id="m1" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="40"><rect x="0" y="2" width="120" height="36" rx="18" fill="#fff"/><rect x="0" y="4.5" width="120" height="36" rx="18" fill="#000"/></mask></defs><rect x="0" y="2" width="120" height="36" rx="18" fill="#0a0d18" opacity="0.5"/><rect x="0" y="0" width="120" height="40" fill="#0a0d18" mask="url(#m1)" opacity="0.35"/></svg>',
+  ribbon: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="64" viewBox="0 0 240 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><polygon points="0,10 37.6,10 37.6,64 0,64 10.92,37" fill="#14966a"/><polygon points="22,54 37.6,54 37.6,64" fill="#0d7352"/><polygon points="240,10 202.4,10 202.4,64 240,64 229.08,37" fill="#14966a"/><polygon points="218,54 202.4,54 202.4,64" fill="#0d7352"/><rect x="22" y="0" width="196" height="54" rx="6" fill="#14966a"/><rect x="22" y="0" width="196" height="49" rx="6" fill="#9eeece"/><rect x="22" y="1.5" width="196" height="47.5" rx="6" fill="url(#g1)"/></svg>',
+  badge: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><circle cx="14" cy="14" r="14" fill="#ffffff"/><circle cx="14" cy="14" r="11.5" fill="url(#g1)"/></svg>',
+  star: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd95c"/><stop offset="1" stop-color="#ffb720"/></linearGradient></defs><polygon points="24,8 29.654,18.717 41.595,20.783 33.149,29.473 34.874,41.467 24,36.12 13.126,41.467 14.851,29.473 6.405,20.783 18.346,18.717" fill="#dc8a02" stroke="#dc8a02" stroke-width="6.4" stroke-linejoin="round"/><polygon points="24,5 29.654,15.717 41.595,17.783 33.149,26.473 34.874,38.467 24,33.12 13.126,38.467 14.851,26.473 6.405,17.783 18.346,15.717" fill="#ffeaa5" stroke="#ffeaa5" stroke-width="6.4" stroke-linejoin="round"/><polygon points="24,6.28 29.654,16.997 41.595,19.063 33.149,27.753 34.874,39.747 24,34.4 13.126,39.747 14.851,27.753 6.405,19.063 18.346,16.997" fill="url(#g1)" stroke="url(#g1)" stroke-width="6.4" stroke-linejoin="round"/></svg>',
+  star0: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3d9e4"/><stop offset="1" stop-color="#bcc4d3"/></linearGradient></defs><polygon points="24,8 29.654,18.717 41.595,20.783 33.149,29.473 34.874,41.467 24,36.12 13.126,41.467 14.851,29.473 6.405,20.783 18.346,18.717" fill="#9aa3b6" stroke="#9aa3b6" stroke-width="6.4" stroke-linejoin="round"/><polygon points="24,5 29.654,15.717 41.595,17.783 33.149,26.473 34.874,38.467 24,33.12 13.126,38.467 14.851,26.473 6.405,17.783 18.346,15.717" fill="#e7eaf0" stroke="#e7eaf0" stroke-width="6.4" stroke-linejoin="round"/><polygon points="24,6.28 29.654,16.997 41.595,19.063 33.149,27.753 34.874,39.747 24,34.4 13.126,39.747 14.851,27.753 6.405,19.063 18.346,16.997" fill="url(#g1)" stroke="url(#g1)" stroke-width="6.4" stroke-linejoin="round"/></svg>',
+  coin: '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd95c"/><stop offset="1" stop-color="#ffb720"/></linearGradient><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb720"/><stop offset="1" stop-color="#ffd95c"/></linearGradient></defs><circle cx="24" cy="26" r="20" fill="#dc8a02"/><circle cx="24" cy="23" r="20" fill="#ffeaa5"/><ellipse cx="24" cy="23.8" rx="20" ry="19.2" fill="url(#g1)"/><circle cx="24" cy="23.5" r="14.5" fill="#dc8a02"/><ellipse cx="24" cy="24.6" rx="14.5" ry="13.6" fill="url(#g2)"/><polygon points="24,18.2 26.116,22.688 31.038,23.313 27.424,26.712 28.35,31.587 24,29.2 19.65,31.587 20.576,26.712 16.962,23.313 21.884,22.688" fill="#dc8a02" stroke="#dc8a02" stroke-width="3.2" stroke-linejoin="round"/><polygon points="24,17 26.116,21.488 31.038,22.113 27.424,25.512 28.35,30.387 24,28 19.65,30.387 20.576,25.512 16.962,22.113 21.884,21.488" fill="#fff3c4" stroke="#fff3c4" stroke-width="3.2" stroke-linejoin="round"/></svg>',
+  icoHome: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><mask id="m1" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect x="7" y="14.5" width="18" height="13.5" rx="2.6" fill="#fff"/><polygon points="16,5.6 27.2,15.8 4.8,15.8" fill="#fff" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/><rect x="13.4" y="19.5" width="5.2" height="10" rx="1.2" fill="#000"/></mask></defs><rect x="0" y="0" width="32" height="32" fill="#ffffff" mask="url(#m1)"/></svg>',
+  icoRestart: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polyline points="25.466,14.464 25.676,15.449 25.785,16.451 25.789,17.458 25.69,18.461 25.489,19.448 25.188,20.41 24.789,21.335 24.297,22.215 23.718,23.039 23.057,23.8 22.322,24.488 21.519,25.098 20.659,25.622 19.749,26.055 18.799,26.392 17.82,26.63 16.821,26.766 15.814,26.798 14.809,26.727 13.817,26.554 12.847,26.279 11.911,25.906 11.018,25.439 10.178,24.883 9.399,24.244 8.69,23.528 8.059,22.743 7.511,21.897 7.053,20.999 6.69,20.059 6.425,19.087 6.261,18.093 6.2,17.087 6.243,16.081 6.389,15.084 6.637,14.107 6.983,13.161 7.425,12.255 7.958,11.4 8.575,10.604 9.271,9.875 10.038,9.222 10.869,8.651 11.753,8.168 12.682,7.779 13.647,7.487 14.636,7.295" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><polygon points="16,3.6 22.8,7.4 16,11.4" fill="#ffffff" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/></svg>',
+  icoSound: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="5,13 9.5,13 15,8.2 15,23.8 9.5,19 5,19" fill="#ffffff" stroke="#ffffff" stroke-width="3.6" stroke-linejoin="round"/><polyline points="19.662,12.253 20.03,12.708 20.35,13.2 20.616,13.722 20.826,14.27 20.978,14.836 21.069,15.415 21.1,16 21.069,16.585 20.978,17.164 20.826,17.73 20.616,18.278 20.35,18.8 20.03,19.292 19.662,19.747" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="23.675,8.64 24.399,9.534 25.026,10.5 25.549,11.526 25.962,12.601 26.26,13.713 26.44,14.85 26.5,16 26.44,17.15 26.26,18.287 25.962,19.399 25.549,20.474 25.026,21.5 24.399,22.466 23.675,23.36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icoMute: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="5,13 9.5,13 15,8.2 15,23.8 9.5,19 5,19" fill="#ffffff" stroke="#ffffff" stroke-width="3.6" stroke-linejoin="round"/><polyline points="20,12.2 27.4,19.8" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="27.4,12.2 20,19.8" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  icoHeart: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="4.441,14.868 4.14,14.277 3.902,13.658 3.73,13.017 3.627,12.362 3.592,11.7 3.627,11.038 3.73,10.383 3.902,9.742 4.14,9.123 4.441,8.532 4.802,7.976 5.219,7.46 5.688,6.991 6.204,6.574 6.76,6.213 7.351,5.912 7.97,5.674 8.611,5.502 9.266,5.399 9.928,5.364 10.59,5.399 11.245,5.502 11.886,5.674 12.505,5.912 13.096,6.213 13.652,6.574 14.168,6.991 14.637,7.46 17.363,7.46 17.832,6.991 18.348,6.574 18.904,6.213 19.495,5.912 20.114,5.674 20.755,5.502 21.41,5.399 22.072,5.364 22.734,5.399 23.389,5.502 24.03,5.674 24.649,5.912 25.24,6.213 25.796,6.574 26.312,6.991 26.781,7.46 27.198,7.976 27.559,8.532 27.86,9.123 28.098,9.742 28.27,10.383 28.373,11.038 28.408,11.7 28.373,12.362 28.27,13.017 28.098,13.658 27.86,14.277 27.559,14.868 16,26.55" fill="#ffffff" stroke="#ffffff" stroke-width="3.2" stroke-linejoin="round"/></svg>',
+  icoTrophy: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polyline points="9.6,15.2 9.119,15.174 8.644,15.095 8.179,14.965 7.729,14.785 7.3,14.557 6.896,14.283 6.522,13.967 6.182,13.612 5.879,13.221 5.616,12.8 5.398,12.352 5.225,11.883 5.101,11.398 5.025,10.902 5,10.4 5.025,9.898 5.101,9.402 5.225,8.917 5.398,8.448 5.616,8 5.879,7.579 6.182,7.188 6.522,6.833 6.896,6.517 7.3,6.243 7.729,6.015 8.179,5.835 8.644,5.705 9.119,5.626 9.6,5.6" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="22.4,5.6 22.881,5.626 23.356,5.705 23.821,5.835 24.271,6.015 24.7,6.243 25.104,6.517 25.478,6.833 25.818,7.188 26.121,7.579 26.384,8 26.602,8.448 26.775,8.917 26.899,9.402 26.975,9.898 27,10.4 26.975,10.902 26.899,11.398 26.775,11.883 26.602,12.352 26.384,12.8 26.121,13.221 25.818,13.612 25.478,13.967 25.104,14.283 24.7,14.557 24.271,14.785 23.821,14.965 23.356,15.095 22.881,15.174 22.4,15.2" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.4,4.4H20.6A2,2 0 0 1 22.6,6.4V13.2A6.6,6.6 0 0 1 16,19.8H16A6.6,6.6 0 0 1 9.4,13.2V6.4A2,2 0 0 1 11.4,4.4Z" fill="#ffffff"/><rect x="14.6" y="19" width="2.8" height="5.5" fill="#ffffff"/><rect x="10" y="23.6" width="12" height="4.2" rx="1.6" fill="#ffffff"/></svg>',
+  icoCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polyline points="6.5,16.5 13,23 25.5,9.5" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  keyA: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6eaf3"/></linearGradient></defs><rect x="2" y="2" width="28" height="28" rx="7" fill="#a7b0c4"/><rect x="2" y="2" width="28" height="24.5" rx="7" fill="#ffffff"/><rect x="2" y="3.2" width="28" height="23.3" rx="7" fill="url(#g1)"/><polyline points="12,20.2 16,8.2 20,20.2" fill="none" stroke="#2b3245" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="13.7,16.2 18.3,16.2" fill="none" stroke="#2b3245" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  keyD: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6eaf3"/></linearGradient></defs><rect x="2" y="2" width="28" height="28" rx="7" fill="#a7b0c4"/><rect x="2" y="2" width="28" height="24.5" rx="7" fill="#ffffff"/><rect x="2" y="3.2" width="28" height="23.3" rx="7" fill="url(#g1)"/><polyline points="12,8.2 12,20.2" fill="none" stroke="#2b3245" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="12,8.2 14.8,8.2 14.8,8.2 15.703,8.279 16.579,8.514 17.4,8.897 18.142,9.417 18.783,10.058 19.303,10.8 19.686,11.621 19.921,12.497 20,13.4 20,15 19.921,15.903 19.686,16.779 19.303,17.6 18.783,18.342 18.142,18.983 17.4,19.503 16.579,19.886 15.703,20.121 14.8,20.2 12,20.2" fill="none" stroke="#2b3245" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  keySpace: '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="32" viewBox="0 0 96 32"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6eaf3"/></linearGradient></defs><rect x="2" y="2" width="92" height="28" rx="7" fill="#a7b0c4"/><rect x="2" y="2" width="92" height="24.5" rx="7" fill="#ffffff"/><rect x="2" y="3.2" width="92" height="23.3" rx="7" fill="url(#g1)"/><polyline points="34.45,11.494 34.259,11.159 33.999,10.857 33.679,10.596 33.308,10.384 32.898,10.228 32.461,10.132 32.01,10.1 31.559,10.132 31.122,10.228 30.712,10.384 30.341,10.596 30.021,10.857 29.761,11.159 29.57,11.494 29.453,11.85 29.413,12.218 29.453,12.586 29.57,12.943 29.761,13.277 30.021,13.58 30.341,13.841 30.712,14.053 31.122,14.209 31.559,14.304 32.01,14.337 32.01,14.063 32.485,14.096 32.945,14.191 33.377,14.347 33.767,14.559 34.104,14.82 34.377,15.122 34.578,15.457 34.702,15.814 34.743,16.182 34.702,16.55 34.578,16.906 34.377,17.241 34.104,17.543 33.767,17.804 33.377,18.016 32.945,18.172 32.485,18.268 32.01,18.3 31.535,18.268 31.075,18.172 30.643,18.016 30.253,17.804 29.916,17.543 29.643,17.241 29.442,16.906" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="37.34,18.3 37.34,10.1 40.347,10.1 40.347,10.1 40.75,10.135 41.141,10.24 41.508,10.411 41.84,10.644 42.126,10.93 42.359,11.262 42.53,11.629 42.635,12.02 42.67,12.423 42.635,12.827 42.53,13.218 42.359,13.585 42.126,13.917 41.84,14.203 41.508,14.435 41.141,14.607 40.75,14.711 40.347,14.747 37.34,14.747" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="45.403,18.3 48.137,10.1 50.87,18.3" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="46.565,15.567 49.708,15.567" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="58.677,11.678 58.448,11.278 58.154,10.922 57.804,10.62 57.409,10.382 56.979,10.213 56.527,10.12 56.066,10.103 55.608,10.165 55.168,10.302 54.757,10.512 54.387,10.788 54.068,11.122 53.811,11.506 53.621,11.927 53.506,12.373 53.467,12.833 53.467,15.567 53.506,16.027 53.621,16.473 53.811,16.894 54.068,17.278 54.387,17.612 54.757,17.888 55.168,18.098 55.608,18.235 56.066,18.297 56.527,18.28 56.979,18.187 57.409,18.018 57.804,17.78 58.154,17.478 58.448,17.122 58.677,16.722" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="66.723,10.1 61.53,10.1 61.53,18.3 66.723,18.3" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="61.53,14.2 65.767,14.2" fill="none" stroke="#2b3245" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  mouse: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6eaf3"/></linearGradient><clipPath id="c2"><rect x="5" y="5.2" width="22" height="29.8" rx="11" fill="#fff"/></clipPath><linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fe0a6"/><stop offset="1" stop-color="#22c58a"/></linearGradient></defs><rect x="5" y="4" width="22" height="34" rx="11" fill="#a7b0c4"/><rect x="5" y="4" width="22" height="31" rx="11" fill="#ffffff"/><rect x="5" y="5.2" width="22" height="29.8" rx="11" fill="url(#g1)"/><g clip-path="url(#c2)"><rect x="5" y="3" width="11" height="14.5" fill="url(#g3)"/><polyline points="16,3 16,17.5" fill="none" stroke="#a7b0c4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3,17.5 29,17.5" fill="none" stroke="#a7b0c4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g><rect x="13.2" y="7.6" width="5.6" height="8" rx="2.8" fill="#a7b0c4"/><rect x="14.2" y="8.6" width="3.6" height="6" rx="1.8" fill="#2b3245"/></svg>',
+};
+/* 九宫格的边：[左, 上, 右, 下]，素材 1 倍图上的像素。上下是 0 的只横着拉 */
+const KIT_SLICE = { btn: [17, 16, 17, 18], flat: [16, 16, 16, 16], panel: [20, 20, 20, 24], inset: [16, 16, 16, 16], window: [28, 68, 28, 30], tip: [14, 14, 14, 14],
+  track: [12, 0, 12, 0], fill: [12, 0, 12, 0], fillAmber: [12, 0, 12, 0], pill: [20, 0, 20, 0], ribbon: [48, 0, 48, 0], input: [16, 16, 16, 16] };
+/* 素材还没解码好的那一两帧，先垫一块颜色差不多的圆角块 */
+const KIT_FALLBACK = { panel: '#f6f8fc', tip: '#2b3245', track: '#d8dde8', fill: '#22c58a', fillAmber: '#ffb720', pill: 'rgba(10,13,24,.5)', ribbon: '#22c58a' };
+const KIT = {};
+/* 改色：把 SVG 里的颜色按表换掉。琥珀色那一套给「还没达标的进度」「交货按钮」「该做的下一单」用 */
+function kitTint(svg, map) { return svg.replace(/#[0-9a-f]{6}/gi, c => map[c.toLowerCase()] || c); }
+(function kitBoot() {
+  const AMBER = { '#4fe0a6': '#ffd95c', '#22c58a': '#ffb720', '#14966a': '#dc8a02', '#9eeece': '#ffeaa5' };
+  const all = Object.assign({}, KIT_SVG, {
+    btnGo: kitTint(KIT_SVG.btn, AMBER), btnGoHover: kitTint(KIT_SVG.btnHover, AMBER), btnGoDown: kitTint(KIT_SVG.btnDown, AMBER),
+    fillAmber: kitTint(KIT_SVG.fill, AMBER), tileAmber: kitTint(KIT_SVG.tile, AMBER),
+    heart: kitTint(KIT_SVG.icoHeart, { '#ffffff': '#ff6b9a' }), heart0: kitTint(KIT_SVG.icoHeart, { '#ffffff': '#4a437f' }),
+  });
+  const root = document.documentElement.style, S = 3;   // 画布上用的先按 3 倍栅格化一次，之后每帧只贴位图
+  for (const name in all) {
+    const url = 'data:image/svg+xml,' + encodeURIComponent(all[name]); root.setProperty('--k-' + name, `url("${url}")`);
+    const img = new Image();
+    img.onload = () => { const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, c = document.createElement('canvas'); c.width = w * S; c.height = h * S; c.getContext('2d').drawImage(img, 0, 0, w * S, h * S); KIT[name] = { c, w, h, S }; };
+    img.src = url;
+  }
+})();
+/* 整张贴：把素材拉到 (x, y, w, h)。没解码好返回 false */
+function kit(name, x, y, w, h) { const k = KIT[name]; if (!k) return false; ctx.drawImage(k.c, x, y, w, h); return true; }
+/* 九宫格贴：四个角不变形，中间拉伸。z 是边框画多大（1 = 素材原大） */
+function kit9(name, x, y, w, h, z) {
+  const k = KIT[name];
+  if (!k) { if (KIT_FALLBACK[name]) { rr(ctx, x, y, w, h, Math.min(12, h / 2)); ctx.fillStyle = KIT_FALLBACK[name]; ctx.fill(); } return false; }
+  z = z || 1; const S = k.S, sl = KIT_SLICE[name]; let L = sl[0] * z, T = sl[1] * z, R = sl[2] * z, B = sl[3] * z;
+  if (L + R > w) { const f = w / (L + R); L *= f; R *= f; } if (T + B > h) { const f = h / (T + B); T *= f; B *= f; }
+  const sx = [0, sl[0], k.w - sl[2], k.w], sy = [0, sl[1], k.h - sl[3], k.h], dx = [x, x + L, x + w - R, x + w], dy = [y, y + T, y + h - B, y + h];
+  for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
+    const cw = sx[i + 1] - sx[i], ch = sy[j + 1] - sy[j], dw = dx[i + 1] - dx[i], dh = dy[j + 1] - dy[j];
+    if (cw <= 0 || ch <= 0 || dw <= 0 || dh <= 0) continue;
+    ctx.drawImage(k.c, sx[i] * S, sy[j] * S, cw * S, ch * S, dx[i], dy[j], dw + (i < 2 ? .6 : 0), dh + (j < 2 ? .6 : 0));   // 多画半个像素，接缝不露底
+  }
+  return true;
+}
+/* 一行字，里面的数字和百分号换成强调色（要先把 textAlign 设成 left） */
+function richText(line, x, y, base, accent) {
+  let tx = x; for (const part of line.split(/(\d[\d.]*\s?%?)/)) { if (!part) continue; ctx.fillStyle = /^\d/.test(part) ? accent : base; ctx.fillText(part, tx, y); tx += ctx.measureText(part).width; }
+}
+/* 界面上常用的几个颜色：深色字、次要字、薄荷绿、珊瑚红 */
+const UI = { navy: '#2b3245', slate: '#6b7390', mint: '#22c58a', mintHi: '#6fe9b8', coral: '#f0506e', amber: '#e08f00' };
+/* 力度表上三段的颜色，横竖两版共用 */
+const ZONE = { low: ['#e4e8f0', '#cfd5e2'], ok: ['#4fe0a6', '#22c58a'], brk: ['#ff8a96', '#f0506e'] };
+function vgrad(y0, y1, a, b) { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, a); g.addColorStop(1, b); return g; }
+function hgrad(x0, x1, a, b) { const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, a); g.addColorStop(1, b); return g; }
+/* 力度表旁边的小标签：碎 / 好 / 轻 */
+function chip(x, y, text, fill) {
+  ctx.font = EN ? `700 8px ${BODY}` : `700 12px ${BODY}`; const w = Math.max(19, ctx.measureText(text).width + (EN ? 6 : 8));
+  rr(ctx, x - w / 2, y - 9, w, 18, 6); ctx.fillStyle = fill; ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y + .5);
+}
+/* 耐久：一排心，掉了的变暗 */
+function hpHearts(px, y, size, gap) { const m = G.mat; for (let k = 0; k < m.hp; k++) { if (!kit(k < G.hp ? 'heart' : 'heart0', px + k * gap - size / 2, y - size / 2, size, size)) { ctx.beginPath(); ctx.arc(px + k * gap, y, size * .34, 0, TAU); ctx.fillStyle = k < G.hp ? C.alarm : C.rim; ctx.fill(); } } }
+
 /* ---------- 绘制：甲方、圆度条、力度表 ---------- */
 function wrapText(text, maxW) { const out = []; let cur = ''; for (const ch of (EN ? text.match(/\S+\s*/g) || [] : text)) { if (cur && ctx.measureText(cur + ch).width > maxW) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out; }
 function drawAlien(t) {
   const cx = 92, cy = 112, R = 56, playing = G.state === 'play';
-  const frac = clamp(G.timeLeft / G.timeMax, 0, 1), ringCol = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm;
+  const frac = clamp(G.timeLeft / G.timeMax, 0, 1), ringCol = frac > .5 ? '#4fe0a6' : frac > .2 ? '#ffb720' : '#f0506e';
   let md = G.time < G.moodT ? G.mood : (playing && frac < .2 ? 'angry' : (playing && G.tier ? 'happy' : 'calm'));
-  ctx.lineWidth = 7; ctx.strokeStyle = C.hullHi; ctx.beginPath(); ctx.arc(cx, cy, R + 10, 0, TAU); ctx.stroke();
+  ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.arc(cx, cy, R + 10, 0, TAU); ctx.stroke();
   ctx.strokeStyle = ringCol; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(cx, cy, R + 10, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(.001, frac)); ctx.stroke(); ctx.lineCap = 'butt';
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
-  const wg = ctx.createLinearGradient(0, cy - R, 0, cy + R); wg.addColorStop(0, '#0f2a3a'); wg.addColorStop(1, '#1d5560'); ctx.fillStyle = wg; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+  const wg = ctx.createLinearGradient(0, cy - R, 0, cy + R); wg.addColorStop(0, '#232a4a'); wg.addColorStop(1, '#3d4f8f'); ctx.fillStyle = wg; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
   const bob = REDUCED ? 0 : Math.sin(t * (md === 'angry' ? 9 : 2)) * (md === 'angry' ? 1.5 : 2.2), hy = cy + 8 + bob;
   const skin = md === 'angry' ? '#c9d94a' : C.alien;
   ctx.fillStyle = '#4f9c33'; ctx.beginPath(); ctx.ellipse(cx, cy + 66, 44, 30, 0, 0, TAU); ctx.fill();
@@ -2935,40 +3116,70 @@ function drawAlien(t) {
   ctx.restore();
   ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R - 6, 1.15 * Math.PI, 1.45 * Math.PI); ctx.stroke();
   if (PORT) return;   // 竖屏的文字和气泡在 drawHudPort 里另排
-  // 窗下：耐心、单号、酬劳
+  // 窗下：一块白色的小面板，写耐心、单号、酬劳
+  kit9('panel', 20, 186, 144, 92);
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.font = `500 15px ${NUM}`; ctx.fillStyle = ringCol; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), cx, 204);
-  ctx.font = `13px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), cx, 228);
-  ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, cx, 256);
-  // 气泡
+  ctx.font = `700 15px ${NUM}`; ctx.fillStyle = frac > .2 ? UI.navy : UI.coral; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), cx, 211);
+  ctx.font = `13px ${BODY}`; ctx.fillStyle = UI.slate; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), cx, 232);
+  ctx.font = `700 22px ${NUM}`; const sc = String(G.score), sx = cx - (ctx.measureText(sc).width + 28) / 2;
+  if (!kit('coin', sx, 240, 23, 23)) { ctx.fillStyle = UI.amber; ctx.textAlign = 'left'; ctx.fillText('◎', sx, 260); }
+  ctx.textAlign = 'left'; ctx.fillStyle = UI.navy; ctx.fillText(sc, sx + 28, 260);
+  // 气泡：深色的提示框，数字换成薄荷绿
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
     ctx.font = `15px ${BODY}`; if (!bb.lines) bb.lines = wrapText(bb.text, 204);
-    const lh = 21, bw = Math.max(...bb.lines.map(l => ctx.measureText(l).width)) + 26, bh = bb.lines.length * lh + 16, bx = 172, by = 92;
+    const lh = 21, bw = Math.max(...bb.lines.map(l => ctx.measureText(l).width)) + 28, bh = bb.lines.length * lh + 18, bx = 174, by = 92;
     ctx.globalAlpha = clamp((bb.dur - (G.time - bb.t0)) * 3, 0, 1) * clamp((G.time - bb.t0) * 8, 0, 1);
-    ctx.fillStyle = C.ink; rr(ctx, bx, by, bw, bh, 15); ctx.fill(); ctx.beginPath(); ctx.moveTo(bx + 4, by + 12); ctx.lineTo(bx - 12, by + 20); ctx.lineTo(bx + 4, by + 28); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = C.hull; ctx.textAlign = 'left'; bb.lines.forEach((l, i) => ctx.fillText(l, bx + 13, by + 26 + i * lh));
+    kit9('panel', bx, by, bw, bh + 3, .6); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(bx + 3, by + 12); ctx.lineTo(bx - 11, by + 20); ctx.lineTo(bx + 3, by + 28); ctx.closePath(); ctx.fill();
+    ctx.textAlign = 'left'; bb.lines.forEach((l, i) => richText(l, bx + 14, by + 27 + i * lh, UI.navy, '#14966a'));
     ctx.globalAlpha = 1;
   }
+}
+/* 一条素材包的进度条：灰色底槽 + 色条，色条右端落在 p 的位置上。
+   没到一星是琥珀色；够一星以后色条变成一道流动的彩虹，往外放光，上面有一道光扫过去，旁边闪小星星。星级越高光越亮、星星越多 */
+const RAINBOW = ['#ff5f7e', '#ffa94d', '#ffe066', '#5fe3a1', '#5ab8ff', '#b28cff'];
+function kitBar(x, y, w, h, p, tier) {
+  const z = h / 24, pad = 3 * z;
+  kit9('track', x, y, w, h, z);
+  if (w * p <= 5) return;
+  if (!tier) { kit9('fillAmber', x, y, Math.max(h, 2 * pad + (w - 2 * pad) * p), h, z); return; }
+  const t = REDUCED ? 0 : G.time, fx = x + pad, fy = y + pad, fw = Math.max(h - 2 * pad, (w - 2 * pad) * p), fh = h - 2 * pad, L = 220;
+  const N = Math.ceil(w / L) + 2, gx = fx - L + (t * 80) % L, g = ctx.createLinearGradient(gx, 0, gx + L * N, 0);
+  for (let k = 0; k <= N * 6; k++) g.addColorStop(k / (N * 6), RAINBOW[k % 6]);
+  ctx.save();
+  // 放光：色条外面一圈跟着彩虹变色的光晕，一呼一吸（阴影的模糊不跟画布缩放走，要自己乘）
+  ctx.shadowColor = `hsla(${(t * 110) % 360}, 100%, 66%, .95)`; ctx.shadowBlur = (9 + 4 * tier + (REDUCED ? 0 : 4 * Math.sin(t * 5))) * scale;
+  rr(ctx, fx, fy, fw, fh, fh / 2); ctx.fillStyle = g; ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.clip();
+  // 底下一道暗边、上面一道高光，跟素材包的色条一个做法
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(fx, fy + fh - 1.6 * z, fw, 1.6 * z);
+  if (fw > 14 * z) { rr(ctx, fx + 6 * z, fy + 3 * z, fw - 12 * z, 3.5 * z, 1.75 * z); ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fill(); }
+  // 一道斜着扫过去的光
+  if (!REDUCED) { const sx = fx - 60 + (t * 260) % (fw + 240); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(sx, fy + fh); ctx.lineTo(sx + 14 * z, fy + fh); ctx.lineTo(sx + 14 * z + fh * .8, fy); ctx.lineTo(sx + fh * .8, fy); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+  // 几颗小星星贴着色条上下闪：每颗亮一下就换个地方
+  if (!REDUCED) { ctx.fillStyle = '#fff'; for (let k = 0; k < 2 + tier * 2; k++) {
+    const c = t * .9 + k * .37, n = Math.floor(c), hx = (Math.sin(n * 91.7 + k * 13.3) * 43758.5453 % 1 + 1) % 1;
+    spark(ctx, fx + hx * fw, k & 1 ? y - 3 * z : y + h + 3 * z, 6.5 * z * Math.sin((c - n) * Math.PI));
+  } }
 }
 function drawRoundBar() {
   const x0 = 262, w = 420, y = 30, h = 24, p = G.shown, ready = G.tier > 0;
   ctx.textBaseline = 'alphabetic'; ctx.font = `${EN ? 18 : 20}px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText(L('圆形程度', 'Roundness'), x0 - 10, y + 19);
-  rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
-  ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
-  rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
+  kitBar(x0, y, w, h, p, G.tier);
   drawStarLines(x0, w, y, h, `500 12px ${NUM}`, C.ink);
-  ctx.font = `36px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 14, y + 27);
-  drawTier(x0 + w + 16, y + 53, 19);
+  kit9('panel', x0 + w + 8, y - 9, 100, 45, .7);
+  ctx.font = `28px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.fillStyle = ready ? '#14966a' : UI.navy; ctx.fillText(pct(G.round), x0 + w + 58, y + 21);
+  drawTier(x0 + w + 26, y + 57, 19);
   // 材料名、耐久、敲击统计
-  const m = G.mat; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 52);
-  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 51); px += EN ? 28 : 34;
-  for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 17, y + 46, 5.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
+  const m = G.mat; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 52);
+  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 51); px += EN ? 34 : 40;
+  hpHearts(px, y + 46, 17, 18);
   ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), x0 + w, y + 51);
 }
 /* 圆度条上的三条星线：一星、二星是短实线，三星是原来那条虚线；上面只标下一颗星要到多少，三颗都拿到了就标三星线 */
 function drawStarLines(x0, w, y, h, font, col) {
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+  ctx.strokeStyle = UI.navy; ctx.lineWidth = 2;   // 星线画在浅色的槽上，用深色才看得见
   for (let k = 0; k < 3; k++) {
     const x = x0 + w * G.lines[k]; ctx.globalAlpha = k < 2 ? .75 : 1;
     if (k === 2) ctx.setLineDash([4, 3]);
@@ -2979,48 +3190,55 @@ function drawStarLines(x0, w, y, h, font, col) {
   ctx.font = font; ctx.textAlign = 'center'; ctx.fillStyle = col;
   const tw = ctx.measureText(label).width; ctx.fillText(label, Math.min(x0 + w * G.lines[k], x0 + w + 8 - tw / 2), y - 10);
 }
-/* 现在够几颗星：亮的是金色，没亮的是边框色 */
+/* 现在够几颗星：亮的是素材包的金星，没亮的是灰星 */
 function drawTier(x, y, size) {
   ctx.font = `${size}px ${BODY}`; ctx.textAlign = 'left';
-  for (let k = 0; k < 3; k++) { ctx.fillStyle = k < G.tier ? C.coin : C.rim; ctx.fillText('★', x + k * size * 1.05, y); }
+  for (let k = 0; k < 3; k++) {
+    const on = k < G.tier;
+    if (!kit(on ? 'star' : 'star0', x + k * size * 1.08 - 1, y - size * .95, size * 1.18, size * 1.18)) { ctx.fillStyle = on ? C.coin : C.rim; ctx.fillText('★', x + k * size * 1.05, y); }
+  }
 }
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
 function layerTag(b) {
   const m = b.mat;
-  if (m.warm) { const h = b.heat || 0, w = m.warm, tooHot = w.hot && h >= w.peak + .15; return [(tooHot ? L('太热 ', 'Too hot ') : L('手温 ', 'Warm ')) + Math.round(h * 100) + '%', tooHot ? C.alarm : h > (w.peak || .5) - .1 ? C.coin : C.dim]; }
-  if (m.fill) { const on = faceMat(b).isCore; return [on ? L(m.core.label[0], m.core.label[1]) : L('空的', 'Hollow'), on ? C.coin : C.dim]; }
-  if (!b.c) return [L('下限 +', 'Floor +') + Math.round(b.hardAdd), C.coin]; const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? C.coin : C.dim]; }
+  if (m.warm) { const h = b.heat || 0, w = m.warm, tooHot = w.hot && h >= w.peak + .15; return [(tooHot ? L('太热 ', 'Too hot ') : L('手温 ', 'Warm ')) + Math.round(h * 100) + '%', tooHot ? UI.coral : h > (w.peak || .5) - .1 ? UI.amber : UI.slate]; }
+  if (m.fill) { const on = faceMat(b).isCore; return [on ? L(m.core.label[0], m.core.label[1]) : L('空的', 'Hollow'), on ? UI.amber : UI.slate]; }
+  if (!b.c) return [L('下限 +', 'Floor +') + Math.round(b.hardAdd), UI.amber]; const k = b.mat.core, on = faceMat(b).isCore; return [on ? L(k.label[0], k.label[1]) : L('外层', 'Shell'), on ? UI.amber : UI.slate]; }
 function drawGauge() {
   const b = G.body, m = faceMat(b);
   const py = PORT ? 136 - TOP : 0;
-  ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); if (PORT) ctx.fillRect(WALL_R, py, W - WALL_R, 3);
-  if (PORT) return;   // 竖屏的力度表横着画在底部，见 drawGaugePort
-  const fz = 1;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 60);
-  if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 10' : '13'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 76); }
-  ctx.font = `500 ${11 * fz}px ${NUM}`; ctx.fillStyle = C.dim; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
+  if (PORT) { ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py); ctx.fillRect(WALL_R, py, W - WALL_R, 3); return; }   // 竖屏：右边只剩一道墙，力度表横着画在底部，见 drawGaugePort
+  // 右墙：墙面照旧，上面立一块素材包的白色面板
+  ctx.fillStyle = C.hull; ctx.fillRect(WALL_R, py, W - WALL_R, FLOOR - py); ctx.fillStyle = C.rim; ctx.fillRect(WALL_R, py, 3, FLOOR - py);
+  kit9('panel', WALL_R + 1, 30, W - WALL_R - 3, 486);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = UI.navy; ctx.fillText(L('力度', 'Force'), GX + GW / 2 + 1, 62);
+  if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `700 ${EN ? 10 : 13}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, GX + GW / 2 + 1, 78); }
+  ctx.font = `700 11px ${NUM}`; ctx.fillStyle = UI.slate; ctx.fillText('100', GX + GW / 2, GY0 - 8); ctx.fillText('0', GX + GW / 2, GY1 + 16);
+  rr(ctx, GX - 2, GY0 - 3, GW + 4, GY1 - GY0 + 5, (GW + 4) / 2); ctx.fillStyle = '#bfc7d8'; ctx.fill();   // 底槽的边，跟素材包的进度槽一个样
   ctx.save(); rr(ctx, GX, GY0, GW, GY1 - GY0, GW / 2); ctx.clip();
-  ctx.fillStyle = '#3b3180'; ctx.fillRect(GX, GY0, GW, GY1 - GY0);
-  const g = ctx.createLinearGradient(0, gy(m.hard), 0, gy(m.brittle)); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(GX, gy(m.brittle), GW, gy(m.hard) - gy(m.brittle));
-  ctx.fillStyle = C.alarm; ctx.fillRect(GX, GY0, GW, gy(m.brittle) - GY0);
-  ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let yy = GY0 - GW; yy < gy(m.brittle); yy += 9) { ctx.moveTo(GX, yy + GW); ctx.lineTo(GX + GW, yy); } ctx.stroke();
+  ctx.fillStyle = hgrad(GX, GX + GW, ZONE.low[0], ZONE.low[1]); ctx.fillRect(GX, GY0, GW, GY1 - GY0);
+  ctx.fillStyle = hgrad(GX, GX + GW, ZONE.ok[0], ZONE.ok[1]); ctx.fillRect(GX, gy(m.brittle), GW, gy(m.hard) - gy(m.brittle));
+  ctx.fillStyle = hgrad(GX, GX + GW, ZONE.brk[0], ZONE.brk[1]); ctx.fillRect(GX, GY0, GW, gy(m.brittle) - GY0);
+  ctx.strokeStyle = 'rgba(255,255,255,.32)'; ctx.lineWidth = 3; ctx.beginPath(); for (let yy = GY0 - GW; yy < gy(m.brittle); yy += 9) { ctx.moveTo(GX, yy + GW); ctx.lineTo(GX + GW, yy); } ctx.stroke();
+  rr(ctx, GX + 4, GY0 + 9, 4, GY1 - GY0 - 18, 2); ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.fill();   // 一道竖着的高光，跟进度条上那道一样
   ctx.restore();
-  ctx.font = EN ? `700 ${9.5 * fz}px ${BODY}` : `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
+  if (m.brittle < 97) chip(893, (GY0 + gy(m.brittle)) / 2, m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), UI.coral);
+  chip(893, (gy(m.brittle) + gy(m.hard)) / 2, L('好', 'OK'), UI.mint); chip(893, (gy(m.hard) + GY1) / 2, L('轻', 'LOW'), '#8f9ab5');
+  ctx.textBaseline = 'middle';
   const lh = G.lastHit;
   if (lh && lh.kind === 'over' && G.time - lh.t < 2) { const k = clamp(2 - (G.time - lh.t), 0, 1) * (.6 + .4 * Math.sin((G.time - lh.t) * 20));
-    ctx.globalAlpha = k; ctx.strokeStyle = C.alarm; ctx.lineWidth = 4; rr(ctx, GX - 6, GY0 - 6, GW + 12, gy(m.brittle) - GY0 + 12, 10); ctx.stroke();
-    ctx.font = `700 ${EN ? 11 : 14}px ${BODY}`; ctx.fillStyle = C.alarm; ctx.textAlign = 'center'; ctx.fillText(L('太重！', 'Too hard!'), GX + GW / 2, GY0 - 24); ctx.globalAlpha = 1; }
+    ctx.globalAlpha = k; ctx.strokeStyle = UI.coral; ctx.lineWidth = 4; rr(ctx, GX - 6, GY0 - 6, GW + 12, gy(m.brittle) - GY0 + 12, 10); ctx.stroke();
+    ctx.font = `700 ${EN ? 11 : 14}px ${BODY}`; ctx.fillStyle = UI.coral; ctx.textAlign = 'center'; ctx.fillText(L('太重！', 'Too hard!'), GX + GW / 2, GY0 - 24); ctx.globalAlpha = 1; }
   if (lh && G.time - lh.t < 3) {
     ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const yy = gy(lh.F);
-    ctx.fillStyle = '#fff'; ctx.fillRect(GX - 3, yy - 2, GW + 6, 4); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(GX - 3, yy - 2, GW + 6, 4); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff'; ctx.fillRect(GX - 3, yy - 2, GW + 6, 4); ctx.strokeStyle = UI.navy; ctx.lineWidth = 1.5; ctx.strokeRect(GX - 3, yy - 2, GW + 6, 4); ctx.globalAlpha = 1;
   }
   if (b && !b.dead && G.state === 'play') {
     if (b.held && b.clear > 2) { // 空心箭头：此刻松手的落地力度
       const yy = gy(clamp(Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100, 0, 100));
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(GX + GW + 4, yy); ctx.lineTo(GX + GW + 16, yy - 7); ctx.lineTo(GX + GW + 16, yy + 7); ctx.closePath(); ctx.stroke();
+      ctx.strokeStyle = UI.navy; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(GX + GW + 4, yy); ctx.lineTo(GX + GW + 15, yy - 7); ctx.lineTo(GX + GW + 15, yy + 7); ctx.closePath(); ctx.stroke();
     }
-    if (G.needle > 1) { const yy = gy(G.needle); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(GX + GW + 3, yy); ctx.lineTo(GX + GW + 15, yy - 7); ctx.lineTo(GX + GW + 15, yy + 7); ctx.closePath(); ctx.fill(); }
+    if (G.needle > 1) { const yy = gy(G.needle); ctx.fillStyle = UI.navy; ctx.beginPath(); ctx.moveTo(GX + GW + 3, yy); ctx.lineTo(GX + GW + 14, yy - 7); ctx.lineTo(GX + GW + 14, yy + 7); ctx.closePath(); ctx.fill(); }
   }
 }
 const TIPS = EN
@@ -3029,44 +3247,51 @@ const TIPS = EN
 /* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
 function drawRotHint() {
   const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held) return;
-  const on = rotId !== null, x = PORT ? midX() : 440, y = 30, fs = PORT ? 18 : 15;
+  const on = rotId !== null, x = PORT ? midX() : 440, y = PORT ? 30 : 124, fs = PORT ? 18 : 15;   // 横屏：让到圆度条下面
   const txt = on ? L('← 顺时针 · 逆时针 →', '← clockwise · counter →') : L('另一根手指 ← 左右滑 → 转', 'Second finger: ← slide → to turn');
   ctx.font = `${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(txt).width + 30, h = fs * 2;
-  ctx.globalAlpha = on ? 1 : .55 + .25 * Math.sin(G.time * 4);
-  rr(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fillStyle = on ? C.coin : 'rgba(17,13,43,.75)'; ctx.fill();
-  ctx.strokeStyle = C.coin; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.fillStyle = on ? C.space : C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
+  ctx.globalAlpha = on ? 1 : .7 + .25 * Math.sin(G.time * 4);
+  if (on) { rr(ctx, x - w / 2, y - h / 2, w, h, 10); ctx.fillStyle = '#ffb720'; ctx.fill(); } else kit9('tip', x - w / 2, y - h / 2, w, h);
+  ctx.fillStyle = on ? UI.navy : C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
 }
+/* 底下那条轮换的提示：深色提示框，电脑上前面带素材包的按键图标 */
 function drawHints() {
   if (G.state !== 'play' || (!PORT && toastInPlay())) return;
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`; ctx.fillStyle = C.dim;
-  ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
+  const i = G.started ? Math.floor(G.time / 6) % TIPS.length : 0, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`;
+  const iw = icons.length * 26, tw = ctx.measureText(txt).width, w = tw + iw + 36, h = PORT ? 36 : 34;
+  const x = PORT ? Math.max(midX() - w / 2, Math.min(WALL_L + 254, WALL_L + 534 - w)) : 400 - w / 2, y = FLOOR + (PORT ? 22 : 50);   // 竖屏：往右让开左下角那两个按钮
+  kit9('tip', x, y - h / 2, w, h);
+  icons.forEach((n, k) => kit(n, x + 14 + k * 26, y - (n === 'mouse' ? 14 : 12), n === 'mouse' ? 22 : 24, n === 'mouse' ? 27.5 : 24));
+  ctx.fillStyle = C.ink; ctx.fillText(txt, x + 18 + iw, y + 1);
 }
 /* 竖屏底部的横版力度表：左轻右重。画面坐标 */
 function drawGaugePort() {
   const b = G.body, m = faceMat(b), X0 = 92, X1 = VW - 24, y = TOP + H + 34, h = 28, gx = F => X0 + (X1 - X0) * F / 100;
-  ctx.fillStyle = C.hull; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = C.rim; ctx.fillRect(0, TOP + H, VW, 2);
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
-  if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `${EN ? '700 12' : '15'}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
+  ctx.fillStyle = '#f3f5fa'; ctx.fillRect(0, TOP + H, VW, BOT); ctx.fillStyle = '#c0d7df'; ctx.fillRect(0, TOP + H, VW, 3);
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `24px ${DISPLAY}`; ctx.fillStyle = UI.navy; ctx.fillText(L('力度', 'Force'), 14, y + h / 2);
+  if (b && (b.c || b.hardAdd || b.mat.warm || b.mat.fill)) { const [tx, tc] = layerTag(b); ctx.font = `700 ${EN ? 12 : 15}px ${BODY}`; ctx.fillStyle = tc; ctx.fillText(tx, 14, y + h + 18); }
+  rr(ctx, X0 - 2, y - 3, X1 - X0 + 4, h + 5, (h + 5) / 2); ctx.fillStyle = '#bfc7d8'; ctx.fill();
   ctx.save(); rr(ctx, X0, y, X1 - X0, h, h / 2); ctx.clip();
-  ctx.fillStyle = '#3b3180'; ctx.fillRect(X0, y, X1 - X0, h);
-  const g = ctx.createLinearGradient(gx(m.hard), 0, gx(m.brittle), 0); g.addColorStop(0, '#4f9c33'); g.addColorStop(1, C.alien); ctx.fillStyle = g; ctx.fillRect(gx(m.hard), y, gx(m.brittle) - gx(m.hard), h);
-  ctx.fillStyle = C.alarm; ctx.fillRect(gx(m.brittle), y, X1 - gx(m.brittle), h);
-  ctx.strokeStyle = 'rgba(17,13,43,.3)'; ctx.lineWidth = 3; ctx.beginPath(); for (let xx = gx(m.brittle); xx < X1 + h; xx += 9) { ctx.moveTo(xx, y); ctx.lineTo(xx - h, y + h); } ctx.stroke();
+  ctx.fillStyle = vgrad(y, y + h, ZONE.low[0], ZONE.low[1]); ctx.fillRect(X0, y, X1 - X0, h);
+  ctx.fillStyle = vgrad(y, y + h, ZONE.ok[0], ZONE.ok[1]); ctx.fillRect(gx(m.hard), y, gx(m.brittle) - gx(m.hard), h);
+  ctx.fillStyle = vgrad(y, y + h, ZONE.brk[0], ZONE.brk[1]); ctx.fillRect(gx(m.brittle), y, X1 - gx(m.brittle), h);
+  ctx.strokeStyle = 'rgba(255,255,255,.32)'; ctx.lineWidth = 3; ctx.beginPath(); for (let xx = gx(m.brittle); xx < X1 + h; xx += 9) { ctx.moveTo(xx, y); ctx.lineTo(xx - h, y + h); } ctx.stroke();
+  rr(ctx, X0 + 9, y + 4, X1 - X0 - 18, 4, 2); ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.fill();
   ctx.restore();
-  ctx.textAlign = 'center'; ctx.font = EN ? `700 13px ${BODY}` : `16px ${BODY}`; const ly = y + h + 18;
-  ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), (X0 + gx(m.hard)) / 2, ly); ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), (gx(m.hard) + gx(m.brittle)) / 2, ly);
-  if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), (gx(m.brittle) + X1) / 2, ly); }
+  const ly = y + h + 18;
+  chip((X0 + gx(m.hard)) / 2, ly, L('轻', 'LOW'), '#8f9ab5'); chip((gx(m.hard) + gx(m.brittle)) / 2, ly, L('好', 'OK'), UI.mint);
+  if (m.brittle < 97) chip((gx(m.brittle) + X1) / 2, ly, m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), UI.coral);
   const lh = G.lastHit;
   if (lh && lh.kind === 'over' && G.time - lh.t < 2) { const k = clamp(2 - (G.time - lh.t), 0, 1) * (.6 + .4 * Math.sin((G.time - lh.t) * 20));
-    ctx.globalAlpha = k; ctx.strokeStyle = C.alarm; ctx.lineWidth = 4; rr(ctx, gx(m.brittle) - 6, y - 6, X1 - gx(m.brittle) + 12, h + 12, 12); ctx.stroke(); ctx.globalAlpha = 1; }
-  if (lh && G.time - lh.t < 3) { ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const xx = gx(lh.F); ctx.fillStyle = '#fff'; ctx.fillRect(xx - 2, y - 3, 4, h + 6); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(xx - 2, y - 3, 4, h + 6); ctx.globalAlpha = 1; }
+    ctx.globalAlpha = k; ctx.strokeStyle = UI.coral; ctx.lineWidth = 4; rr(ctx, gx(m.brittle) - 6, y - 6, X1 - gx(m.brittle) + 12, h + 12, 12); ctx.stroke(); ctx.globalAlpha = 1; }
+  if (lh && G.time - lh.t < 3) { ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const xx = gx(lh.F); ctx.fillStyle = '#fff'; ctx.fillRect(xx - 2, y - 3, 4, h + 6); ctx.strokeStyle = UI.navy; ctx.lineWidth = 1.5; ctx.strokeRect(xx - 2, y - 3, 4, h + 6); ctx.globalAlpha = 1; }
   if (b && !b.dead && G.state === 'play') {
     if (b.held && b.clear > 2) { const xx = gx(clamp(Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100, 0, 100));
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(xx, y - 4); ctx.lineTo(xx - 8, y - 17); ctx.lineTo(xx + 8, y - 17); ctx.closePath(); ctx.stroke(); }
-    if (G.needle > 1) { const xx = gx(G.needle); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(xx, y - 3); ctx.lineTo(xx - 8, y - 16); ctx.lineTo(xx + 8, y - 16); ctx.closePath(); ctx.fill(); }
+      ctx.strokeStyle = UI.navy; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(xx, y - 4); ctx.lineTo(xx - 8, y - 17); ctx.lineTo(xx + 8, y - 17); ctx.closePath(); ctx.stroke(); }
+    if (G.needle > 1) { const xx = gx(G.needle); ctx.fillStyle = UI.navy; ctx.beginPath(); ctx.moveTo(xx, y - 3); ctx.lineTo(xx - 8, y - 16); ctx.lineTo(xx + 8, y - 16); ctx.closePath(); ctx.fill(); }
   }
 }
 /* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
@@ -3075,26 +3300,26 @@ function drawHudPort(t) {
   const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, ready = G.tier > 0, m = G.mat;
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
   drawTier(x0 + ctx.measureText(L('圆形程度', 'Roundness')).width + 10, y - 9, 17);
-  rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
-  ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
-  rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
+  kitBar(x0, y, w, h, p, G.tier);
   drawStarLines(x0, w, y, h, `500 14px ${NUM}`, C.dim);
-  ctx.font = `40px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 12, y + 29);
-  ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
-  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
-  for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 19, y + 51, 6.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
+  kit9('panel', x0 + w + 8, y - 8, VW - x0 - w - 16, 45, .7);
+  ctx.font = `30px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.fillStyle = ready ? '#14966a' : UI.navy; ctx.fillText(pct(G.round), (x0 + w + 8 + VW - 8) / 2, y + 23);
+  ctx.textAlign = 'left'; ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
+  let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 38 : 46;
+  hpHearts(px, y + 51, 20, 21);
   ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
   ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; if (!toastInPlay()) ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
-  ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
+  ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; const sc = String(G.score), sw = ctx.measureText(sc).width;
+  if (kit('coin', VW - 38 - sw, 107, 22, 22)) { ctx.fillStyle = C.coin; ctx.fillText(sc, VW - 12, 126); } else { ctx.fillStyle = C.coin; ctx.fillText('◎ ' + sc, VW - 12, 126); }
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
-    ctx.font = `17px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, 400);
-    const lh = 24, bw = Math.max(...bb.plines.map(l => ctx.measureText(l).width)) + 28, bh = bb.plines.length * lh + 16, bx = 12, by = 142;
+    ctx.font = `17px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, 318);   // 右边要给回首页按钮留地方（带图标以后它更宽了）
+    const lh = 24, bw = Math.max(...bb.plines.map(l => ctx.measureText(l).width)) + 28, bh = bb.plines.length * lh + 18, bx = 12, by = 142;
     ctx.globalAlpha = clamp((bb.dur - (G.time - bb.t0)) * 3, 0, 1) * clamp((G.time - bb.t0) * 8, 0, 1);
-    ctx.fillStyle = C.ink; rr(ctx, bx, by, bw, bh, 15); ctx.fill(); ctx.beginPath(); ctx.moveTo(bx + 26, by + 2); ctx.lineTo(bx + 36, by - 10); ctx.lineTo(bx + 48, by + 2); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = C.hull; ctx.textAlign = 'left'; bb.plines.forEach((l, i) => ctx.fillText(l, bx + 14, by + 28 + i * lh));
+    kit9('panel', bx, by, bw, bh + 3, .6); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(bx + 26, by + 3); ctx.lineTo(bx + 36, by - 10); ctx.lineTo(bx + 48, by + 3); ctx.closePath(); ctx.fill();
+    ctx.textAlign = 'left'; bb.plines.forEach((l, i) => richText(l, bx + 14, by + 29 + i * lh, UI.navy, '#14966a'));
     ctx.globalAlpha = 1;
   }
 }
@@ -3138,6 +3363,33 @@ function draw() {
   drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); if (G.cele) drawCelebrate(t); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
+  drawEdgeGlow(t);
+}
+/* 三颗星到手以后：画面四周一圈流动的彩虹光。一串光斑沿着边框顺时针转，一呼一吸，贴边闪小星星；
+   舞台外面也跟着泛一圈光（CSS 里的 #stage.star3）。掉回三星线以下、或者换了一单，就慢慢暗下去 */
+function drawEdgeGlow(t) {
+  const on = G.tier >= 3 && (G.state === 'play' || G.state === 'result');
+  G.glowK = (G.glowK || 0) + ((on ? 1 : 0) - (G.glowK || 0)) * .08;
+  if (on !== !!G.glowOn) { G.glowOn = on; stage.classList.toggle('star3', on); }
+  const k = G.glowK; if (k < .02) return;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const P = 2 * (VW + VH), n = 16, tt = REDUCED ? 0 : t, pulse = REDUCED ? 1 : .8 + .2 * Math.sin(tt * 3.2);
+  const edge = s => { s = ((s % P) + P) % P; if (s < VW) return [s, 0]; s -= VW; if (s < VH) return [VW, s]; s -= VH; if (s < VW) return [VW - s, VH]; return [0, VH - (s - VW)]; };   // 沿边框走 s 这么远，走到哪儿
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const [x, y] = edge(i / n * P + tt * 150), r = 150, hue = (i / n * 360 + tt * 50) % 360, g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `hsla(${hue}, 100%, 62%, ${.48 * k * pulse})`); g.addColorStop(1, `hsla(${hue}, 100%, 62%, 0)`);
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  ctx.restore();
+  if (REDUCED) return;
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 12; i++) {   // 小星星：每颗亮一下就换个地方，离边 10 到 40
+    const c = t * .8 + i * .31, m = Math.floor(c), h1 = (Math.sin(m * 71.3 + i * 17.7) * 43758.5453 % 1 + 1) % 1, h2 = (Math.sin(m * 33.1 + i * 5.3) * 12543.123 % 1 + 1) % 1;
+    const [x, y] = edge(h1 * P), inset = 10 + h2 * 30, cx = clamp(x, inset, VW - inset), cy = clamp(y, inset, VH - inset);
+    ctx.globalAlpha = k; spark(ctx, cx, cy, 9 * Math.sin((c - m) * Math.PI));
+  }
+  ctx.globalAlpha = 1;
 }
 
 /* ---------- 缩放与主循环 ---------- */
