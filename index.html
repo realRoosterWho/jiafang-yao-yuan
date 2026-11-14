@@ -207,7 +207,7 @@ body {
       <button id="deliver" type="button" hidden>交货<kbd>空格</kbd></button>
       <button id="mute" type="button" aria-pressed="false">声音 开</button>
       <button id="replay" type="button" hidden>重来<kbd>R</kbd></button>
-      <button id="home" type="button" hidden>主页<kbd>Esc</kbd></button>
+      <button id="home" type="button" hidden>回首页<kbd>Esc</kbd></button>
       <div id="rot"><button id="rotL" type="button" aria-label="向左转">↺</button><button id="rotR" type="button" aria-label="向右转">↻</button></div>
       <div id="overlay" hidden><section id="card"></section></div>
     </div>
@@ -1170,7 +1170,7 @@ function showBoard(refetch = true) {
     <p class="eyebrow" data-board>${L('排行榜', 'Leaderboard')}</p>
     <h2>${L('谁最会弄圆', 'Who makes it roundest')}</h2>
     ${body}
-    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('返回', 'Back')}</button></div>`);
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   if (!refetch || !CLOUD) return;
   const seq = ++BOARD.seq;
   fetch(CLOUD.replace(/save$/, 'leaderboard') + (NAME ? '?name=' + encodeURIComponent(NAME) : ''))
@@ -1212,7 +1212,7 @@ function showBook() {
     <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
     ${html}
     <p class="note">${L('绿色是交付过的。哪一单都能直接开工，酬劳从那一单算起。', 'Green ones are delivered. Start from any order; pay counts from there.')}</p>
-    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('返回', 'Back')}</button></div>`);
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showChapter() {
   setupRound(); const k = G.idx / PER | 0, ch = CHAPS[k]; G.state = 'chapter';
