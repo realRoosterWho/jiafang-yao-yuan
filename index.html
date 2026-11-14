@@ -2066,7 +2066,7 @@ function update(dt) {
     if (b.mat.melt && G.state === 'play' && G.started) {   // 冰一直在化：整块等比缩小，形状不变，但留下的越来越少
       const k = Math.exp(Math.log(1 - b.mat.melt) * dt / b.mat.time);
       for (let i = 0; i < N; i++) b.r[i] *= k; if (b.c) for (let i = 0; i < N; i++) b.c[i] *= k;
-      props(b);
+      props(b); if (!b.held && b.clear < 4) snapToFloor(b);   // 放在地上时贴着地板缩：不然底面一直往上抬，冰悬在半空、一醒就往下掉，看着一顿一顿的
       if (Math.random() < dt * 3) fxp(b.x + rand(-b.meanR * .6, b.meanR * .6), b.y + b.meanR * .5, 1, 'drop', b.mat.chips, { up: 0, g: 900 });
       if (Math.random() < dt) stain(b.x, 18 + 30 * (1 - b.area / b.area0), 'rgba(160,220,250,.22)');
     }
@@ -2715,26 +2715,15 @@ const surfR = (b, a) => { const f = ((a / DPHI) % N + N) % N, i = Math.floor(f) 
 const artToBody = (b, x, y) => { const M = b.artM || [1, 0, 0, 1]; return [M[0] * x + M[2] * y + b.artX, M[1] * x + M[3] * y + b.artY]; };
 const OVER = {
   octobear(c, b, t) {   // 粉色耳机：头梁从头顶上方拱过去，耳罩朝里一圈橙金，右边耳罩上一颗星
-    // 耳机是一整副，套在脸周围：两只耳罩在脸的左右、和脸差不多高，头梁在脸的正上方。只按“脸这一层身体有多宽、头顶有多高”伸缩，
-    // 而且只在合理范围里伸缩，所以身体怎么变形、怎么转，它都是一副完整的耳机，不会被扯散、不会绕着身体兜圈
+    // 耳机只是个装饰：一整副、尺寸固定，戴在脸周围跟着脸走，不量身体、不跟着身体变形伸缩
     const keepIn = (x, y) => { const d = Math.hypot(x, y), lim = Math.max(0, surfR(b, Math.atan2(y, x)) - 34); return d > lim ? [x * lim / d, y * lim / d] : [x, y]; };
-    const [fx, fy] = keepIn(...artToBody(b, -6, -28)), poly = ptsFromR(b.r);
-    let left = fx - 60, right = fx + 60, topY = fy - 60;
-    { let lo = 1e9, hi = -1e9, up = 1e9;
-      for (let i = 0; i < N; i++) {
-        const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % N];
-        if ((y1 - fy) * (y2 - fy) <= 0 && y1 !== y2) { const x = x1 + (fy - y1) / (y2 - y1) * (x2 - x1); lo = Math.min(lo, x); hi = Math.max(hi, x); }   // 脸这一层的左右边
-        if ((x1 - fx) * (x2 - fx) <= 0 && x1 !== x2) { const y = y1 + (fx - x1) / (x2 - x1) * (y2 - y1); if (y < fy) up = Math.min(up, y); }   // 脸正上方的头顶
-      }
-      if (lo < hi) { left = lo; right = hi; } if (up < 1e9) topY = up; }
-    const want = { fx, fy, hl: clamp(fx - left + 4, 56, 104), hr: clamp(right - fx + 4, 56, 104), hu: clamp(fy - topY + 22, 64, 118) };
-    // 平滑地靠过去：砸中那一下身体突然变形，耳机跟着晃过去，不硬跳
+    const [fx, fy] = keepIn(...artToBody(b, -6, -28));
+    // 砸中那一下脸的位置可能突然一跳，平滑地跟过去
     const o = b.ovl, dt = clamp(G.time - (b.ovlT === undefined ? G.time : b.ovlT), 0, .1), k = o ? 1 - Math.exp(-dt * 22) : 1; b.ovlT = G.time;
-    const cur = b.ovl = o ? Object.fromEntries(Object.keys(want).map(n => [n, o[n] + (want[n] - o[n]) * k])) : want;
-    const [ex, ey] = keepIn(cur.fx, cur.fy);
+    const [ex, ey] = b.ovl = o ? [o[0] + (fx - o[0]) * k, o[1] + (fy - o[1]) * k] : [fx, fy];
     c.save(); c.translate(ex, ey); octoFace(c, b, t); c.restore();
-    const cups = [[-1, cur.hl, 6], [1, cur.hr, 8]].map(([s, h, dy]) => { const cx = ex + s * h, cy = ey + dy, rot = s * .06; return { cx, cy, rot, s, sq: 1, top: [cx + 34 * Math.sin(rot), cy - 34 * Math.cos(rot)] }; });
-    const [[x0, y0], [x3, y3]] = cups.map(q => q.top), apex = Math.min(ey - cur.hu, Math.min(y0, y3) - 18), cy = (apex - (y0 + y3) / 8) * 4 / 3;
+    const cups = [[-1, 80, 6], [1, 92, 8]].map(([s, h, dy]) => { const cx = ex + s * h, cy = ey + dy, rot = s * .06; return { cx, cy, rot, s, sq: 1, top: [cx + 34 * Math.sin(rot), cy - 34 * Math.cos(rot)] }; });
+    const [[x0, y0], [x3, y3]] = cups.map(q => q.top), apex = ey - 92, cy = (apex - (y0 + y3) / 8) * 4 / 3;
     const band = () => { c.beginPath(); c.moveTo(x0, y0); c.bezierCurveTo(x0 - 6, cy, x3 + 6, cy, x3, y3); };
     c.lineCap = 'round';
     c.strokeStyle = '#c4447c'; c.lineWidth = 19; band(); c.stroke();
