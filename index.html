@@ -2715,20 +2715,26 @@ const surfR = (b, a) => { const f = ((a / DPHI) % N + N) % N, i = Math.floor(f) 
 const artToBody = (b, x, y) => { const M = b.artM || [1, 0, 0, 1]; return [M[0] * x + M[2] * y + b.artX, M[1] * x + M[3] * y + b.artY]; };
 const OVER = {
   octobear(c, b, t) {   // 粉色耳机：头梁从头顶上方拱过去，耳罩朝里一圈橙金，右边耳罩上一颗星
-    const near = clamp(1 - (b.clear || 0) / 40, 0, 1), down = a => clamp((Math.sin(a + b.a) - .15) / .85, 0, 1) * near;   // 这个方向离地板多近、多朝下
-    // 脸：跟着原来那块料走，但永远留在身体里面
-    let [fx, fy] = artToBody(b, -6, -28); const fd = Math.hypot(fx, fy), lim = Math.max(0, surfR(b, Math.atan2(fy, fx)) - 34);
-    if (fd > lim) { fx *= lim / fd; fy *= lim / fd; }
-    c.save(); c.translate(fx, fy); octoFace(c, b, t); c.restore();
-    // 耳罩：贴在两侧现在的表面上，长轴顺着表面
-    const cups = OCTO.cups.map(([x, y], k) => {
-      const [bx, by] = artToBody(b, x, y), a = Math.atan2(by, bx), s = k ? 1 : -1, d = down(a), r = surfR(b, a) + 4 - 34 * d;
-      const cx = Math.cos(a) * r, cy = Math.sin(a) * r, rot = wrapPi(a - (s > 0 ? 0 : Math.PI)) * .35;   // 耳罩只跟着表面微微歪一点
-      return { cx, cy, rot, s, sq: 1 - .35 * d, top: [cx + 34 * Math.sin(rot), cy - 34 * Math.cos(rot)] };
-    });
-    // 头梁：从两只耳罩的上端拱到现在的头顶上方
-    let top = 0; for (let i = 0; i < N; i++) if (Math.abs(wrapPi(i * DPHI + Math.PI / 2)) < .8) top = Math.max(top, -b.r[i] * SIN[i]);
-    const [[x0, y0], [x3, y3]] = cups.map(q => q.top), apex = -(top + 20 - 40 * down(-Math.PI / 2)), cy = (apex - (y0 + y3) / 8) * 4 / 3;
+    // 耳机是一整副，套在脸周围：两只耳罩在脸的左右、和脸差不多高，头梁在脸的正上方。只按“脸这一层身体有多宽、头顶有多高”伸缩，
+    // 而且只在合理范围里伸缩，所以身体怎么变形、怎么转，它都是一副完整的耳机，不会被扯散、不会绕着身体兜圈
+    const keepIn = (x, y) => { const d = Math.hypot(x, y), lim = Math.max(0, surfR(b, Math.atan2(y, x)) - 34); return d > lim ? [x * lim / d, y * lim / d] : [x, y]; };
+    const [fx, fy] = keepIn(...artToBody(b, -6, -28)), poly = ptsFromR(b.r);
+    let left = fx - 60, right = fx + 60, topY = fy - 60;
+    { let lo = 1e9, hi = -1e9, up = 1e9;
+      for (let i = 0; i < N; i++) {
+        const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % N];
+        if ((y1 - fy) * (y2 - fy) <= 0 && y1 !== y2) { const x = x1 + (fy - y1) / (y2 - y1) * (x2 - x1); lo = Math.min(lo, x); hi = Math.max(hi, x); }   // 脸这一层的左右边
+        if ((x1 - fx) * (x2 - fx) <= 0 && x1 !== x2) { const y = y1 + (fx - x1) / (x2 - x1) * (y2 - y1); if (y < fy) up = Math.min(up, y); }   // 脸正上方的头顶
+      }
+      if (lo < hi) { left = lo; right = hi; } if (up < 1e9) topY = up; }
+    const want = { fx, fy, hl: clamp(fx - left + 4, 56, 104), hr: clamp(right - fx + 4, 56, 104), hu: clamp(fy - topY + 22, 64, 118) };
+    // 平滑地靠过去：砸中那一下身体突然变形，耳机跟着晃过去，不硬跳
+    const o = b.ovl, dt = clamp(G.time - (b.ovlT === undefined ? G.time : b.ovlT), 0, .1), k = o ? 1 - Math.exp(-dt * 22) : 1; b.ovlT = G.time;
+    const cur = b.ovl = o ? Object.fromEntries(Object.keys(want).map(n => [n, o[n] + (want[n] - o[n]) * k])) : want;
+    const [ex, ey] = keepIn(cur.fx, cur.fy);
+    c.save(); c.translate(ex, ey); octoFace(c, b, t); c.restore();
+    const cups = [[-1, cur.hl, 6], [1, cur.hr, 8]].map(([s, h, dy]) => { const cx = ex + s * h, cy = ey + dy, rot = s * .06; return { cx, cy, rot, s, sq: 1, top: [cx + 34 * Math.sin(rot), cy - 34 * Math.cos(rot)] }; });
+    const [[x0, y0], [x3, y3]] = cups.map(q => q.top), apex = Math.min(ey - cur.hu, Math.min(y0, y3) - 18), cy = (apex - (y0 + y3) / 8) * 4 / 3;
     const band = () => { c.beginPath(); c.moveTo(x0, y0); c.bezierCurveTo(x0 - 6, cy, x3 + 6, cy, x3, y3); };
     c.lineCap = 'round';
     c.strokeStyle = '#c4447c'; c.lineWidth = 19; band(); c.stroke();
