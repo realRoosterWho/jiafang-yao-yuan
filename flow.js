@@ -260,6 +260,7 @@ function pill(c, v, main, sub, hot) {
   c.strokeStyle = hot ? C.alien : C.coin; c.lineWidth = 2; c.stroke();
   c.fillStyle = hot ? C.alien : C.ink; c.font = `${f1}px ${DISPLAY}`; c.fillText(main, x, y - (sub ? (f2 + 9) / 2 : 0) + 1);
   if (sub) { c.fillStyle = C.dim; c.font = `${f2}px ${BODY}`; c.fillText(sub, x, y + (f1 + 9) / 2 + 1); }
+  return { x0: x - bw / 2, x1: x + bw / 2, y1: y + bh / 2 };
 }
 function keycap(c, x, y, letter, glyph, on, want, t) {
   const s = 50; c.save(); c.translate(x, y + (on ? 3 : 0));
@@ -302,19 +303,22 @@ function drawHints(b, g, ready) {
     for (let k = 0; k < 3; k++) { const f = ((t * 1.6 + k / 3) % 1), y = y0 + span * f; c.globalAlpha = Math.sin(Math.PI * f); c.beginPath(); c.moveTo(x - 14, y - 8); c.lineTo(x, y + 6); c.lineTo(x + 14, y - 8); c.stroke(); }
     c.globalAlpha = 1;
   }
-  if (!TOUCH && b.held && !ready) {   // 电脑：石头两边的 A / D 键帽，正在按的亮起来，该按的那个闪
-    const gap = b.meanR + 78, lo = v.CAMX + 44, hi = 880 - 44, y = clamp(b.y + 8, 96, FLOOR - 40);
-    const need = !aligned && bumpy ? (g.err > 0 ? 'R' : 'L') : '';
-    keycap(c, clamp(b.x - gap, lo, hi), y, 'A', '↺', T.keyL, need === 'L', t);
-    keycap(c, clamp(b.x + gap, lo, hi), y, 'D', '↻', T.keyR, need === 'R', t);
-  }
   // 一句话提示
   const flash = T.note && t - T.note.t < 2.4 ? T.note.text : '';
-  if (ready) pill(c, v, TXT.ready, T.rotated ? '' : TXT.readySub, true);
-  else if (flash) pill(c, v, flash, '', false);
-  else if (!b.held) pill(c, v, T.grabbed ? TXT.again : TXT.grab, '', false);
-  else if (aligned && bumpy) pill(c, v, TXT.slam, T.light >= 2 ? TXT.light : '', true);
-  else pill(c, v, TXT.turn, TXT.turnSub, false);
+  const box = ready ? pill(c, v, TXT.ready, T.rotated ? '' : TXT.readySub, true)
+    : flash ? pill(c, v, flash, '', false)
+    : !b.held ? pill(c, v, T.grabbed ? TXT.again : TXT.grab, '', false)
+    : aligned && bumpy ? pill(c, v, TXT.slam, T.light >= 2 ? TXT.light : '', true)
+    : pill(c, v, TXT.turn, TXT.turnSub, false);
+  if (!TOUCH && b.held && !ready) {   // 电脑：石头两边的 A / D 键帽，正在按的亮起来，该按的那个闪
+    const gap = b.meanR + 78, lo = v.CAMX + 44, hi = 880 - 44, xa = clamp(b.x - gap, lo, hi), xd = clamp(b.x + gap, lo, hi);
+    let y = clamp(b.y + 8, 96, FLOOR - 40);
+    const under = x => x + 36 > box.x0 && x - 36 < box.x1;   // 石头举高了：键帽别压在提示条上，留在提示条下面
+    if (under(xa) || under(xd)) y = Math.max(y, Math.min(FLOOR - 40, box.y1 + 64));
+    const need = !aligned && bumpy ? (g.err > 0 ? 'R' : 'L') : '';
+    keycap(c, xa, y, 'A', '↺', T.keyL, need === 'L', t);
+    keycap(c, xd, y, 'D', '↻', T.keyR, need === 'R', t);
+  }
   c.restore();
 }
 function tutFrame() {
@@ -537,6 +541,9 @@ function begin(replay) {
 }
 
 /* ---------- 抢在游戏前面的事件监听（捕获阶段） ---------- */
+/* 游戏嵌在别的页面里（iframe）时：画布上的按下都被 preventDefault 了，键盘焦点一直留在外层页面，
+   封面 → 播片 → 新手关一路只点画布，A / D、空格就全没反应。所以每次按下都把焦点要过来。 */
+window.addEventListener('pointerdown', () => { try { if (!document.hasFocus()) window.focus(); } catch (e) {} }, true);
 window.addEventListener('pointerdown', e => {
   if (phase === 'idle' && G.state === 'cover' && e.target === cv && wantIntro()) { e.preventDefault(); e.stopImmediatePropagation(); begin(false); }
 }, true);
