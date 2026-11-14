@@ -384,16 +384,16 @@ const MATS = {
     base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '它砸不坏，地板会。得抡。' },
   /* 第九班：特邀嘉宾。Games Now!（阿尔托大学的游戏社区）的吉祥物章鱼熊。像一块软肉：一碰就变形、不掉料，最后拍成一个圆滚滚的球。
      活的（flee），快圆了放在地上会自己滚正、脸朝前（upright：圆度到多少开始）。会说话：talk 里每种场合几句 [中文, 英文]，头顶冒自己的小气泡；glow 是轮廓外的一圈光 */
-  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 52, loose: 1.5, plastic: 1, smooth: .5, passes: 6, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .9, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(130,240,215,.45)',
-    base: '#7ee4d4', outline: '#2f9a8c', chips: ['#aef4e9', '#84e0d2', '#62d8a8'], over: '章鱼熊疼哭了！', dead: '章鱼熊委屈地爬回 Games Now! 去了，说以后只给 game jam 当吉祥物。', blurb: '<strong>Games Now!</strong> 的吉祥物。软得像肉：拍哪鼓哪，不掉料，最后拍成一个球。会说话，也会疼。',
+  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 52, loose: 1, plastic: 1, smooth: .5, passes: 6, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .93, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
+    base: '#76dcd0', outline: '#4cbcae', chips: ['#8ce7dd', '#76dcd0', '#6ce8a8'], over: '章鱼熊疼哭了！', dead: '章鱼熊委屈地爬回 Games Now! 去了，说以后只给 game jam 当吉祥物。', blurb: '<strong>Games Now!</strong> 的吉祥物，戴着耳机来的。软得像肉：拍哪鼓哪，不掉料，最后拍成一个球。耳机不用管。会说话，也会疼。',
     talk: {
       start: [['大家好，我是 Games Now! 的章鱼熊！', "Hi! I'm the Games Now! octo-bear!"], ['听说要把我弄圆？轻一点哦。', 'I hear you want me round? Be gentle.']],
-      grab: [['哇，好高！', 'Whoa, so high!'], ['别晃，我晕。', "Don't shake me, I'm dizzy."], ['飞起来啦～', "I'm flying!"]],
+      grab: [['哇，好高！', 'Whoa, so high!'], ['耳机别掉了！', 'Mind my headphones!'], ['别晃，我晕。', "Don't shake me, I'm dizzy."], ['飞起来啦～', "I'm flying!"]],
       good: [['咕叽！', 'Squish!'], ['再来一下～', 'One more!'], ['好舒服！', 'That feels nice!'], ['我在变圆！', "I'm getting rounder!"], ['像在做按摩。', 'Like a massage.']],
       light: [['好痒……', 'That tickles…'], ['你在挠我吗？', 'Are you tickling me?']],
       over: [['疼疼疼！', 'Ow ow ow!'], ['轻点！我是吉祥物！', "Easy! I'm a mascot!"], ['呜……要喷墨了！', "Sniff… I'm gonna squirt ink!"]],
       ready: [['我圆啦！Games Now!', "I'm round! Games Now!"], ['圆滚滚！快交货！', 'Round and chubby! Deliver me!']],
-      idle: [['Games Now! 有讲座、有 game jam，欢迎来玩。', 'Games Now! has talks and game jams. Come along!'], ['Game jam 见～', 'See you at the game jam!'], ['你也做游戏吗？来 Games Now! 呀。', 'Do you make games? Come to Games Now!']],
+      idle: [['Games Now! 有讲座、有 game jam，欢迎来玩。', 'Games Now! has talks and game jams. Come along!'], ['Game jam 见～', 'See you at the game jam!'], ['你也做游戏吗？来 Games Now! 呀。', 'Do you make games? Come to Games Now!'], ['戴着耳机听歌呢，砸轻点。', "I'm listening to music. Gently, please."]],
       flee: [['我回 Games Now! 了，哼！', "I'm going back to Games Now!. Hmph!"]],
     } },
 };
@@ -461,7 +461,7 @@ const MATS_EN = {
   aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', 'Knock off the "!" first, then the A. One slip only.'],
   sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", '<strong>Hot</strong>: grab, lift, let go.'],
   oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "It can't break; the floor can. Swing it."],
-  octobear: ['Octo-Bear', 'Octo-Bear is crying!', 'The octo-bear crawled back to Games Now! in tears and says it will only be a mascot at game jams from now on.', "The <strong>Games Now!</strong> mascot. Soft as meat: it bulges, never loses material, and ends up a ball. It talks, and it can get hurt."],
+  octobear: ['Octo-Bear', 'Octo-Bear is crying!', 'The octo-bear crawled back to Games Now! in tears and says it will only be a mascot at game jams from now on.', "The <strong>Games Now!</strong> mascot, headphones and all. Soft as meat: it bulges, never loses material, and ends up a ball. Never mind the headphones. It talks, and it can get hurt."],
 };
 const CHAPS_EN = [
   ['Probation', ''],
@@ -483,8 +483,9 @@ if (EN) {
 // 圣诞老人的帽子、驯鹿的一边鹿角（另一边对称）：形状和贴图共用
 const SANTA_HAT = [[-36, -66], [-33, -86], [-24, -102], [-10, -113], [8, -120], [28, -126], [46, -126], [52, -121], [44, -113], [37, -100], [33, -84], [32, -66]];
 // 驯鹿角（右边，左边对称）：轮廓只能从中心往外放射，所以做成掌状：一块角掌，掌上伸出几根往外微弯的叉
-// 章鱼熊：圆脑袋、两只熊耳朵、底下一圈胖触手，最长的一条往右摊着（形状照官网上那只，颜色和表情照横幅上 3D 的那只）
-const OCTO = { head: [0, -18, 66, 62], ears: [[-44, -67, 19], [36, -75, 19]], legs: [[-76, 32, 31, 21, .7], [-40, 58, 23, 30, .25], [2, 64, 25, 26, 0], [46, 52, 29, 21, -.25], [100, 16, 44, 21, -.12]] };
+// 章鱼熊（照 Games Now! 横幅上那只 3D 的）：圆顶软冻，下摆比头宽，底下一圈往下淌的圆滴，两只小熊耳夹在头梁和耳罩之间。
+// 耳机是戴着的配件（见 OVER），不算形状；cups 是两个耳罩的中心
+const OCTO = { head: [0, -14, 84, 70], skirt: [0, 24, 90, 40], drips: [[-80, 34, 30], [-38, 60, 30], [10, 66, 28], [54, 56, 26], [86, 30, 20]], ears: [[-62, -64, 13], [62, -64, 13]], cups: [[-86, -22], [86, -20]] };
 const ANTLER_PALM = [17, 66, 78];   // 角掌：从离竖直多少度到多少度，伸出多远
 const ANTLER = [[23, 122, 11, 7], [42, 128, 11, 9], [59, 104, 10, 9]];   // 叉：[角度, 长度, 根部半宽, 往外弯多少度]
 const tinePts = (deg, len, w, bend, s) => { const A = [], B = []; for (let k = 0; k <= 8; k++) { const u = k / 8, a = (deg + bend * u * u) * Math.PI / 180 * s, r = 56 + (len - 56) * u, ww = w * (1 - u) + 1.6, dx = Math.sin(a), dy = -Math.cos(a); A.push([dx * r + dy * ww * s, dy * r - dx * ww * s]); B.push([dx * r - dy * ww * s, dy * r + dx * ww * s]); } return A.concat(B.reverse()); };
@@ -543,7 +544,7 @@ const SHAPES = {
   aalto: () => blobPts([{ s: [-79, 78, -36, -74, 26] }, { s: [19, 78, -24, -74, 26] }, { s: [-56, 30, -4, 30, 22] }, { s: [69, -70, 69, 26, 27] }, { c: [69, 66, 25] }, { s: [-84, 98, 74, 98, 12] }]),   // 字外面留一圈亚克力边，底下一条插底座的边
   sauna: () => { const n = 7, off = rand(0, TAU), p = []; for (let k = 0; k < n; k++) { const a = off + (k + rand(-.25, .25)) / n * TAU, q = rand(72, 112); p.push([Math.cos(a) * q, Math.sin(a) * q * .8]); } return chaikin(p, 2); },   // 圆润的多边形：桑拿石是磨过的
   oldphone: () => superPts(54, 114, 5).map(([x, y]) => [x * (1 - .07 * Math.exp(-((y / 46) ** 2)) + .05 * clamp((y - 30) / 70, 0, 1)), y]),   // 圆角直板，中间略收腰，底下略宽
-  octobear: () => blobPts([{ e: OCTO.head }, ...OCTO.ears.map(c => ({ c })), ...OCTO.legs.map(e => ({ e }))]),
+  octobear: () => blobPts([{ e: OCTO.head }, { e: OCTO.skirt }, ...OCTO.drips.map(c => ({ c })), ...OCTO.ears.map(c => ({ c }))]),
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
 function arcPts(cx, cy, rad, a0, a1, n) { const o = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); } return o; }
@@ -2089,45 +2090,63 @@ Object.assign(ART, {
 /* 特邀嘉宾：Games Now! 的章鱼熊 */
 Object.assign(ART, {
   octobear(c, b, t) {
-    // 薄荷绿，头顶浅、触手往下偏绿，照 Games Now! 横幅上那只 3D 的画：不描线，靠明暗显出软乎乎的体积
-    let g = c.createLinearGradient(0, -100, 0, 96); g.addColorStop(0, '#aaf6ec'); g.addColorStop(.45, '#7ee4d4'); g.addColorStop(1, '#6ce6b4'); c.fillStyle = g; c.fillRect(-150, -130, 300, 240);
-    g = c.createRadialGradient(70, 60, 10, 50, 50, 130); g.addColorStop(0, 'rgba(20,140,120,.14)'); g.addColorStop(1, 'rgba(20,140,120,0)'); c.fillStyle = g; c.fillRect(-150, -130, 300, 240);
-    // 每条触手：底下一层暗、上面一层亮，叠出一坨一坨的感觉
-    for (const [x, y, rx, ry, ro] of OCTO.legs) {
-      g = c.createRadialGradient(x - rx * .2, y - ry * .3, 2, x, y, Math.max(rx, ry) * 1.1); g.addColorStop(0, 'rgba(255,255,255,.16)'); g.addColorStop(.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(20,130,110,.16)');
-      c.fillStyle = g; c.beginPath(); c.ellipse(x, y, rx, ry, ro, 0, TAU); c.fill();
+    // 薄荷色软冻：头顶偏蓝绿，往下的滴偏黄绿；不描线，靠明暗显体积（照 Games Now! 横幅上那只 3D 的）
+    let g = c.createLinearGradient(0, -90, 0, 104); g.addColorStop(0, '#8ce7dd'); g.addColorStop(.5, '#76dcd0'); g.addColorStop(1, '#6ce8a8'); c.fillStyle = g; c.fillRect(-150, -130, 300, 260);
+    g = c.createRadialGradient(56, 18, 10, 46, 10, 120); g.addColorStop(0, 'rgba(30,140,140,.16)'); g.addColorStop(1, 'rgba(30,140,140,0)'); c.fillStyle = g; c.fillRect(-150, -130, 300, 260);
+    // 往下淌的滴：滴与滴之间一道折痕，下缘透亮
+    const D = OCTO.drips;
+    for (let i = 0; i + 1 < D.length; i++) { const [x0, y0, r0] = D[i], [x1, y1, r1] = D[i + 1]; c.fillStyle = 'rgba(30,140,125,.2)'; c.beginPath(); c.ellipse((x0 + x1) / 2, Math.max(y0, y1) - 2, 4, 12, (x1 - x0) * .004, 0, TAU); c.fill(); }
+    for (const [x, y, r] of D) {
+      g = c.createRadialGradient(x - r * .3, y - r * .4, 1, x, y, r); g.addColorStop(0, 'rgba(255,255,255,.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(205,255,225,.55)'; c.lineWidth = 3.5; c.beginPath(); c.arc(x, y, r - 4, .2 * Math.PI, .8 * Math.PI); c.stroke();
     }
-    c.strokeStyle = 'rgba(30,140,120,.26)'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath();   // 触手之间浅浅的缝
-    c.moveTo(-36, 18); c.quadraticCurveTo(-56, 30, -64, 52); c.moveTo(-14, 30); c.quadraticCurveTo(-20, 54, -22, 82);
-    c.moveTo(16, 30); c.quadraticCurveTo(22, 54, 24, 84); c.moveTo(40, 20); c.quadraticCurveTo(60, 32, 70, 58); c.moveTo(56, 10); c.quadraticCurveTo(96, 6, 132, 14);
-    c.stroke();
     // 耳朵里深一点
-    c.fillStyle = 'rgba(40,160,145,.3)'; for (const [x, y, r] of OCTO.ears) { c.beginPath(); c.ellipse(x, y + 2, r * .5, r * .42, 0, 0, TAU); c.fill(); }
-    // 脑袋左上一大块柔光 + 一个亮点
-    g = c.createRadialGradient(-28, -56, 4, -20, -46, 64); g.addColorStop(0, 'rgba(255,255,255,.62)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(-100, -120, 160, 140);
-    c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(-34, -60, 9, 5, -.6, 0, TAU); c.fill();
-    // 表情：平时就是原版那张脸（眯眼笑 + 张着小嘴）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪、嘴发抖；够圆了笑得更开、腮红更红
+    c.fillStyle = 'rgba(45,160,150,.3)'; for (const [x, y, r] of OCTO.ears) { c.beginPath(); c.ellipse(x, y + 2, r * .5, r * .45, 0, 0, TAU); c.fill(); }
+    // 头顶左上一大块柔光
+    g = c.createRadialGradient(-38, -52, 4, -28, -40, 80); g.addColorStop(0, 'rgba(255,255,255,.5)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(-110, -130, 170, 150);
+    c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.ellipse(-44, -58, 10, 5, -.6, 0, TAU); c.fill();
+    // 脸：小小的，偏左上，头微微歪着。平时 ^ ^ 加一张黑色小嘴（原版那张脸）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪；够圆了笑得更开、加腮红
     const play = G.state === 'play', happy = (play && G.round >= G.target) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
-      squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, ink = '#1d1d1f';
-    c.fillStyle = `rgba(255,130,170,${happy ? .6 : .42})`; c.beginPath(); c.ellipse(-40, -6, 11, 6.5, 0, 0, TAU); c.ellipse(40, -6, 11, 6.5, 0, 0, TAU); c.fill();
-    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3.4; c.lineCap = 'round'; c.lineJoin = 'round';
-    const open = (b.held && !squish) || hurt;
+      squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, held = b.held && !squish, ink = '#151517';
+    c.save(); c.translate(-6, -28); c.rotate(.1); c.scale(1.2, 1.2);
+    if (happy) { c.fillStyle = 'rgba(255,130,165,.5)'; c.beginPath(); c.ellipse(-34, 10, 10, 6, 0, 0, TAU); c.ellipse(34, 10, 10, 6, 0, 0, TAU); c.fill(); }
+    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3.6; c.lineCap = 'round'; c.lineJoin = 'round';
     for (const s of [-1, 1]) {
-      const x = s * 22, y = -24;
-      if (squish) { c.beginPath(); c.moveTo(x - s * 6, y - 7); c.lineTo(x + s * 5, y); c.lineTo(x - s * 6, y + 7); c.stroke(); }
-      else if (open) { const k = b.held ? 1.2 : 1; c.beginPath(); c.ellipse(x, y, 4.6 * k, 7 * k, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 1.4, y - 3, 1.8, 0, TAU); c.fill(); c.fillStyle = ink; }
-      else { c.beginPath(); c.arc(x, y + 5, 8, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }   // 眯眼笑
-      if (hurt) { const d = (t * 1.3 + (s > 0 ? .5 : 0)) % 1; c.fillStyle = `rgba(120,190,255,${1 - d * .8})`; c.beginPath(); c.ellipse(x + s * 3, y + 13 + d * 20, 4.2, 6, 0, 0, TAU); c.fill(); c.fillStyle = `rgba(255,255,255,${.8 - d * .6})`; c.beginPath(); c.arc(x + s * 3 - 1.3, y + 11.5 + d * 20, 1.4, 0, TAU); c.fill(); c.fillStyle = ink; }
+      const x = s * 19, y = 0;
+      if (squish) { c.beginPath(); c.moveTo(x - s * 6, y - 6.5); c.lineTo(x + s * 5, y); c.lineTo(x - s * 6, y + 6.5); c.stroke(); }
+      else if (held || hurt) { c.beginPath(); c.ellipse(x, y, 4.4, 6.4, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 1.3, y - 2.6, 1.6, 0, TAU); c.fill(); c.fillStyle = ink; }
+      else { c.beginPath(); c.arc(x, y + 5, 7.5, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }   // 眯眼笑
+      if (hurt) { const d = (t * 1.3 + (s > 0 ? .5 : 0)) % 1; c.fillStyle = `rgba(110,185,255,${1 - d * .8})`; c.beginPath(); c.ellipse(x + s * 3, y + 12 + d * 20, 4, 5.8, 0, 0, TAU); c.fill(); c.fillStyle = `rgba(255,255,255,${.8 - d * .6})`; c.beginPath(); c.arc(x + s * 3 - 1.2, y + 10.5 + d * 20, 1.3, 0, TAU); c.fill(); c.fillStyle = ink; }
     }
-    // 嘴：张着的小嘴，里面一点粉
-    const mouth = (w, h) => { c.fillStyle = ink; c.beginPath(); c.moveTo(-w, -12); c.quadraticCurveTo(0, -12 + h * 2.2, w, -12); c.closePath(); c.fill(); c.fillStyle = '#ff8fa6'; c.beginPath(); c.ellipse(0, -12 + h * .85, w * .45, h * .35, 0, 0, TAU); c.fill(); };
-    if (hurt) { c.lineWidth = 2.6; c.beginPath(); c.moveTo(-9, -9); c.quadraticCurveTo(-4.5, -13, 0, -9); c.quadraticCurveTo(4.5, -5, 9, -9); c.stroke(); }
-    else if (b.held && !squish) { c.beginPath(); c.ellipse(0, -8, 4.5, 5.5, 0, 0, TAU); c.fill(); }
-    else if (happy) mouth(10, 8);
-    else mouth(8, 6.2);
-    c.lineCap = 'butt'; c.lineJoin = 'miter';
+    if (hurt) { c.lineWidth = 2.6; c.beginPath(); c.moveTo(-8, 12); c.quadraticCurveTo(-4, 8, 0, 12); c.quadraticCurveTo(4, 16, 8, 12); c.stroke(); }
+    else if (held) { c.beginPath(); c.ellipse(-1, 13, 4.2, 5.2, 0, 0, TAU); c.fill(); }
+    else { const w = happy ? 8.5 : 6.5, h = happy ? 8 : 6.5; c.beginPath(); c.moveTo(-1 - w, 9); c.lineTo(-1 + w, 9); c.ellipse(-1, 9, w, h, 0, 0, Math.PI); c.closePath(); c.fill(); }   // 平顶圆底的小嘴
+    c.restore(); c.lineCap = 'butt'; c.lineJoin = 'miter';
   },
 });
+/* 戴在身上的配件：画在轮廓外面、不算形状、不会被砸扁，跟着料一起转。坐标和 ART 一样 */
+const OVER = {
+  octobear(c, b, t) {   // 粉色耳机：头梁从头顶上方拱过去，耳罩朝里一圈橙金，右边耳罩上一颗星
+    const [[lx, ly], [rx, ry]] = OCTO.cups;
+    c.lineCap = 'round';
+    const band = () => { c.beginPath(); c.moveTo(lx + 2, ly - 34); c.bezierCurveTo(lx - 4, -128, rx + 4, -128, rx - 2, ry - 34); };
+    c.strokeStyle = '#c4447c'; c.lineWidth = 19; band(); c.stroke();
+    let g = c.createLinearGradient(0, -116, 0, -50); g.addColorStop(0, '#ffa2c8'); g.addColorStop(1, '#ec66a0'); c.strokeStyle = g; c.lineWidth = 14; band(); c.stroke();
+    c.save(); c.translate(-1, -3); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 4; band(); c.stroke(); c.restore();
+    for (const [x, y, s] of [[lx, ly, -1], [rx, ry, 1]]) {
+      // 朝里那一圈橙金
+      g = c.createLinearGradient(x - s * 18, y - 30, x + s * 6, y + 30); g.addColorStop(0, '#ffe08e'); g.addColorStop(.5, '#f5a443'); g.addColorStop(1, '#c86a1e'); c.fillStyle = g; c.beginPath(); c.ellipse(x - s * 9, y, 18, 38, 0, 0, TAU); c.fill();
+      // 外面的粉色壳
+      g = c.createRadialGradient(x + s * 2, y - 14, 2, x + s * 6, y, 38); g.addColorStop(0, '#ffb0cf'); g.addColorStop(.6, '#ef6aa3'); g.addColorStop(1, '#cf4b86'); c.fillStyle = g; c.beginPath(); c.ellipse(x + s * 6, y + 1, 19, 37, 0, 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(x + s * 1, y - 17, 5, 12, 0, 0, TAU); c.fill();
+    }
+    // 右耳罩上的星星
+    c.save(); c.translate(rx + 9, ry + 5); c.rotate(.2); c.beginPath();
+    for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? 4.6 : 11; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); }
+    c.closePath(); c.fillStyle = '#ffd35c'; c.fill(); c.strokeStyle = '#e8862a'; c.lineWidth = 1.5; c.stroke(); c.restore();
+    c.lineCap = 'butt';
+  },
+};
 /* 芯的剖面图：画在壳的图案上面，坐标和 ART 一样是出厂时的坐标 */
 const CORE_ART = {
   coconut(c) { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(0, 0, 54, 0, TAU); c.fill(); c.fillStyle = '#d9eeee'; c.beginPath(); c.arc(0, 0, 40, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-14, -16, 14, 6, -.5, 0, TAU); c.fill(); },
@@ -2187,6 +2206,7 @@ function drawBody(b, t) {
   if (m.rim) { bodyPath(b); ctx.strokeStyle = m.rim; ctx.lineWidth = 14; ctx.stroke(); }
   ctx.restore();
   bodyPath(b); ctx.strokeStyle = m.outline; ctx.lineWidth = 3; ctx.stroke();
+  if (OVER[b.id]) { ctx.save(); ctx.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; ctx.transform(M[0], M[1], M[2], M[3], 0, 0); } OVER[b.id](ctx, b, t); ctx.restore(); }   // 戴在身上的配件
   if (b.flash > 0) { bodyPath(b); ctx.fillStyle = `rgba(255,255,255,${b.flash})`; ctx.fill(); }
   ctx.restore();
   if (b.held && m.hot && G.state === 'play') {   // 烫手：抓的地方画一圈倒计时
