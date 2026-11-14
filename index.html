@@ -632,8 +632,8 @@ const PARTS = [{ name: L('冒险模式', 'Adventure'), from: 0, to: ADV_N }, { n
    剩下的关卡平时玩不到，只在无尽模式里随机抽到（交付一次就收进图鉴）；订单簿是藏起来的开发者入口（首页连点外星人 10 下）。
    G.mode：main 冒险模式；book 从订单簿开工（老玩法，一路做到第 49 单）；endless 无尽模式。G.end：这一趟做到第几单为止 */
 const ADV_IDS = ADV_LIST.map(a => a[0]);
-/* 无尽模式：全部物品有放回地抽；每交一单，甲方耐心（限时）× 0.93，最低到原来的三成，砸一次就结束 */
-const ENDLESS = { decay: .93, floor: .3, minTime: 5 };
+/* 无尽模式：全部物品有放回地抽；每交一单，甲方耐心（限时）× 0.9（第 10 单只剩四成，交满 10 单就算高手），最低到原来的一成（第 23 单到底，多数东西只剩 7 到 16 秒），砸一次就结束 */
+const ENDLESS = { decay: .9, floor: .1, minTime: 5 };
 const endlessPace = n => Math.max(ENDLESS.floor, Math.pow(ENDLESS.decay, n));
 let DEV = false; try { DEV = localStorage.getItem('yuan.dev') === '1'; } catch (e) {}
 const chapAt = i => { for (let k = CHAPS.length - 1; k > 0; k--) if (i >= CHAPS[k].from) return k; return 0; };
@@ -1497,7 +1497,7 @@ const ACH = [
   { id: 'wan_yuan', g: 'prog', goal: () => 10000, prog: () => sumBest(), t: ['万圆户', '各单最高酬劳加起来过了 ◎ 10000。地球上叫万元户，这儿叫万圆户。'], e: ['Ten-Grand Club', 'Best pays add up to ◎ 10000. Nothing here to spend it on. Very round money, though.'] },
   { id: 'big_ticket', g: 'prog', goal: () => 3000, prog: () => Math.max(0, ...ORDER.map(id => SAVE.best[id] || 0)), t: ['开张吃三年', '一单拿了 ◎ 3000 以上。三年不开张，开张吃三年。'], e: ['Big Ticket', '◎ 3000 or more for one order. The Client paid in coins. Round ones, naturally.'] },
   { id: 'ot_first', g: 'prog', t: ['自愿加班', '在无尽模式里交了一单。甲方强调加班是自愿的。门是锁着的。'], e: ['Voluntary Overtime', 'Delivered an order in endless mode. Strictly voluntary, the Client stresses. The door is locked.'] },
-  { id: 'endless_10', g: 'prog', goal: () => 10, prog: () => SAVE.endless.n, t: ['耐心减半', '无尽模式一轮交了 10 单。甲方的耐心只剩一半，你的还剩很多。'], e: ['Half the Patience', "Ten orders in one endless run. The Client's patience is down to half. Yours is not."] },
+  { id: 'endless_10', g: 'prog', goal: () => 10, prog: () => SAVE.endless.n, t: ['耐心告急', '无尽模式一轮交了 10 单。甲方的耐心只剩三分之一，你的还剩很多。'], e: ['Patience Running Low', "Ten orders in one endless run. The Client's patience is down to a third. Yours is not."] },
   { id: 'endless_25', g: 'prog', goal: () => 25, prog: () => SAVE.endless.n, t: ['缩成一个点', '无尽模式一轮交了 25 单。甲方的耐心早就缩成了一个点，你还在。'], e: ['Down to a Dot', "Twenty-five orders in one endless run. The Client's patience shrank to a dot long ago. You are still here."] },
   // 手艺
   { id: 'hat_trick', g: 'craft', goal: () => 3, prog: () => A.three.length, t: ['连中三圆', '连续 3 单三星。古人叫连中三元，甲方叫连中三圆。'], e: ['Hat Trick', 'Three three-star orders in a row. The Client offers you a hat. It is round.'] },
