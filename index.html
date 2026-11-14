@@ -336,6 +336,7 @@ const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' ||
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
 const GRAV = 5200, FOLLOW = 20, ARM = 16, MIN_F = 4;
+const FOLLOW_T = 40, TOUCH_ACC = 5, TOUCH_V = 2.2;   // 触屏拎料：跟手更紧；左右/往上的加速度和速度上限放宽到几倍（往下砸不放宽）
 // K：圆度 = 1 - K * 半径变异系数；D0/D1：每一下的形变量 = 半径 * 松散 * (D0 + D1 * 窗口内位置)
 const TUNE = { K: 3.5, D0: 0.05, D1: 0.2 };
 const COS = new Float32Array(N), SIN = new Float32Array(N);
@@ -1067,11 +1068,22 @@ function stepBody(b, dt) {
     b.w = clamp((b.targetA + b.userRot - b.a) * 16, -14, 14); b.a += b.w * dt;
     const c = Math.cos(b.a), s = Math.sin(b.a);
     b.lift = (b.lift || 0) + ((b.liftTo || 0) - (b.lift || 0)) * Math.min(1, dt * 9);
-    let dvx = (P.x - (b.gx * c - b.gy * s) - b.x) * FOLLOW, dvy = (P.y - b.lift - (b.gx * s + b.gy * c) - b.y) * FOLLOW;
-    const sp = Math.hypot(dvx, dvy); if (sp > VMAX) { dvx *= VMAX / sp; dvy *= VMAX / sp; }
-    let ax = dvx - b.vx, ay = dvy - b.vy; const al = Math.hypot(ax, ay), mx = m.accel * dt;
-    if (al > mx) { ax *= mx / al; ay *= mx / al; }
-    b.vx += ax; b.vy += ay; b.x += b.vx * dt; b.y += b.vy * dt;
+    const fol = TOUCH ? FOLLOW_T : FOLLOW;
+    let dvx = (P.x - (b.gx * c - b.gy * s) - b.x) * fol, dvy = (P.y - b.lift - (b.gx * s + b.gy * c) - b.y) * fol;
+    if (!TOUCH) {
+      const sp = Math.hypot(dvx, dvy); if (sp > VMAX) { dvx *= VMAX / sp; dvy *= VMAX / sp; }
+      let ax = dvx - b.vx, ay = dvy - b.vy; const al = Math.hypot(ax, ay), mx = m.accel * dt;
+      if (al > mx) { ax *= mx / al; ay *= mx / al; }
+      b.vx += ax; b.vy += ay;
+    } else {
+      // 触屏手指一挪就是一大段，快拉时料跟不上、虚线被拉长。只有「往下砸」还守着原来的速度和加速度上限（力度就是按它算的），
+      // 左右挪、往上提、往下砸到一半刹车都放开，料紧跟着手指走
+      const fast = m.accel * TOUCH_ACC * dt, slow = m.accel * dt;
+      dvx = clamp(dvx, -VMAX * TOUCH_V, VMAX * TOUCH_V); dvy = clamp(dvy, -VMAX * TOUCH_V, VMAX);
+      b.vx += clamp(dvx - b.vx, -fast, fast);
+      b.vy += clamp(dvy - b.vy, -fast, b.vy < 0 ? Math.min(fast, slow - b.vy) : slow);   // 往上的速度可以很快刹到 0，过了 0 再往下就按原来的劲加速
+    }
+    b.x += b.vx * dt; b.y += b.vy * dt;
     let maxY = -1e9, minX = 1e9, maxX = -1e9, lowX = b.x;
     for (let i = 0; i < N; i++) {
       const lx = b.r[i] * COS[i], ly = b.r[i] * SIN[i], wx = b.x + lx * c - ly * s, wy = b.y + lx * s + ly * c;
@@ -2135,7 +2147,7 @@ function tryGrab() {
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; if (Math.random() < .35) talk('grab'); return true;
 }
-function release() { const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); } }
+function release() { const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远
 // 第一根手指拎材料；拎着的时候第二根手指落在画面上，左右滑就是微调角度
 let grabId = null, rotId = null, rotX = 0;
 cv.addEventListener('pointerdown', e => {
