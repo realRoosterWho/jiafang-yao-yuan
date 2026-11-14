@@ -526,7 +526,24 @@ function showChoice(name, how, no) {
 }
 
 /* ---------- 开始 ---------- */
+/* 第一次来、还没选过语言：先选。浏览器语言那个排前面、高亮。选了就记在 yuan.lang，以后不再问 */
+const langChosen = () => { try { return !!localStorage.getItem('yuan.lang') || !!new URLSearchParams(location.search).get('lang'); } catch (e) { return true; } };
+function pickLang(then) {
+  phase = 'lang';
+  const browserZh = /^zh/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
+  const opts = browserZh ? [['zh', '中文'], ['en', 'English']] : [['en', 'English'], ['zh', '中文']];
+  X.setCard(`<p class="eyebrow">语言 · Language</p>
+    <div class="flow-go">${opts.map(([v, t], i) => `<button class="btn${i ? ' ghost' : ''}" type="button" data-lang="${v}" lang="${v}">${t}</button>`).join('')}</div>`);
+  const first = card.querySelector('[data-lang]'); if (first) first.focus();
+  card.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', () => {
+    const to = btn.dataset.lang;
+    try { localStorage.setItem('yuan.lang', to); } catch (e) {}
+    if ((to === 'en') === EN) { phase = 'idle'; then(); return; }
+    location.href = location.pathname + '?lang=' + to;   // 换语言要重新加载；回来是封面，再点一下就开场（声音要这一下）
+  }));
+}
 function begin(replay) {
+  if (!replay && !langChosen()) { X.audioInit(); X.sfx.ui(); pickLang(() => begin(replay)); return; }
   ran = true;
   X.audioInit(); X.sfx.ui();
   card.innerHTML = ''; overlay.hidden = true; stage.classList.remove('cover'); deliverBtn.hidden = true;
