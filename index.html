@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>甲方要圆</title>
-<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。48 单敲击小游戏。">
+<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。49 单敲击小游戏。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -382,8 +382,22 @@ const MATS = {
     base: '#3a3940', outline: '#e0702c', chips: ['#4a4950', '#2a292e', '#ff8a3c'], over: '崩掉一块！', dead: '桑拿石碎了一地。甲方的桑拿房今晚只能干蒸了。', blurb: '<strong>烫手</strong>：抓起来，举高，松手。' },
   oldphone: { name: '老手机', unit: '部', hard: 48, brittle: 88, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .15, fric: .7, accel: 15000, jig: 0, target: .82, time: 160, floor: 1,
     base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '它砸不坏，地板会。得抡。' },
+  /* 第九班：特邀嘉宾。Games Now!（阿尔托大学的游戏社区）的吉祥物章鱼熊。像一块软肉：一碰就变形、不掉料，最后拍成一个圆滚滚的球。
+     活的（flee），快圆了放在地上会自己滚正、脸朝前（upright：圆度到多少开始）。会说话：talk 里每种场合几句 [中文, 英文]，头顶冒自己的小气泡；glow 是轮廓外的一圈光 */
+  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 52, loose: 1.5, plastic: 1, smooth: .5, passes: 6, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .9, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(130,240,215,.45)',
+    base: '#7ee4d4', outline: '#2f9a8c', chips: ['#aef4e9', '#84e0d2', '#62d8a8'], over: '章鱼熊疼哭了！', dead: '章鱼熊委屈地爬回 Games Now! 去了，说以后只给 game jam 当吉祥物。', blurb: '<strong>Games Now!</strong> 的吉祥物。软得像肉：拍哪鼓哪，不掉料，最后拍成一个球。会说话，也会疼。',
+    talk: {
+      start: [['大家好，我是 Games Now! 的章鱼熊！', "Hi! I'm the Games Now! octo-bear!"], ['听说要把我弄圆？轻一点哦。', 'I hear you want me round? Be gentle.']],
+      grab: [['哇，好高！', 'Whoa, so high!'], ['别晃，我晕。', "Don't shake me, I'm dizzy."], ['飞起来啦～', "I'm flying!"]],
+      good: [['咕叽！', 'Squish!'], ['再来一下～', 'One more!'], ['好舒服！', 'That feels nice!'], ['我在变圆！', "I'm getting rounder!"], ['像在做按摩。', 'Like a massage.']],
+      light: [['好痒……', 'That tickles…'], ['你在挠我吗？', 'Are you tickling me?']],
+      over: [['疼疼疼！', 'Ow ow ow!'], ['轻点！我是吉祥物！', "Easy! I'm a mascot!"], ['呜……要喷墨了！', "Sniff… I'm gonna squirt ink!"]],
+      ready: [['我圆啦！Games Now!', "I'm round! Games Now!"], ['圆滚滚！快交货！', 'Round and chubby! Deliver me!']],
+      idle: [['Games Now! 有讲座、有 game jam，欢迎来玩。', 'Games Now! has talks and game jams. Come along!'], ['Game jam 见～', 'See you at the game jam!'], ['你也做游戏吗？来 Games Now! 呀。', 'Do you make games? Come to Games Now!']],
+      flee: [['我回 Games Now! 了，哼！', "I'm going back to Games Now!. Hmph!"]],
+    } },
 };
-const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'octobear'];
 const PER = 6;   // 每班六单
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -394,6 +408,7 @@ const CHAPS = [
   { name: '软硬不吃', intro: '这一班的东西脾气都怪。金属越砸越硬，每浪费一下，后面都更难砸动；软的东西放在地上不管就会塌，压在底下的那面慢慢变平。不过塌也能帮你：把尖角朝下放着，让它自己塌圆。' },
   { name: '拿捏', intro: '这一班考你怎么拿。有的东西拎在手里会被焐软：越拎越软、一下砸得越多，放下又慢慢凉回来。有的东西里面装着沙子、硬币、蜂蜜，会慢慢往下流：有东西垫着的那面扛得住重砸，空着的那面一碰就碎。翻过来以后，等它流到底再砸。' },
   { name: '芬兰特供', intro: '甲方的飞碟追着极光一路飞到了芬兰，装了一飞碟的特产回来，连圣诞老人和他的驯鹿都请上了船。芬兰人做东西结实、实用，就是不圆。这一班前面学过的花样全有，另外三样新的：活的东西砸狠了会急，急够三次就跑；桑拿石烫手，拎不了多久；最后那部老手机砸不坏，会坏的是甲方的地板。' },
+  { name: '特邀嘉宾', intro: '甲方听说芬兰有个游戏社区叫 Games Now!，派飞碟去把他们的吉祥物请来做客。一见面甲方就说：可爱是可爱，就是不够圆。这一班只有一单。' },
 ];
 
 /* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
@@ -446,6 +461,7 @@ const MATS_EN = {
   aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', 'Knock off the "!" first, then the A. One slip only.'],
   sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", '<strong>Hot</strong>: grab, lift, let go.'],
   oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "It can't break; the floor can. Swing it."],
+  octobear: ['Octo-Bear', 'Octo-Bear is crying!', 'The octo-bear crawled back to Games Now! in tears and says it will only be a mascot at game jams from now on.', "The <strong>Games Now!</strong> mascot. Soft as meat: it bulges, never loses material, and ends up a ball. It talks, and it can get hurt."],
 };
 const CHAPS_EN = [
   ['Probation', ''],
@@ -456,6 +472,7 @@ const CHAPS_EN = [
   ['Stubborn Stuff', 'Everything this shift has a temper. Metals harden as you hit them, so every wasted hit makes the rest harder. Soft things slump if you leave them on the floor, flattening whatever side is underneath. But slumping can help too: set a corner down and let it sag round on its own.'],
   ['Handle With Care', 'This shift is about how you hold things. Some soften in your warm hand: the longer you hold them, the softer they get and the more each hit changes them, and they cool again once you put them down. Others hold sand, coins or honey that slowly flows downward: a side with something behind it can take a heavy hit, a hollow side breaks at a touch. Once you flip it, wait for the contents to settle before you hit.'],
   ['Finnish Specials', "The Client's saucer chased the northern lights all the way to Finland and came back loaded with local specialities. Santa and his reindeer came along too. Finns make things sturdy and practical, just not round. This shift has every trick so far, plus three new ones: living things get upset if you hit too hard, and after three times they run off; the sauna stone is too hot to hold for long; and the old phone at the end can't break, but the Client's floor can."],
+  ['Special Guest', "The Client heard about a Finnish games community called Games Now! and sent the saucer to invite their mascot over. The moment they met, the Client said: adorable, but not round enough. This shift has just one order."],
 ];
 if (EN) {
   for (const id in MATS_EN) { const [name, over, dead, blurb] = MATS_EN[id]; Object.assign(MATS[id], { name, over, dead, blurb }); }
@@ -466,6 +483,8 @@ if (EN) {
 // 圣诞老人的帽子、驯鹿的一边鹿角（另一边对称）：形状和贴图共用
 const SANTA_HAT = [[-36, -66], [-33, -86], [-24, -102], [-10, -113], [8, -120], [28, -126], [46, -126], [52, -121], [44, -113], [37, -100], [33, -84], [32, -66]];
 // 驯鹿角（右边，左边对称）：轮廓只能从中心往外放射，所以做成掌状：一块角掌，掌上伸出几根往外微弯的叉
+// 章鱼熊：圆脑袋、两只熊耳朵、底下一圈胖触手，最长的一条往右摊着（形状照官网上那只，颜色和表情照横幅上 3D 的那只）
+const OCTO = { head: [0, -18, 66, 62], ears: [[-44, -67, 19], [36, -75, 19]], legs: [[-76, 32, 31, 21, .7], [-40, 58, 23, 30, .25], [2, 64, 25, 26, 0], [46, 52, 29, 21, -.25], [100, 16, 44, 21, -.12]] };
 const ANTLER_PALM = [17, 66, 78];   // 角掌：从离竖直多少度到多少度，伸出多远
 const ANTLER = [[23, 122, 11, 7], [42, 128, 11, 9], [59, 104, 10, 9]];   // 叉：[角度, 长度, 根部半宽, 往外弯多少度]
 const tinePts = (deg, len, w, bend, s) => { const A = [], B = []; for (let k = 0; k <= 8; k++) { const u = k / 8, a = (deg + bend * u * u) * Math.PI / 180 * s, r = 56 + (len - 56) * u, ww = w * (1 - u) + 1.6, dx = Math.sin(a), dy = -Math.cos(a); A.push([dx * r + dy * ww * s, dy * r - dx * ww * s]); B.push([dx * r - dy * ww * s, dy * r + dx * ww * s]); } return A.concat(B.reverse()); };
@@ -524,6 +543,7 @@ const SHAPES = {
   aalto: () => blobPts([{ s: [-79, 78, -36, -74, 26] }, { s: [19, 78, -24, -74, 26] }, { s: [-56, 30, -4, 30, 22] }, { s: [69, -70, 69, 26, 27] }, { c: [69, 66, 25] }, { s: [-84, 98, 74, 98, 12] }]),   // 字外面留一圈亚克力边，底下一条插底座的边
   sauna: () => { const n = 7, off = rand(0, TAU), p = []; for (let k = 0; k < n; k++) { const a = off + (k + rand(-.25, .25)) / n * TAU, q = rand(72, 112); p.push([Math.cos(a) * q, Math.sin(a) * q * .8]); } return chaikin(p, 2); },   // 圆润的多边形：桑拿石是磨过的
   oldphone: () => superPts(54, 114, 5).map(([x, y]) => [x * (1 - .07 * Math.exp(-((y / 46) ** 2)) + .05 * clamp((y - 30) / 70, 0, 1)), y]),   // 圆角直板，中间略收腰，底下略宽
+  octobear: () => blobPts([{ e: OCTO.head }, ...OCTO.ears.map(c => ({ c })), ...OCTO.legs.map(e => ({ e }))]),
 };
 function superPts(hw, hh, p) { const o = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, c = Math.cos(a), s = Math.sin(a); o.push([hw * Math.sign(c) * Math.pow(Math.abs(c), 2 / p), hh * Math.sign(s) * Math.pow(Math.abs(s), 2 / p)]); } return o; }
 function arcPts(cx, cy, rad, a0, a1, n) { const o = []; for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; o.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad]); } return o; }
@@ -819,6 +839,7 @@ const HIT = {
   reindeer: p => { HIT.wood(p); tone(2600, .25, .05, 'sine', 0, .03); tone(3300, .2, .04, 'sine', 0, .08); },   // 角磕一下 + 一串铃铛
   sauna: p => { HIT.stone(p); noise(.4, .18 + .25 * p, 'highpass', 3500); },   // 石头声 + 一声“嘶”
   oldphone: p => { tone(150, .12, .5 * p, 'square', 90); noise(.06, .45 * p, 'bandpass', 1100, 1); tone(1320, .09, .08, 'square', 0, .1); },   // 闷响，再“嘀”一声
+  octobear: p => { HIT.meat(p); tone(620, .1, .14 * p, 'sine', 1150, .03); },   // 软软一声 + 往上挑的“啾”
 };
 const sfx = {
   thud: p => { tone(85, .08, .25 * p, 'sine', 55); noise(.04, .15 * p, 'lowpass', 500); },
@@ -850,6 +871,12 @@ const LINES = {
 function say(kind, force) {
   if (!force && G.bubble && G.time - G.bubble.t0 < 1.6) return;
   G.bubble = { text: pick(LINES[kind](G.mat)), t0: G.time, dur: 3.8, lines: null };
+}
+/* 会说话的料：头顶冒一个自己的小气泡（和甲方的气泡分开）。delay 秒以后才冒出来 */
+function talk(kind, force, delay) {
+  const T = G.mat && G.mat.talk; if (!T || !T[kind] || !G.body) return;
+  if (!force && G.talk && G.time - G.talk.t0 < 1.6) return;
+  const q = pick(T[kind]); G.talk = { text: L(q[0], q[1]), t0: G.time + (delay || 0), dur: 2.6, lines: null };
 }
 function mood(kind, sec) { G.mood = kind; G.moodT = G.time + sec; }
 
@@ -931,7 +958,7 @@ function impact(b, F, cx) {
     if (primary) {
       G.lastHit = { F, t: G.time, kind: 'light' }; G.stats.light++;
       floatText(cx, FLOOR - 46, L('太轻 ', 'Too soft ') + Math.round(F), C.dim, 20);
-      if (Math.random() < .45) say('light');
+      if (Math.random() < .45) say('light'); if (Math.random() < .5) talk('light');
     }
     return;
   }
@@ -951,7 +978,7 @@ function impact(b, F, cx) {
     floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
     floatText(cx, FLOOR - 22, L(`太重 ${Math.round(F)} > ${lm.brittle}`, `Too hard ${Math.round(F)} > ${lm.brittle}`), C.alarm, 17);
     if (G.hp <= 0) { shatter(b); return; }
-    say('over', true);
+    say('over', true); talk('over', true);
   } else {
     G.stats.good++;
     if (m.harden && !lm.isCore) {
@@ -961,19 +988,20 @@ function impact(b, F, cx) {
     const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
     if (gain < -.012) say('worse'); else if (Math.random() < .3) say('good');
+    if (Math.random() < .55) talk('good');
   }
 }
 function updateRoundness() {
   G.round = roundness(G.body.r);
   const ready = G.round >= G.target;
-  if (ready && !G.wasReady && G.state === 'play') { sfx.ready(); say('ready', true); mood('happy', 3); }
+  if (ready && !G.wasReady && G.state === 'play') { sfx.ready(); say('ready', true); talk('ready', true, .7); mood('happy', 3); }
   G.wasReady = ready; deliverBtn.hidden = !(ready && G.state === 'play');
 }
 function shatter(b) {
   if (b.mat.flee) {   // 活的：急够了站直了就跑，不碎
     b.held = false; b.flee = true; b.fleeT = 0; let lo = 0; for (let i = 0; i < N; i++) lo = Math.max(lo, b.r[i] * SIN[i]); b.fleeY = FLOOR - lo;
     sfx.huff(); [0, .12, .24].forEach(d => tone(520, .1, .16, 'square', 900, d)); G.shake = 10;
-    fail('shatter'); say('flee', true); return;
+    fail('shatter'); say('flee', true); talk('flee', true, .3); return;
   }
   b.dead = true; b.held = false; sfx.shatter(); G.shake = 24;
   if (b.mat.floor) {   // 碎的是地板：砸出一个洞，东西连同你一起掉下去
@@ -1081,6 +1109,10 @@ const MATFX = {
     if (over) { stain(x, 50, 'rgba(8,5,24,.85)', 4); shards(x, 10, ['#2a2166', '#3d3190', '#7566db']); ring(x, 130, '#7566db'); }
     else if (p > .7) fxp(x, FLOOR - 12, 2, 'glyph', ['#9fb85a'], { ch: ['♪'], s0: 14, s1: 18, g: 200, up: 180, life: 1.2 });
   },
+  octobear: (x, p, over) => {   // 砸好了冒心，砸疼了喷墨
+    if (over) { stain(x, 60, 'rgba(40,18,50,.85)', 4); fxp(x, FLOOR - 8, 16, 'drop', ['#2a1230', '#4a2050'], { up: 320, g: 900, s0: 4, s1: 8 }); }
+    else if (p > .25) fxp(x, FLOOR - 16, 1 + (p > .6 ? 1 : 0), 'glyph', ['#ff7aa0', '#ffd35c'], { ch: ['♥'], s0: 16, s1: 24, g: 80, up: 200, life: 1.4 });
+  },
 };
 /* 蒸汽：往上飘、越飘越大的白烟 */
 function steam(x, n, y) { for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-20, 20), y: y === undefined ? FLOOR - 6 : y, vx: rand(-30, 30), vy: rand(-140, -60), life: rand(.9, 1.5), t: 0, s: rand(8, 16), c: '#ffffff', rot: 0, vr: 0, kind: 'dust', a: .4 }); }
@@ -1095,7 +1127,7 @@ function setupRound() {
   const id = ORDER[G.idx], m = MATS[id];
   G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = m.time; G.hp = m.hp;
   G.stats = { good: 0, over: 0, light: 0 }; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
-  G.warned = false; G.wasReady = false; G.startScore = G.score; G.bubble = null; G.mood = 'calm'; G.moodT = 0;
+  G.warned = false; G.wasReady = false; G.startScore = G.score; G.bubble = null; G.talk = null; G.mood = 'calm'; G.moodT = 0;
   parts = []; frags = []; floats = []; stains = [];
 }
 /* 存档只记每一单拿过的最高酬劳。不锁关：订单簿里哪一单都能直接开工 */
@@ -1223,7 +1255,7 @@ function showChapter() {
     <p class="eyebrow">${L(`第 ${k + 1} 班 · 共 ${CHAPS.length} 班`, `Shift ${k + 1} of ${CHAPS.length}`)}</p>
     <h2>${ch.name}</h2>
     <p>${ch.intro}</p>
-    <p class="note">${L('这一班六单：', 'Six orders this shift: ')}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
+    <p class="note">${(n => n === 1 ? L('这一班只有一单：', 'Just one order this shift: ') : n === PER ? L('这一班六单：', 'Six orders this shift: ') : L(`这一班 ${n} 单：`, `${n} orders this shift: `))(ORDER.slice(k * PER, (k + 1) * PER).length)}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
@@ -1359,13 +1391,13 @@ function act(a) {
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();
   else if (a === 'enter') showOrder();
-  else if (a === 'go') { G.state = 'play'; overlay.hidden = true; say('start', true); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
+  else if (a === 'go') { G.state = 'play'; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
   else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (G.idx % PER === 0) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
   else if (a === 'replay') {   // 干活途中直接重来：不弹订单卡，料和时间都换新的
     if (G.state !== 'play') return;
     TRACK('retry', roundInfo());
-    G.score = G.startScore; setupRound(); G.state = 'play'; overlay.hidden = true; updateRoundness(); say('start', true);
+    G.score = G.startScore; setupRound(); G.state = 'play'; overlay.hidden = true; updateRoundness(); say('start', true); talk('start', true, 1.6);
   }
   else if (a === 'restart') showMenu();
   else if (a === 'home') { if (G.state === 'play') TRACK('quit', roundInfo()); showMenu(); }
@@ -1405,7 +1437,7 @@ function tryGrab() {
   // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 34 像素（lift 为负 = 往下）
   b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 34 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
-  G.started = true; return true;
+  G.started = true; if (Math.random() < .35) talk('grab'); return true;
 }
 function release() { const b = G.body; if (b && b.held) { b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); } }
 // 第一根手指拎材料；拎着的时候第二根手指落在画面上，左右滑就是微调角度
@@ -1477,6 +1509,8 @@ function update(dt) {
     b.flash = Math.max(0, b.flash - dt * 3);
     // 塌不靠“睡着”判断：底面很宽的东西停在地上会一直微微抖，永远睡不着。只要贴着地、几乎不动就算放着
     if (b.mat.fill) flowFill(b, dt);
+    // 快圆了的活物放在地上会自己慢慢滚正，脸朝前坐好
+    if (b.mat.upright && !b.held && b.clear < 4 && G.round >= b.mat.upright && Math.abs(wrapPi(b.a)) > .02 && Math.hypot(b.vx, b.vy) < 80) { b.a -= wrapPi(b.a) * Math.min(1, dt * 2.5); snapToFloor(b); }
     if (b.mat.warm && G.state === 'play') {
       const w = b.mat.warm, h0 = b.heat || 0; b.heat = clamp(h0 + (b.held ? w.rate : -w.cool) * dt, 0, 1);
       const soft = w.peak || .6, hot = w.hot ? w.peak + .15 : 2;
@@ -1492,6 +1526,7 @@ function update(dt) {
       if (b.restT > .3) creep(b, dt, sagNow);
     }
   }
+  if (G.state === 'play' && G.mat.talk && G.started && (!G.talk || G.time - G.talk.t0 > 9) && Math.random() < dt * .3) talk('idle');
   if (G.state === 'play' && G.started && b && !b.dead) {
     G.timeLeft -= dt;
     if (!G.warned && G.timeLeft < 15) { G.warned = true; say('hurry', true); }
@@ -2051,6 +2086,48 @@ Object.assign(ART, {
     c.fillStyle = '#0b0f17'; c.beginPath(); c.arc(0, 104, 2.4, 0, TAU); c.fill();   // 话筒孔
   },
 });
+/* 特邀嘉宾：Games Now! 的章鱼熊 */
+Object.assign(ART, {
+  octobear(c, b, t) {
+    // 薄荷绿，头顶浅、触手往下偏绿，照 Games Now! 横幅上那只 3D 的画：不描线，靠明暗显出软乎乎的体积
+    let g = c.createLinearGradient(0, -100, 0, 96); g.addColorStop(0, '#aaf6ec'); g.addColorStop(.45, '#7ee4d4'); g.addColorStop(1, '#6ce6b4'); c.fillStyle = g; c.fillRect(-150, -130, 300, 240);
+    g = c.createRadialGradient(70, 60, 10, 50, 50, 130); g.addColorStop(0, 'rgba(20,140,120,.14)'); g.addColorStop(1, 'rgba(20,140,120,0)'); c.fillStyle = g; c.fillRect(-150, -130, 300, 240);
+    // 每条触手：底下一层暗、上面一层亮，叠出一坨一坨的感觉
+    for (const [x, y, rx, ry, ro] of OCTO.legs) {
+      g = c.createRadialGradient(x - rx * .2, y - ry * .3, 2, x, y, Math.max(rx, ry) * 1.1); g.addColorStop(0, 'rgba(255,255,255,.16)'); g.addColorStop(.6, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(20,130,110,.16)');
+      c.fillStyle = g; c.beginPath(); c.ellipse(x, y, rx, ry, ro, 0, TAU); c.fill();
+    }
+    c.strokeStyle = 'rgba(30,140,120,.26)'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath();   // 触手之间浅浅的缝
+    c.moveTo(-36, 18); c.quadraticCurveTo(-56, 30, -64, 52); c.moveTo(-14, 30); c.quadraticCurveTo(-20, 54, -22, 82);
+    c.moveTo(16, 30); c.quadraticCurveTo(22, 54, 24, 84); c.moveTo(40, 20); c.quadraticCurveTo(60, 32, 70, 58); c.moveTo(56, 10); c.quadraticCurveTo(96, 6, 132, 14);
+    c.stroke();
+    // 耳朵里深一点
+    c.fillStyle = 'rgba(40,160,145,.3)'; for (const [x, y, r] of OCTO.ears) { c.beginPath(); c.ellipse(x, y + 2, r * .5, r * .42, 0, 0, TAU); c.fill(); }
+    // 脑袋左上一大块柔光 + 一个亮点
+    g = c.createRadialGradient(-28, -56, 4, -20, -46, 64); g.addColorStop(0, 'rgba(255,255,255,.62)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(-100, -120, 160, 140);
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.ellipse(-34, -60, 9, 5, -.6, 0, TAU); c.fill();
+    // 表情：平时就是原版那张脸（眯眼笑 + 张着小嘴）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪、嘴发抖；够圆了笑得更开、腮红更红
+    const play = G.state === 'play', happy = (play && G.round >= G.target) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
+      squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, ink = '#1d1d1f';
+    c.fillStyle = `rgba(255,130,170,${happy ? .6 : .42})`; c.beginPath(); c.ellipse(-40, -6, 11, 6.5, 0, 0, TAU); c.ellipse(40, -6, 11, 6.5, 0, 0, TAU); c.fill();
+    c.strokeStyle = ink; c.fillStyle = ink; c.lineWidth = 3.4; c.lineCap = 'round'; c.lineJoin = 'round';
+    const open = (b.held && !squish) || hurt;
+    for (const s of [-1, 1]) {
+      const x = s * 22, y = -24;
+      if (squish) { c.beginPath(); c.moveTo(x - s * 6, y - 7); c.lineTo(x + s * 5, y); c.lineTo(x - s * 6, y + 7); c.stroke(); }
+      else if (open) { const k = b.held ? 1.2 : 1; c.beginPath(); c.ellipse(x, y, 4.6 * k, 7 * k, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(x + 1.4, y - 3, 1.8, 0, TAU); c.fill(); c.fillStyle = ink; }
+      else { c.beginPath(); c.arc(x, y + 5, 8, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }   // 眯眼笑
+      if (hurt) { const d = (t * 1.3 + (s > 0 ? .5 : 0)) % 1; c.fillStyle = `rgba(120,190,255,${1 - d * .8})`; c.beginPath(); c.ellipse(x + s * 3, y + 13 + d * 20, 4.2, 6, 0, 0, TAU); c.fill(); c.fillStyle = `rgba(255,255,255,${.8 - d * .6})`; c.beginPath(); c.arc(x + s * 3 - 1.3, y + 11.5 + d * 20, 1.4, 0, TAU); c.fill(); c.fillStyle = ink; }
+    }
+    // 嘴：张着的小嘴，里面一点粉
+    const mouth = (w, h) => { c.fillStyle = ink; c.beginPath(); c.moveTo(-w, -12); c.quadraticCurveTo(0, -12 + h * 2.2, w, -12); c.closePath(); c.fill(); c.fillStyle = '#ff8fa6'; c.beginPath(); c.ellipse(0, -12 + h * .85, w * .45, h * .35, 0, 0, TAU); c.fill(); };
+    if (hurt) { c.lineWidth = 2.6; c.beginPath(); c.moveTo(-9, -9); c.quadraticCurveTo(-4.5, -13, 0, -9); c.quadraticCurveTo(4.5, -5, 9, -9); c.stroke(); }
+    else if (b.held && !squish) { c.beginPath(); c.ellipse(0, -8, 4.5, 5.5, 0, 0, TAU); c.fill(); }
+    else if (happy) mouth(10, 8);
+    else mouth(8, 6.2);
+    c.lineCap = 'butt'; c.lineJoin = 'miter';
+  },
+});
 /* 芯的剖面图：画在壳的图案上面，坐标和 ART 一样是出厂时的坐标 */
 const CORE_ART = {
   coconut(c) { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(0, 0, 54, 0, TAU); c.fill(); c.fillStyle = '#d9eeee'; c.beginPath(); c.arc(0, 0, 40, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-14, -16, 14, 6, -.5, 0, TAU); c.fill(); },
@@ -2092,7 +2169,7 @@ function drawBody(b, t) {
     ctx.fillStyle = 'rgba(244,240,255,.6)'; ctx.beginPath(); ctx.moveTo(b.lowX - 6, FLOOR - 10); ctx.lineTo(b.lowX + 6, FLOOR - 10); ctx.lineTo(b.lowX, FLOOR - 1); ctx.closePath(); ctx.fill();
   }
   ctx.save(); ctx.translate(b.x, b.y + (b.clear < 6 ? b.jig * b.meanR * .8 : 0)); ctx.scale(1 + b.jig, 1 - b.jig); ctx.rotate(b.a); ctx.lineJoin = 'round';
-  bodyPath(b); ctx.fillStyle = m.base; ctx.fill();
+  bodyPath(b); ctx.fillStyle = m.base; if (m.glow) { ctx.shadowColor = m.glow; ctx.shadowBlur = 30; } ctx.fill(); ctx.shadowBlur = 0;
   ctx.save(); ctx.clip();
   ctx.save(); ctx.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; ctx.transform(M[0], M[1], M[2], M[3], 0, 0); } ART[b.id](ctx, b, t); ctx.restore();
   if (b.c) drawCore(b, t);
@@ -2119,6 +2196,17 @@ function drawBody(b, t) {
   }
   // 参考圆：凸出虚线的地方就是该砸的地方
   if (G.state === 'play') { ctx.strokeStyle = 'rgba(244,240,255,.42)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 7]); ctx.beginPath(); ctx.arc(b.x, b.y, b.meanR, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+}
+function drawTalk(b) {
+  const k = G.talk, age = k ? G.time - k.t0 : -1; if (!k || age < 0 || age > k.dur) return;
+  ctx.font = `600 14px ${BODY}`; if (!k.lines) k.lines = wrapText(k.text, 176).map(l => l.trim());
+  const lh = 19, w = Math.max(...k.lines.map(l => ctx.measureText(l).width)) + 24, h = k.lines.length * lh + 14;
+  const top = Math.max(-TOP + 6, Math.min(b.y, FLOOR) - b.meanR * 1.25 - h - 18), x = clamp(b.x - w / 2, WALL_L + 6, WALL_R - w - 6), tx = clamp(b.x, x + 16, x + w - 16);
+  ctx.globalAlpha = clamp(age * 8, 0, 1) * clamp((k.dur - age) * 4, 0, 1);
+  ctx.fillStyle = '#fff6ee'; rr(ctx, x, top, w, h, 13); ctx.fill(); ctx.beginPath(); ctx.moveTo(tx - 8, top + h - 1); ctx.lineTo(tx + 8, top + h - 1); ctx.lineTo(tx + 2, top + h + 11); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = b.mat.outline; ctx.lineWidth = 2; rr(ctx, x, top, w, h, 13); ctx.stroke();
+  ctx.fillStyle = '#5a1a0e'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; k.lines.forEach((l, i) => ctx.fillText(l, x + 12, top + 21 + i * lh));
+  ctx.globalAlpha = 1;
 }
 function drawFx() {
   for (const f of frags) {
@@ -2365,7 +2453,7 @@ function draw() {
   ctx.save(); if (!REDUCED && G.shake > .4) ctx.translate(rand(-1, 1) * G.shake, rand(-1, 1) * G.shake);
   drawBg(t); for (const st of stains) { ctx.fillStyle = st.c; ctx.beginPath(); ctx.ellipse(st.x, FLOOR + 2, st.w * Math.min(1, .3 + st.t * 3), st.h, 0, st.h > 6 ? Math.PI : 0, st.h > 6 ? TAU : TAU); ctx.fill(); }
   if (!PORT) drawAlien(t);
-  if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); }
+  if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); drawTalk(G.body); }
   if (G.doom) drawDoom(G.doom);
   drawFx(); if (G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); ctx.restore();
   drawGauge(); drawHints();
@@ -2389,7 +2477,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住拎起来砸地板 · 另一根手指滑动来转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
-  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 48-order whacking game.';
+  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 49-order whacking game.';
   document.getElementById('help').textContent = TOUCH
     ? 'Hold to lift, slam on the floor · Second finger slides to turn'
     : 'Hold to lift, slam on the floor · A / D to turn · Space delivers';
@@ -2397,7 +2485,7 @@ if (EN) {
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
 }
-try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
+try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬疼0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
 let last = 0;
 function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
 
