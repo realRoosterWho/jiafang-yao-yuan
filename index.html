@@ -1521,7 +1521,8 @@ const MATFX = {
 };
 /* 蒸汽：往上飘、越飘越大的白烟 */
 function steam(x, n, y) { for (let k = 0; k < n && parts.length < 320; k++) parts.push({ x: x + rand(-20, 20), y: y === undefined ? FLOOR - 6 : y, vx: rand(-30, 30), vy: rand(-140, -60), life: rand(.9, 1.5), t: 0, s: rand(8, 16), c: '#ffffff', rot: 0, vr: 0, kind: 'dust', a: .4 }); }
-function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
+function floatText(x, y, text, color, size) { if (G.tutUI) return;   // 新手关不在地板上飘字，只听甲方气泡那一句
+  floats.push({ x: clamp(x, WALL_L + 60, WALL_R - 60), y, text, color, size, t: 0 }); }
 
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -3724,12 +3725,14 @@ function drawAlien(t) {
   // 气泡：奶油色的软泡泡，尖角对着舷窗，冒出来的时候弹一下，数字是橘色的。窄一点、多折几行，不伸到顶上那条目标栏底下去
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
-    ctx.font = `600 15px ${BODY}`; if (!bb.lines) bb.lines = wrapText(bb.text, 204);
-    const lh = 22, bw = Math.max(...bb.lines.map(l => ctx.measureText(l).width)) + 34, bh = bb.lines.length * lh + 22, bx = cx + 78, by = 127, ty = by + 21, s = 1 + .12 * bounce(bb.t0, .35);
+    const big = G.tutUI, fs = big ? 20 : 15;   // 新手关：气泡是唯一的提示，字放大
+    ctx.font = `600 ${fs}px ${BODY}`; if (!bb.lines) bb.lines = wrapText(bb.text, big ? 260 : 204);
+    const lh = big ? 28 : 22, bw = Math.max(...bb.lines.map(l => ctx.measureText(l).width)) + 34, bh = bb.lines.length * lh + 22, bx = cx + 78, by = 127, ty = by + 21, s = 1 + .12 * bounce(bb.t0, .35);
     ctx.save(); ctx.translate(bx, ty); ctx.scale(s, s); ctx.translate(-bx, -ty);
     ctx.globalAlpha = clamp((bb.dur - (G.time - bb.t0)) * 3, 0, 1) * clamp((G.time - bb.t0) * 8, 0, 1);
     talkBox(bx, by, bw, bh, 18, [bx + 2, ty - 9, bx - 12, ty, bx + 2, ty + 9]);
-    ctx.textAlign = 'left'; bb.lines.forEach((l, i) => richText(l, bx + 17, by + 28.5 + i * lh, UI.ink, UI.accent));
+    const y0 = big ? 11 + lh / 2 + .38 * fs + 1 : 28.5;
+    ctx.textAlign = 'left'; bb.lines.forEach((l, i) => richText(l, bx + 17, by + y0 + i * lh, UI.ink, UI.accent));
     ctx.restore(); ctx.globalAlpha = 1;
   }
 }
@@ -3901,14 +3904,16 @@ function drawRotHint() {
 function drawJoyAt(x0, y, k, s, a) {
   const R = JOY_R * s, kr = JOY_KNOB * s, h = kr * 1.3, kx = x0 + clamp(k, -1, 1) * R, on = Math.abs(k) > JOY_DEAD, dir = Math.sign(k);
   ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  rr(ctx, x0 - R - h / 2, y - h / 2, 2 * R + h, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.42)'; ctx.fill();
-  ctx.strokeStyle = 'rgba(244,240,255,.42)'; ctx.lineWidth = 1.5 * s; ctx.stroke();
+  // 外观跟新界面一套：槽是底部提示条那种半透明紫玻璃，钮是金色的糖果按钮。大小、方向、透明度没变
+  rr(ctx, x0 - R - h / 2, y - h / 2, 2 * R + h, h, h / 2); ctx.fillStyle = vgrad(y - h / 2, y + h / 2, 'rgba(150,142,255,.45)', 'rgba(84,88,196,.5)'); ctx.fill();
+  ctx.strokeStyle = 'rgba(190,190,250,.6)'; ctx.lineWidth = 2 * s; ctx.stroke();
   if (on) {   // 推出去的那一截亮起来，推得越远越亮
     const xa = x0 + dir * JOY_DEAD * R, w = Math.abs(kx - xa), hh = h * .44;
-    ctx.globalAlpha = a * (.3 + .5 * Math.abs(k)); ctx.fillStyle = C.coin; rr(ctx, Math.min(xa, kx), y - hh / 2, w, hh, Math.min(hh / 2, w / 2)); ctx.fill(); ctx.globalAlpha = a;
+    ctx.globalAlpha = a * (.4 + .5 * Math.abs(k)); ctx.fillStyle = '#ffd759'; rr(ctx, Math.min(xa, kx), y - hh / 2, w, hh, Math.min(hh / 2, w / 2)); ctx.fill(); ctx.globalAlpha = a;
   }
-  ctx.beginPath(); ctx.arc(kx, y, kr, 0, TAU); ctx.fillStyle = on ? 'rgba(255,211,92,.5)' : 'rgba(244,240,255,.24)'; ctx.fill();
-  ctx.strokeStyle = on ? C.coin : 'rgba(244,240,255,.85)'; ctx.lineWidth = 2.2 * s; ctx.stroke();
+  ctx.beginPath(); ctx.arc(kx, y, kr, 0, TAU); ctx.fillStyle = vgrad(y - kr, y + kr, '#ffe98a', '#f6ac2a'); ctx.globalAlpha = a * (on ? 1 : .85); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4 * s; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(kx - kr * .25, y - kr * .42, kr * .42, kr * .2, -.3, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fill();   // 钮上一点高光
   ctx.restore();
 }
 function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住它），不跟着震屏
@@ -4005,12 +4010,14 @@ function drawHudPort(t) {
   }
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
-    ctx.font = `600 17px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, VW - 64);
-    const lh = 24, bw = Math.max(...bb.plines.map(l => ctx.measureText(l).width)) + 34, bh = bb.plines.length * lh + 22, bx = 8, by = 158, s = 1 + .1 * bounce(bb.t0, .35);
+    const big = G.tutUI, fs = big ? 25 : 17;   // 新手关：气泡是唯一的提示，字放大
+    ctx.font = `600 ${fs}px ${BODY}`; if (!bb.plines) bb.plines = wrapText(bb.text, VW - 64);
+    const lh = big ? 33 : 24, bw = Math.max(...bb.plines.map(l => ctx.measureText(l).width)) + 34, bh = bb.plines.length * lh + 22, bx = 8, by = 158, s = 1 + .1 * bounce(bb.t0, .35);
     ctx.save(); ctx.translate(bx + 36, by); ctx.scale(s, s); ctx.translate(-(bx + 36), -by);
     ctx.globalAlpha = clamp((bb.dur - (G.time - bb.t0)) * 3, 0, 1) * clamp((G.time - bb.t0) * 8, 0, 1);
     talkBox(bx, by, bw, bh, 19, [bx + 33, by + 2, bx + 45, by - 12, bx + 57, by + 2]);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; bb.plines.forEach((l, i) => richText(l, bx + 17, by + 31 + i * lh, UI.ink, UI.accent));
+    const y0 = big ? 11 + lh / 2 + .38 * fs + 1.5 : 31;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; bb.plines.forEach((l, i) => richText(l, bx + 17, by + y0 + i * lh, UI.ink, UI.accent));
     ctx.restore(); ctx.globalAlpha = 1;
   }
 }
@@ -4128,7 +4135,7 @@ function sim(id, t, hits, aimErr) {
 }
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
-window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
+window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, kit, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
   joyDraw: drawJoyAt, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x0: JOY.x0, y: JOY.y, k: JOY.k, s: JOY.s } : null; } };
 
 function boot(data) {
