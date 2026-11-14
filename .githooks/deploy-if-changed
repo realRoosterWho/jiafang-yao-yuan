@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 被 post-commit / post-merge 调用：$1 是改动前的提交（空 = 这是第一个提交）。
-# 只要在 main 上、这段改动碰了 index.html 或 server/，就在后台把 HEAD 部署到 roosterpi。
+# 只要在 main 上、这段改动碰了 index.html、flow.js 或 server/，就在后台把 HEAD 部署到 roosterpi。
 # 日志：.git/deploy.log。部署失败会弹 macOS 通知。跳过一次：FC_NO_DEPLOY=1 git ...
 [ -n "${FC_NO_DEPLOY:-}" ] && exit 0
 [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || exit 0
@@ -11,7 +11,7 @@ if [ -n "$before" ] && git rev-parse -q --verify "$before^{commit}" >/dev/null; 
 else
   changed=$(git ls-tree -r --name-only HEAD)
 fi
-echo "$changed" | grep -qE '^(index\.html|server/)' || exit 0
+echo "$changed" | grep -qE '^(index\.html|flow\.js|server/)' || exit 0
 
 root=$(git rev-parse --show-toplevel)
 gitdir=$(cd "$(git rev-parse --git-common-dir)" && pwd)

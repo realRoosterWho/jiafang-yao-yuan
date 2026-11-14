@@ -34,7 +34,8 @@ EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win"}
 MAX_BODY = 4096
 MAX_SAVE_BODY = 16384  # 云存档带着星级和成就，比事件大
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
-STATIC = {"/": ("index.html", "text/html; charset=utf-8")}
+STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
+          "/flow.js": ("flow.js", "text/javascript; charset=utf-8")}   # 开场流程：播片、新手关、签合同
 
 _db_lock = threading.Lock()
 _hits: dict[str, deque] = defaultdict(deque)

@@ -3100,6 +3100,8 @@ function sim(id, t, hits, aimErr) {
   return { curve: out, keep: Math.round(b.area / b.area0 * 100) };
 }
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
+/* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
+window.__yuanFlow = { SHAPES, ART, CHAPS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; } };
 
 function boot(data) {
   const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);
@@ -3119,6 +3121,7 @@ try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
 })();
 </script>
+<script src="flow.js"></script>
 
 </body>
 </html>
