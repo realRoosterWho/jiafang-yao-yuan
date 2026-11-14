@@ -3772,15 +3772,14 @@ function kitBar(x, y, w, h, p, tier) {
 /* 顶上的目标栏（电脑 / 横屏）：一条紫色的长药丸，从左到右是「有多圆」、圆度条、读数，三样并成一条；
    上沿骑着一块小牌子标下一颗星要到多少；下面一行只留耐久的心和现在够几颗星。材料名在气泡和接单卡里有，敲击统计在结算卡里有，这里不再重复 */
 function drawRoundBar() {
+  if (G.tutUI) return;   // 新手关不放圆度条：只看石头变没变圆，够了交货按钮自己会亮
   // 对齐：整条栏居中在料的中线上（x = 440，跟底下的提示条同一条中线）；小牌子的上沿、回首页按钮的上沿都在 14；栏的上沿跟左边舷窗的上沿齐
   const Wd = 440, X = 440 - Wd / 2, Y = 37, Hh = 54, x0 = X + 104, w = 222, y = Y + 11, h = 32, p = G.shown, ready = G.tier > 0;
   wellPanel(X, Y, Wd, Hh);
   ctx.fillStyle = '#ffe066'; spark(ctx, X + 22, Y + Hh / 2, 8);
   ctx.font = `${EN ? 14 : 20}px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(L('有多圆', 'How round'), X + 34, Y + Hh / 2 + 1);
   kitBar(x0, y, w, h, p, G.tier);
-  const bare = G.tutUI;   // 新手关：只画一道达标线，下面那行心和星也不放
-  if (bare) { const tx = x0 + w * clamp(G.target, 0, 1); ctx.fillStyle = '#fff'; ctx.fillRect(tx - 1.5, Y - 3, 3, Hh + 6); }
-  else drawStarLines(x0, w, y, h, Y - 3, Y + Hh + 3, X + 8, X + Wd - 8);
+  drawStarLines(x0, w, y, h, Y - 3, Y + Hh + 3, X + 8, X + Wd - 8);
   // 右边的读数：一块奶油牌子，圆度一涨数字就弹一下
   const s = 1 + .28 * bounce(J.gainT, .4) + .2 * bounce(J.tierT, .5), px = X + Wd - 57, py = Y + Hh / 2;
   ctx.save(); ctx.translate(px, py); ctx.scale(s, s);
@@ -3788,7 +3787,6 @@ function drawRoundBar() {
   ctx.font = `700 30px ${NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = ready ? UI.mintLo : UI.ink; ctx.fillText(pct(G.round), 0, 2);
   ctx.restore();
   // 下面一行：耐久的心（左边跟圆度条的左端对齐），够几颗星（右边跟圆度条的右端对齐）
-  if (bare) return;
   const hl = L('耐久', 'HP'); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `17px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(hl, x0 + 2, Y + Hh + 27);
   hpHearts(x0 + 2 + ctx.measureText(hl).width + 22, Y + Hh + 21, 19, 22);
   drawTier(x0 + w - 67, Y + Hh + 28, 19);
@@ -3982,19 +3980,18 @@ function drawGaugePort() {
    中间是并成一条的目标栏（圆度条 + 读数，上沿骑着「目标 ★ 78%」的小牌子），右上角留给回首页的图标按钮；下面一行只有耐久的心和星星。
    坐标是画面坐标（宽 VW），不跟世界镜头走 */
 function drawHudPort(t) {
-  ctx.fillStyle = 'rgba(34,40,140,.55)'; ctx.fillRect(0, 0, VW, 142); ctx.fillStyle = 'rgba(200,205,255,.55)'; ctx.fillRect(0, 142, VW, 2);
+  const bare = G.tutUI;   // 新手关：顶上只留甲方和它的气泡，圆度条、百分比、顶栏底色一概不放
+  if (!bare) { ctx.fillStyle = 'rgba(34,40,140,.55)'; ctx.fillRect(0, 0, VW, 142); ctx.fillStyle = 'rgba(200,205,255,.55)'; ctx.fillRect(0, 142, VW, 2); }
   ctx.save(); ctx.translate(53 - 80 * .68, 54 - 103 * .68); ctx.scale(.68, .68); drawAlien(t); ctx.restore();
-  const bare = G.tutUI;   // 新手关：只留甲方、圆度条和百分比，别的字一概不放
+  if (!bare) {
   const X = 106, Y = 28, Wd = 346, Hh = 46, x0 = X + 12, w = 226, y = Y + 9, h = 28, p = G.shown, ready = G.tier > 0;
-  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `16px ${DISPLAY}`; ctx.fillStyle = C.ink; if (!bare) ctx.fillText(L('有多圆', 'How round'), X + 6, Y - 9);
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `16px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('有多圆', 'How round'), X + 6, Y - 9);
   wellPanel(X, Y, Wd, Hh);
   kitBar(x0, y, w, h, p, G.tier);
-  if (bare) { const tx = x0 + w * clamp(G.target, 0, 1); ctx.fillStyle = '#fff'; ctx.fillRect(tx - 1.5, Y - 3, 3, Hh + 6); }   // 只画一道达标线
-  else drawStarLines(x0, w, y, h, Y - 3, Y + Hh + 3, X + 70, X + Wd);
+  drawStarLines(x0, w, y, h, Y - 3, Y + Hh + 3, X + 70, X + Wd);
   { const s = 1 + .26 * bounce(J.gainT, .4) + .2 * bounce(J.tierT, .5), pw = Wd - w - 30, px = X + Wd - 7 - pw / 2, py = Y + Hh / 2;
     ctx.save(); ctx.translate(px, py); ctx.scale(s, s); creamChip(-pw / 2, -18, pw, 36, 18);
     ctx.font = `700 24px ${NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = ready ? UI.mintLo : UI.ink; ctx.fillText(pct(G.round), 0, 1.5); ctx.restore(); }
-  if (!bare) {
   const hl = L('耐久', 'HP'); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `17px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(hl, x0, 98);
   hpHearts(x0 + ctx.measureText(hl).width + 22, 92, 19, 22);
   drawTier(X + Wd - 74, 99, 18);
