@@ -30,7 +30,7 @@
 **字体**
 
 - 两款：英文和数字用 **Chewy**（Apache 2.0），中文用 **猫啃什锦黑 Maoken Assorted Sans**（SIL OFL 1.1）。标题、按钮、读数、评价字是 Chewy 在前、猫啃在后（英文数字走 Chewy，汉字落到猫啃）；正文、气泡只用猫啃。
-- 都内嵌在 `index.html` 的样式里（两条 `@font-face`，base64），游戏还是单文件。猫啃原文件 12MB、三万多字，这里只留了 `index.html` 和 `flow.js` 里出现过的字（一千三百多个），约 300KB；Chewy 整个留着，约 20KB。`index.html` 因此从 480KB 涨到 900KB。
+- 都内嵌在 `index.html` 的样式里（两条 `@font-face`，base64），游戏还是单文件。猫啃原文件 12MB、三万多字，这里只留了 `index.html` 和 `flow.js` 里出现过的字（一千三百九十个），WOFF2 约 260KB；Chewy 整个留着，约 18KB。现在内嵌的猫啃是 v1.70（[官方仓库](https://github.com/maoken-fonts/MaokenAssortedSans/releases) 的 `MaokenAssortedSans.ttf`）。
 - **加了新文案要重新裁字**，不然新出现的字会退到后面的字体（站酷快乐体、系统黑体），夹在一句话里很显眼：
 
   ```bash
