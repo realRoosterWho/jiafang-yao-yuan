@@ -11,7 +11,8 @@
 - 游戏：<https://fullcircle.roosterwho.com/>（roosterpi 上的 `fullcircle.service`，Cloudflare Tunnel `fullcircle` 对外）
 - 数据后台：<https://fullcircle.roosterwho.com/admin>，团队密码在 roosterpi 的 `~/services/fullcircle/admin.env`
 - 游戏会匿名上报每一单的开工、交付、失败、中途关掉（随机玩家 ID，不存 IP）。本地打开不上报。
-- 服务端代码在 `server/`：`collector.py` 收事件写 SQLite，`admin.py` + `admin.html` 是后台。
+- 云存档：玩家在首页可以起个名字，每单最高酬劳会存到服务器，换设备输同一个名字就能接着玩。没有密码，服务器按每单取较大值合并，所以同名只会让成绩变高、抹不掉进度；后台「存档玩家」里能看到并删掉不合适的名字。
+- 服务端代码在 `server/`：`collector.py` 收事件写 SQLite，`saves.py` 是云存档，`admin.py` + `admin.html` 是后台。
 
 **部署是自动的**：`main` 上的 HEAD 一变，并且这次变化碰了 `index.html` 或 `server/`，钩子就在后台把 HEAD（不是工作区）部署到 roosterpi：
 

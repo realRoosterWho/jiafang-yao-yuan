@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import admin
+import saves
 
 HERE = Path(__file__).resolve().parent
 HOST = os.environ.get("FC_HOST", "127.0.0.1")
@@ -58,6 +59,7 @@ def db() -> sqlite3.Connection:
     )
     con.execute("CREATE INDEX IF NOT EXISTS events_ev ON events(ev, ts)")
     con.execute("CREATE INDEX IF NOT EXISTS events_pid ON events(pid)")
+    saves.schema(con)
     return con
 
 
@@ -110,7 +112,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_request(self, code="-", size="-"):
         """只记页面和上报接口：方法、路径、状态码、事件名或拒收原因、浏览器大类。不记 IP。"""
         path = self.path.split("?", 1)[0]
-        if path in ("/", "/api/event"):
+        if path in ("/", "/api/event", "/api/save"):
             ua = self.headers.get("User-Agent") or ""
             fam = next((n for k, n in (("Edg/", "Edge"), ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("CriOS", "Chrome-iOS"),
                                        ("Chrome/", "Chrome"), ("Safari/", "Safari")) if k in ua), "other")
@@ -163,6 +165,16 @@ class Handler(BaseHTTPRequestHandler):
     def _admin_post(self, path: str):
         n = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(min(max(n, 0), MAX_BODY))
+        if path == "/admin/api/save/delete":
+            if not admin.authed(self.headers.get("Cookie"), DB_PATH.parent):
+                return self._send(401, b"login required")
+            try:
+                key = json.loads(body or b"{}").get("key")
+            except (ValueError, AttributeError):
+                key = None
+            with _db_lock:
+                ok = saves.delete(CON, key)
+            return self._send(204 if ok else 404, extra={"Cache-Control": "no-store"})
         if path == "/admin/logout":
             return self._send(303, extra={"Location": "/admin", "Set-Cookie": admin.clear_cookie()})
         if path != "/admin/login":
@@ -198,6 +210,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.startswith("/admin/"):
             return self._admin_post(self.path.split("?", 1)[0])
+        if self.path.split("?", 1)[0] == "/api/save":
+            return self._save()
         if self.path.split("?", 1)[0] != "/api/event":
             return self._send(404, b"not found")
         try:
@@ -234,6 +248,34 @@ class Handler(BaseHTTPRequestHandler):
                         (time.time(), pid, sid, seq, ev, ms, country, data))
             CON.commit()
         self._send(204, extra=self._cors())
+
+    def _save(self):
+        """云存档：{name, pid, best} -> 合并后的 {name, best}。"""
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = -1
+        if n <= 0 or n > MAX_BODY:
+            self._note = f"save-bad-length:{n}"
+            return self._send(400, b"bad length", extra=self._cors())
+        raw = self.rfile.read(n)
+        if not rate_ok(self._client()):
+            self._note = "save-rate-limited"
+            return self._send(429, b"slow down", extra=self._cors())
+        try:
+            msg = json.loads(raw)
+            assert isinstance(msg, dict)
+        except (ValueError, AssertionError):
+            self._note = "save-bad-json"
+            return self._send(400, b"bad json", extra=self._cors())
+        with _db_lock:
+            out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"))
+        if out is None:
+            self._note = "save-bad-name"
+            return self._send(422, json.dumps({"error": "bad-name"}).encode(), "application/json", self._cors())
+        self._note = f"save {len(out['best'])} orders"
+        self._send(200, json.dumps(out, ensure_ascii=False).encode(), "application/json; charset=utf-8",
+                   {**self._cors(), "Cache-Control": "no-store"})
 
 
 def serve():

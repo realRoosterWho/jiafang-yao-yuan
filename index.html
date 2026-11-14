@@ -132,6 +132,19 @@ body {
 .w-break { background: var(--alarm); }
 .pips { letter-spacing: .15em; color: var(--coin); margin-right: .5em; }
 .note { font-size: .85em; color: var(--dim); }
+/* 云存档 */
+.who { display: grid; gap: .45em; margin: 0; }
+.who-row { display: flex; gap: .5em; align-items: center; }
+.who input {
+  flex: 1 1 8em; min-width: 0; font: inherit; font-size: max(16px, 1em); padding: .5em .95em; border: 0; border-radius: 999px;
+  background: var(--hull-hi); color: var(--ink); box-shadow: inset 0 0 0 2px var(--rim); -webkit-user-select: text; user-select: text;
+}
+.who input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--alien); }
+.who input::placeholder { color: var(--dim); }
+.btn.small { font-size: 1.05em; padding: .5em 1.2em; flex: none; }
+.btn:disabled { opacity: .55; cursor: default; }
+.who .err { color: var(--alarm); }
+.link { font: inherit; padding: 0; border: 0; background: none; color: var(--alien); text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
 /* 订单簿 */
 .chap { font-size: .8em; letter-spacing: .1em; color: var(--dim); }
 .grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .3em; margin-top: -.4em; }
@@ -1069,18 +1082,19 @@ const SAVE = { best: {} };
 try { const s = JSON.parse(localStorage.getItem('yuan.save.v2') || 'null'); if (s && s.best && typeof s.best === 'object') for (const id of ORDER) if (s.best[id] > 0) SAVE.best[id] = +s.best[id]; } catch (e) {}
 function saveBest(id, pay) {
   const old = SAVE.best[id] || 0;
-  if (pay > old) { SAVE.best[id] = pay; try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} }
+  if (pay > old) { SAVE.best[id] = pay; try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} if (NAME) cloudSync(NAME).catch(() => {}); }
   return old;
 }
 function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
 /* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
    本地打开（file:// 或 localhost）不发，免得开发时弄脏数据。
    不看“请勿追踪”/GPC：数据匿名、不存 IP、不跨站，说明卡里写明了；Firefox 隐私模式默认开 GPC，看它会漏掉一大片玩家。 */
+const rid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+const PID = (() => { try { let p = localStorage.getItem('yuan.pid'); if (!p) { p = rid(); localStorage.setItem('yuan.pid', p); } return p; } catch (e) { return rid(); } })();
 const TRACK = (() => {
   const host = location.hostname, off = !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host);
   if (off) return () => {};
-  const URL_ = 'https://fullcircle.roosterwho.com/api/event', rid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
-  let pid = ''; try { pid = localStorage.getItem('yuan.pid') || ''; if (!pid) { pid = rid(); localStorage.setItem('yuan.pid', pid); } } catch (e) { pid = rid(); }
+  const URL_ = 'https://fullcircle.roosterwho.com/api/event', pid = PID;
   const sid = rid(), t0 = performance.now(); let seq = 0;
   return (ev, data) => {
     try {
@@ -1089,6 +1103,48 @@ const TRACK = (() => {
     } catch (e) {}
   };
 })();
+/* 云存档：起个名字，进度（每单最高酬劳）就存到服务器，换设备输同一个名字就能接着玩。
+   没有密码：服务器按“每单取较大值”合并，同名的人只能让成绩变高、抹不掉进度。file:// 打开时没有这个功能。 */
+const CLOUD = (() => {
+  if (!/^https?:$/.test(location.protocol)) return null;
+  const h = location.hostname;
+  return h === 'fullcircle.roosterwho.com' || /^(localhost|127\.|\[::1\])/.test(h) ? '/api/save' : 'https://fullcircle.roosterwho.com/api/save';
+})();
+let NAME = ''; try { NAME = localStorage.getItem('yuan.name') || ''; } catch (e) {}
+const WHO = { busy: false, err: '' };
+const escH = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+function mergeBest(best) {
+  let changed = false;
+  for (const id of ORDER) { const v = +((best || {})[id]) || 0; if (v > (SAVE.best[id] || 0)) { SAVE.best[id] = v; changed = true; } }
+  if (changed) try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {}
+  return changed;
+}
+async function cloudSync(name) {
+  if (!CLOUD || !name) return null;
+  // 字符串 body = text/plain，跨域也不用预检
+  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best }), keepalive: true });
+  if (r.status === 422) throw new Error('bad-name');
+  if (!r.ok) throw new Error('http ' + r.status);
+  const d = await r.json(); mergeBest(d.best); return d;
+}
+function refreshCard() { if (card.querySelector('[data-who]')) showMenu(); else if (card.querySelector('.grid')) showBook(); }
+async function setName(raw) {
+  const name = String(raw || '').trim().replace(/\s+/g, ' ');
+  if (!name || WHO.busy) return;
+  WHO.busy = true; WHO.err = ''; refreshCard();
+  try { const d = await cloudSync(name); NAME = d.name; try { localStorage.setItem('yuan.name', NAME); } catch (e) {} }
+  catch (e) { WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
+  WHO.busy = false; refreshCard();
+}
+function whoRow() {
+  if (!CLOUD) return '';
+  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。进度自动存到云端，换设备输同一个名字就能接着玩。', '. Progress syncs to the cloud; enter the same name on another device to continue.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
+  return `<form class="who" data-who autocomplete="off">
+      <label class="note" for="who-name">${L('起个名字，进度就能存到云端，换设备也能接着玩（不填也能玩）：', 'Pick a name to save progress to the cloud and continue on any device (optional):')}</label>
+      <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('你的名字', 'Your name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('存档', 'Save')}</button></span>
+      ${WHO.err ? `<span class="note err" role="alert">${WHO.err}</span>` : ''}
+    </form>`;
+}
 const r3 = v => Math.round(v * 1000) / 1000;
 function roundInfo() {
   const b = G.body;
@@ -1172,7 +1228,8 @@ function showMenu() {
       <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候按左边的 ↺ ↻ 可以微调角度。', 'While holding, press ↺ ↻ on the left to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
     </ul>
     <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button><button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
-    <p class="note">${L('会匿名记录每一单的圆度、用时和成败，用来调难度；不收集任何个人信息。', 'Anonymous gameplay stats (roundness, time, pass/fail per order) are recorded to tune difficulty. No personal data.')}</p>`);
+    ${whoRow()}
+    <p class="note">${L('会匿名记录每一单的圆度、用时和成败，用来调难度。起了名字的话，名字和每单最高酬劳会存在服务器上。', 'Anonymous gameplay stats (roundness, time, pass/fail per order) are recorded to tune difficulty. If you pick a name, it is stored with your best pay per order.')}</p>`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0;
@@ -1263,8 +1320,10 @@ function act(a) {
     G.score = G.startScore; setupRound(); G.state = 'play'; overlay.hidden = true; updateRoundness(); say('start', true);
   }
   else if (a === 'restart') showMenu();
+  else if (a === 'rename') { NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
   else if (a === 'again') { G.loop++; G.idx = 0; showOrder(); }
 }
+card.addEventListener('submit', e => { const f = e.target.closest('[data-who]'); if (!f) return; e.preventDefault(); audioInit(); sfx.ui(); setName(f.elements.who && f.elements.who.value); });
 card.addEventListener('click', e => {
   const lv = e.target.closest('[data-lv]'); if (lv) { audioInit(); sfx.ui(); startAt(+lv.dataset.lv); return; }
   const t = e.target.closest('[data-act]'); if (t) act(t.dataset.act);
@@ -1321,10 +1380,11 @@ for (const [id, k] of [['rotL', 'left'], ['rotR', 'right']]) {
 }
 cv.addEventListener('contextmenu', e => e.preventDefault());
 // 手机上长按/双击别选中文字、别弹放大镜
-document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('selectstart', e => { if (!(e.target && e.target.closest && e.target.closest('input, textarea'))) e.preventDefault(); });
 document.addEventListener('dblclick', e => e.preventDefault());
 cv.addEventListener('wheel', e => { const b = G.body; if (b && b.held) { e.preventDefault(); b.userRot += clamp(e.deltaY, -120, 120) * .004; } }, { passive: false });
 window.addEventListener('keydown', e => {
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;   // 在输入框里打字
   if (G.state === 'cover' && !e.metaKey && !e.ctrlKey && !e.altKey && document.activeElement !== muteBtn) { e.preventDefault(); leaveCover(); return; }
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
   else if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
@@ -2273,6 +2333,7 @@ function boot(data) {
   else showCover();
   requestAnimationFrame(now => { last = now; frame(now); });
   let ref = ''; try { const r = document.referrer && new URL(document.referrer).hostname; if (r && r !== location.hostname) ref = r; } catch (e) {}
+  if (NAME) cloudSync(NAME).then(refreshCard).catch(() => {});
   TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, delivered: Object.keys(SAVE.best).length });
 }
 /* 关页面时还在做的那一单，记成中途放弃 */

@@ -17,6 +17,8 @@ import secrets
 import statistics
 import threading
 import time
+
+import saves
 from collections import defaultdict, deque
 from pathlib import Path
 from urllib.parse import parse_qs
@@ -187,7 +189,9 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
 
     far = [{"k": r[0], "n": r[1]} for r in q("""SELECT far, COUNT(*) FROM (SELECT pid, MAX(json_extract(data,'$.idx')) far
            FROM events WHERE {W} AND ev='deliver' GROUP BY pid) GROUP BY far ORDER BY far""")]
-    recent = [{"ts": r[0], "pid": r[1][:6], "ev": r[2], "country": r[3], "data": json.loads(r[4])}
+    names = saves.names_by_pid(con)
+    named = saves.players(con, order)
+    recent = [{"ts": r[0], "pid": r[1][:6], "name": names.get(r[1]), "ev": r[2], "country": r[3], "data": json.loads(r[4])}
               for r in q("SELECT ts, pid, ev, country, data FROM events WHERE {W} ORDER BY id DESC LIMIT 40")]
 
     return {
@@ -195,7 +199,9 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
         "kpi": {"players": players, "sessions": sessions, "starts": ev.get("start", 0), "delivers": ev.get("deliver", 0),
                 "fails": ev.get("fail", 0), "quits": ev.get("quit", 0), "wins": ev.get("win", 0),
                 "winners": q("SELECT COUNT(DISTINCT pid) FROM events WHERE {W} AND ev='win'")[0][0],
-                "median_session": statistics.median(durs) if durs else None},
+                "median_session": statistics.median(durs) if durs else None,
+                "named": len(named)},
+        "saves": named,
         "orders": orders, "daily": daily, "furthest": far,
         "devices": {
             "input": split("CASE json_extract(data,'$.touch') WHEN 1 THEN '触屏' ELSE '鼠标/键盘' END"),

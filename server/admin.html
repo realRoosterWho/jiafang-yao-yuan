@@ -83,6 +83,8 @@ td .bar { display: inline-block; height: 8px; border-radius: 2px; background: va
 .split-row .track span { display: block; height: 100%; background: var(--s1); border-radius: 3px; }
 .split-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty { color: var(--ink-3); padding: 24px 0; text-align: center; }
+.btn.del { padding: 2px 10px; font-size: 12px; }
+.btn.del:hover { border-color: var(--s2); color: var(--s2); }
 details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-top: 8px; }
 .ev { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-2); }
 @media (max-width: 600px) { .kpi .v { font-size: 22px; } h1 { font-size: 18px; } }
@@ -148,6 +150,12 @@ details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-
     <h2>玩家从哪来、用什么玩</h2>
     <p class="desc">按不重复玩家计。国家来自 Cloudflare，只有两位代码。</p>
     <div class="splits" id="splits"></div>
+  </section>
+
+  <section class="card">
+    <h2>存档玩家</h2>
+    <p class="desc">起了名字、进度存在云端的玩家，按最近活动排序。名字不合适可以删掉（只删存档和名字，匿名游戏数据保留）。</p>
+    <div class="scroll"><table id="t-saves"></table></div>
   </section>
 
   <section class="card">
@@ -318,6 +326,7 @@ function render() {
     ['打开次数', fmt(k.sessions), k.players ? `人均 ${(k.sessions / k.players).toFixed(1)} 次` : ''],
     ['接单', fmt(k.starts), `交付 ${fmt(k.delivers)} 单`],
     ['通过率', pct(k.delivers, ends), `失败 ${fmt(k.fails)} · 中途走 ${fmt(k.quits)}`],
+    ['起了名字', fmt(k.named), '有云存档的玩家'],
     ['全部打通', fmt(k.winners), `${d.total_orders} 单全交付的玩家`],
     ['单次游玩', ms == null ? '–' : ms >= 60 ? (ms / 60).toFixed(1) + ' 分' : Math.round(ms) + ' 秒', '中位数'],
   ];
@@ -364,8 +373,14 @@ function render() {
     return parts.join(' · ');
   };
   $('#t-recent').innerHTML = '<tr><th class="l">时间</th><th class="l">玩家</th><th class="l">事件</th><th class="l">内容</th><th class="l">地区</th></tr>' +
-    (d.recent.length ? d.recent.map(e => `<tr><td class="l">${new Date(e.ts * 1000).toLocaleString('zh-CN', { hour12: false })}</td><td class="l muted">${esc(e.pid)}</td><td class="l"><span class="ev">${esc(EVN[e.ev] || e.ev)}</span></td><td class="l">${esc(evDesc(e))}</td><td class="l">${esc(e.country || '')}</td></tr>`).join('')
+    (d.recent.length ? d.recent.map(e => `<tr><td class="l">${new Date(e.ts * 1000).toLocaleString('zh-CN', { hour12: false })}</td><td class="l">${e.name ? esc(e.name) : `<span class="muted">${esc(e.pid)}</span>`}</td><td class="l"><span class="ev">${esc(EVN[e.ev] || e.ev)}</span></td><td class="l">${esc(evDesc(e))}</td><td class="l">${esc(e.country || '')}</td></tr>`).join('')
       : '<tr><td colspan="5" class="empty">还没有事件</td></tr>');
+
+  // 存档玩家
+  const when = t => t ? new Date(t * 1000).toLocaleString('zh-CN', { hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
+  $('#t-saves').innerHTML = '<tr><th class="l">名字</th><th>交付过</th><th>最远</th><th>最高酬劳合计</th><th>设备数</th><th class="l">第一次存档</th><th class="l">最近活动</th><th></th></tr>' +
+    (d.saves.length ? d.saves.map(p => `<tr><td class="l">${esc(p.name)}</td><td>${p.delivered} / ${d.total_orders}</td><td>${p.furthest == null ? '–' : '第 ' + (p.furthest + 1) + ' 单'}</td><td>◎ ${fmt(p.total)}</td><td>${p.devices}</td><td class="l">${when(p.created)}</td><td class="l">${when(p.last)}</td><td><button class="btn del" type="button" data-key="${esc(p.key)}" data-name="${esc(p.name)}">删除</button></td></tr>`).join('')
+      : '<tr><td colspan="8" class="empty">还没有人起名字</td></tr>');
 
   $('#updated').textContent = '更新于 ' + new Date(d.generated * 1000).toLocaleTimeString('zh-CN', { hour12: false });
 }
@@ -380,6 +395,14 @@ async function load() {
     DATA = await r.json(); render();
   } catch (e) { $('#updated').textContent = '加载失败：' + e.message; }
 }
+$('#t-saves').addEventListener('click', async e => {
+  const b = e.target.closest('.del'); if (!b) return;
+  if (!confirm(`删除「${b.dataset.name}」的存档？名字会空出来，玩家本机的进度还在，下次用这个名字会重新存。`)) return;
+  b.disabled = true;
+  const r = await fetch('/admin/api/save/delete', { method: 'POST', credentials: 'same-origin', body: JSON.stringify({ key: b.dataset.key }) });
+  if (r.status === 401) { location.reload(); return; }
+  load();
+});
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
 load();
 setInterval(() => { if (!document.hidden) load(); }, 60000);

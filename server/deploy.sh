@@ -7,7 +7,7 @@ HOST=${HOST:-roosterpi}
 SSH=(ssh); ssh -o ConnectTimeout=8 "$HOST" true 2>/dev/null || SSH=(ssh -o ProxyCommand=none)
 DEST=/home/roosterwho/services/fullcircle
 "${SSH[@]}" "$HOST" "mkdir -p $DEST/public $DEST/data"
-rsync -az -e "${SSH[*]}" server/collector.py server/admin.py server/admin.html "$HOST:$DEST/"
+rsync -az -e "${SSH[*]}" server/collector.py server/admin.py server/saves.py server/admin.html "$HOST:$DEST/"
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 git show HEAD:index.html > "$TMP"
 rsync -az -e "${SSH[*]}" "$TMP" "$HOST:$DEST/public/index.html"
