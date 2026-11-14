@@ -108,9 +108,6 @@ details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-
     <div><span class="flabel">轮次</span><span class="seg" id="f-loops" role="group" aria-label="轮次">
       <button type="button" data-v="first">只看首轮</button><button type="button" data-v="all">含加班轮</button>
     </span></div>
-    <div><span class="flabel">模式</span><span class="seg" id="f-mode" role="group" aria-label="游戏模式">
-      <button type="button" data-v="main">完整版</button><button type="button" data-v="adv">冒险模式</button>
-    </span></div>
   </div>
 
   <section class="kpis" id="kpis"></section>
@@ -184,9 +181,8 @@ const OUT = [
   { key: 'quit', label: '中途关掉', v: '--s4' },
 ];
 const EVN = { open: '打开', start: '接单', deliver: '交付', fail: '失败', quit: '中途走', retry: '重来', win: '全通' };
-const PER = 6;
 
-let state = { days: '0', loops: 'first', mode: 'main' };
+let state = { days: '0', loops: 'first' };
 try { const s = JSON.parse(localStorage.getItem('fc.admin.filters') || 'null'); if (s) state = Object.assign(state, s); } catch (e) {}
 let DATA = null;
 
@@ -201,7 +197,7 @@ function bindSeg(id, key) {
   });
   syncSeg(id, state[key]);
 }
-bindSeg('f-days', 'days'); bindSeg('f-loops', 'loops'); bindSeg('f-mode', 'mode');
+bindSeg('f-days', 'days'); bindSeg('f-loops', 'loops');
 $('#refresh').addEventListener('click', load);
 
 /* ---------- tooltip ---------- */
@@ -260,14 +256,14 @@ function barsByOrder(host, orders, val, tipf, H) {
     hit.addEventListener('mousemove', e => showTip(e, tipf(o, i))); hit.addEventListener('mouseleave', hideTip);
   });
 }
-// 每 6 单一班：在底部标出班次
+// 在底部标出两档：冒险模式、剩下的关卡（服务器按 index.html 算好的 parts）
 function shiftMarks(f, n, step) {
-  if (DATA && DATA.mode === 'adv') return;   // 冒险模式一站一单，不分班
-  for (let s = 0; s * PER < n; s++) {
-    const x0 = f.m.l + s * PER * step, x1 = f.m.l + Math.min(n, (s + 1) * PER) * step;
+  (DATA.parts || []).forEach((p, s) => {
+    if (p.to <= p.from) return;
+    const x0 = f.m.l + p.from * step, x1 = f.m.l + Math.min(n, p.to) * step;
     if (s) el('line', { x1: x0, x2: x0, y1: f.m.t, y2: f.m.t + f.ih + 30, class: 'gl', 'stroke-dasharray': '3 3' }, f.svg);
-    const t = el('text', { x: (x0 + x1) / 2, y: f.m.t + f.ih + 32, 'text-anchor': 'middle', class: 'shiftlbl' }, f.svg); t.textContent = `第 ${s + 1} 班`;
-  }
+    const t = el('text', { x: (x0 + x1) / 2, y: f.m.t + f.ih + 32, 'text-anchor': 'middle', class: 'shiftlbl' }, f.svg); t.textContent = p.name;
+  });
 }
 
 /* 每一单的结局：100% 堆叠 */
@@ -348,7 +344,7 @@ function render() {
   const maxS = Math.max(1, ...d.orders.map(o => o.starts));
   let rows = '<tr><th>单</th><th class="l">材料</th><th>接单</th><th>玩家</th><th>交付</th><th>碎</th><th>超时</th><th>中途走</th><th>通过率</th><th>平均用时</th><th>交付圆度</th><th>达标线</th><th>失败时圆度</th><th>有效/过头</th><th>平均酬劳</th></tr>';
   d.orders.forEach((o, i) => {
-    if (d.mode !== 'adv' && i % PER === 0) rows += `<tr class="shift"><td colspan="15">第 ${i / PER + 1} 班</td></tr>`;
+    const part = (d.parts || []).find(p => p.from === i && p.to > p.from); if (part) rows += `<tr class="shift"><td colspan="15">${esc(part.name)}</td></tr>`;
     const end = o.deliver + o.shatter + o.time + o.quit, f2 = v => v == null ? '<span class="muted">–</span>' : (v * 100).toFixed(1) + '%';
     rows += `<tr><td>${i + 1}</td><td class="l">${esc(o.name)}</td><td>${o.starts}<span class="bar" style="width:${Math.round(o.starts / maxS * 40)}px"></span></td><td>${o.players}</td><td>${o.deliver}</td><td>${o.shatter}</td><td>${o.time}</td><td>${o.quit}</td>`
       + `<td>${pct(o.deliver, end)}</td><td>${o.avg_used == null ? '<span class="muted">–</span>' : o.avg_used.toFixed(1) + ' 秒'}</td><td>${f2(o.avg_round)}</td><td>${f2(o.avg_target)}</td><td>${f2(o.fail_round)}</td>`
@@ -390,7 +386,7 @@ function render() {
 }
 
 async function load() {
-  const qs = `?days=${state.days}&loops=${state.loops}&mode=${state.mode}`;
+  const qs = `?days=${state.days}&loops=${state.loops}`;
   $('#csv').href = '/admin/api/events.csv' + qs;
   $('#updated').textContent = '加载中…';
   try {

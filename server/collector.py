@@ -151,14 +151,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body, "text/html; charset=utf-8", noindex)
         if not ok:
             return self._send(401, b"login required", extra=noindex)
-        days, loops, mode = admin.parse_filters(query)
+        days, loops = admin.parse_filters(query)
         if path == "/admin/api/stats":
             with _db_lock:
-                data = admin.stats(CON, PUBLIC, days, loops, mode)
+                data = admin.stats(CON, PUBLIC, days, loops)
             return self._send(200, json.dumps(data, ensure_ascii=False).encode(), "application/json; charset=utf-8", noindex)
         if path == "/admin/api/events.csv":
             with _db_lock:
-                body = admin.events_csv(CON, days, loops, mode)
+                body = admin.events_csv(CON, days, loops)
             return self._send(200, body, "text/csv; charset=utf-8",
                               {**noindex, "Content-Disposition": 'attachment; filename="fullcircle-events.csv"'})
         return self._send(404, b"not found", extra=noindex)
@@ -195,7 +195,7 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs
             me = parse_qs(query).get("name", [None])[0]
             with _db_lock:
-                out = saves.leaderboard(CON, admin.order_names(PUBLIC)[0], me)
+                out = saves.leaderboard(CON, admin.current_order(PUBLIC)[0], me)
             return self._send(200, json.dumps(out, ensure_ascii=False).encode(), "application/json; charset=utf-8",
                               {**self._cors(), "Cache-Control": "no-store"})
         if path == "/healthz":
@@ -302,9 +302,11 @@ def report():
     print(f"玩家 {players}，打开 {sessions} 次")
     for ev, n in q("SELECT ev, COUNT(*) FROM events GROUP BY ev ORDER BY 2 DESC"):
         print(f"  {ev:8} {n}")
-    print("\n每一单（首轮）：开工 / 交付 / 失败(碎/超时) / 中途走 · 交付时平均用时 · 圆度")
-    rows = q("""
-        SELECT json_extract(data,'$.idx') i, json_extract(data,'$.order') o,
+    print("\n每一单（首轮，按游戏现在的顺序）：开工 / 交付 / 失败(碎/超时) / 中途走 · 交付时平均用时 · 圆度")
+    order, _, n_adv = admin.current_order(PUBLIC)
+    pos = {o: i for i, o in enumerate(order)}
+    rows = {r[0]: r[1:] for r in q("""
+        SELECT json_extract(data,'$.order') o,
           SUM(ev='start'), SUM(ev='deliver'),
           SUM(ev='fail' AND json_extract(data,'$.reason')='shatter'),
           SUM(ev='fail' AND json_extract(data,'$.reason')='time'),
@@ -312,16 +314,25 @@ def report():
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.used') END),
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.round') END)
         FROM events WHERE ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.loop')=0
-          AND json_extract(data,'$.mode') IS NULL
-        GROUP BY i ORDER BY i""")
-    for i, o, st, d, fs, ft, qu, used, rnd in rows:
+          AND json_extract(data,'$.order') IS NOT NULL
+        GROUP BY o""")}
+    for i, o in enumerate(order):
+        if i == n_adv:
+            print("  ---- 剩下的关卡 ----")
+        st, d, fs, ft, qu, used, rnd = rows.get(o, (0, 0, 0, 0, 0, None, None))
         rate = f"{d / st:5.0%}" if st else "   - "
-        print(f"  #{(i or 0) + 1:<3}{(o or '?'):<10} {st:>4} / {d:>4} / {fs:>3}+{ft:<3} / {qu:>3}   通过率 {rate}"
+        print(f"  #{i + 1:<3}{o:<10} {st:>4} / {d:>4} / {fs:>3}+{ft:<3} / {qu:>3}   通过率 {rate}"
               f"   {used or 0:5.1f}s   {rnd or 0:.3f}")
-    print("\n最远打到第几单（每个玩家）：")
-    for far, n in q("""SELECT far, COUNT(*) FROM (SELECT pid, MAX(json_extract(data,'$.idx')) far FROM events
-                       WHERE ev='deliver' AND json_extract(data,'$.mode') IS NULL GROUP BY pid) GROUP BY far ORDER BY far"""):
-        print(f"  第 {far + 1:>2} 单  {n} 人")
+    print("\n最远打到第几单（每个玩家，按游戏现在的顺序）：")
+    far: dict[str, int] = {}
+    for pid, o in q("SELECT pid, json_extract(data,'$.order') FROM events WHERE ev='deliver'"):
+        if o in pos:
+            far[pid] = max(far.get(pid, -1), pos[o])
+    counts: dict[int, int] = {}
+    for i in far.values():
+        counts[i] = counts.get(i, 0) + 1
+    for i, n in sorted(counts.items()):
+        print(f"  第 {i + 1:>2} 单  {n} 人")
 
 
 if __name__ == "__main__":

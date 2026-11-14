@@ -136,10 +136,16 @@ def adventure_order(public: Path) -> list[str]:
     return re.findall(r"^\s+\['([a-z]+)',", block, re.M)
 
 
-def _where(days: float, loops: str, mode: str = "main") -> tuple[str, list]:
+def current_order(public: Path) -> tuple[list[str], dict[str, str], int]:
+    """游戏里实际的顺序：先是冒险模式（ADVENTURE）那几单，再是 ORDER 里剩下的，跟 index.html 里重排的规则一样。
+    返回 (顺序, 名字, 冒险模式几单)。"""
+    order, names = order_names(public)
+    adv = [x for x in adventure_order(public) if x in order]
+    return adv + [x for x in order if x not in adv], names, len(adv)
+
+
+def _where(days: float, loops: str) -> tuple[str, list]:
     w, a = ["1=1"], []
-    # 冒险模式（?mode=adventure）的事件带 mode='adv'，和完整版分开看，不然按序号统计会混在一起
-    w.append("json_extract(data,'$.mode') = 'adv'" if mode == "adv" else "json_extract(data,'$.mode') IS NULL")
     if days > 0:
         w.append("ts >= ?")
         a.append(time.time() - days * 86400)
@@ -148,22 +154,21 @@ def _where(days: float, loops: str, mode: str = "main") -> tuple[str, list]:
     return " AND ".join(w), a
 
 
-def parse_filters(query: str) -> tuple[float, str, str]:
+def parse_filters(query: str) -> tuple[float, str]:
     q = parse_qs(query)
     try:
         days = float(q.get("days", ["0"])[0])
     except ValueError:
         days = 0
     loops = "all" if q.get("loops", ["first"])[0] == "all" else "first"
-    mode = "adv" if q.get("mode", ["main"])[0] == "adv" else "main"
-    return max(0.0, min(days, 3650)), loops, mode
+    return max(0.0, min(days, 3650)), loops
 
 
-def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dict:
-    where, args = _where(days, loops, mode)
+def stats(con, public: Path, days: float, loops: str) -> dict:
+    where, args = _where(days, loops)
     q = lambda sql, *extra: con.execute(sql.replace("{W}", where), (*args, *extra)).fetchall()
-    main_order, names = order_names(public)
-    order = adventure_order(public) if mode == "adv" else main_order
+    order, names, n_adv = current_order(public)
+    pos = {oid: i for i, oid in enumerate(order)}
 
     players, sessions = q("SELECT COUNT(DISTINCT pid), COUNT(DISTINCT sid) FROM events WHERE {W}")[0]
     durs = [r[0] / 1000 for r in q("SELECT MAX(ms) FROM events WHERE {W} AND ms IS NOT NULL GROUP BY sid") if r[0]]
@@ -171,7 +176,7 @@ def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dic
 
     per = {}
     for row in q("""
-        SELECT json_extract(data,'$.idx') i, MAX(json_extract(data,'$.order')),
+        SELECT json_extract(data,'$.order') o,
           SUM(ev='start'), COUNT(DISTINCT CASE WHEN ev='start' THEN pid END),
           SUM(ev='deliver'), COUNT(DISTINCT CASE WHEN ev='deliver' THEN pid END),
           SUM(ev='fail' AND json_extract(data,'$.reason')='shatter'),
@@ -184,16 +189,15 @@ def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dic
           AVG(CASE WHEN ev IN ('deliver','fail','quit') THEN json_extract(data,'$.over') END),
           AVG(CASE WHEN ev='deliver' THEN json_extract(data,'$.pay') END),
           AVG(CASE WHEN ev='fail' THEN json_extract(data,'$.round') END)
-        FROM events WHERE {W} AND ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.idx') IS NOT NULL
-        GROUP BY i"""):
-        i = int(row[0])
-        per[i] = dict(zip(["idx", "order", "starts", "players", "deliver", "deliver_players", "shatter", "time", "quit",
-                           "avg_used", "avg_round", "avg_target", "avg_good", "avg_over", "avg_pay", "fail_round"], (i, *row[1:])))
+        FROM events WHERE {W} AND ev IN ('start','deliver','fail','quit') AND json_extract(data,'$.order') IS NOT NULL
+        GROUP BY o"""):
+        per[row[0]] = dict(zip(["order", "starts", "players", "deliver", "deliver_players", "shatter", "time", "quit",
+                           "avg_used", "avg_round", "avg_target", "avg_good", "avg_over", "avg_pay", "fail_round"], row))
     orders = []
-    for i in range(max([len(order) - 1, *per.keys()], default=-1) + 1):
-        o = per.get(i) or {"idx": i, "order": order[i] if i < len(order) else None, "starts": 0, "players": 0,
-                           "deliver": 0, "deliver_players": 0, "shatter": 0, "time": 0, "quit": 0}
-        o["name"] = names.get(o.get("order") or "", o.get("order") or f"#{i + 1}")
+    for i, oid in enumerate(order):
+        o = per.get(oid) or {"order": oid, "starts": 0, "players": 0, "deliver": 0, "deliver_players": 0, "shatter": 0, "time": 0, "quit": 0}
+        o["idx"] = i
+        o["name"] = names.get(oid, oid)
         orders.append(o)
 
     daily = [dict(zip(["day", "players", "sessions"], r)) for r in q("""
@@ -204,16 +208,22 @@ def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dic
         return [{"k": r[0], "n": r[1]} for r in q(f"""SELECT {expr} k, COUNT(DISTINCT pid) n FROM events
                 WHERE {{W}} AND ev='{ev_name}' GROUP BY k ORDER BY n DESC LIMIT {limit}""")]
 
-    far = [{"k": r[0], "n": r[1]} for r in q("""SELECT far, COUNT(*) FROM (SELECT pid, MAX(json_extract(data,'$.idx')) far
-           FROM events WHERE {W} AND ev='deliver' GROUP BY pid) GROUP BY far ORDER BY far""")]
+    furthest: dict[str, int] = {}
+    for pid, oid in q("SELECT pid, json_extract(data,'$.order') FROM events WHERE {W} AND ev='deliver'"):
+        if oid in pos:
+            furthest[pid] = max(furthest.get(pid, -1), pos[oid])
+    far_n: dict[int, int] = {}
+    for i in furthest.values():
+        far_n[i] = far_n.get(i, 0) + 1
+    far = [{"k": k, "n": n} for k, n in sorted(far_n.items())]
     names = saves.names_by_pid(con)
-    named = saves.players(con, main_order)
+    named = saves.players(con, order)
     recent = [{"ts": r[0], "pid": r[1][:6], "name": names.get(r[1]), "ev": r[2], "country": r[3], "data": json.loads(r[4])}
               for r in q("SELECT ts, pid, ev, country, data FROM events WHERE {W} ORDER BY id DESC LIMIT 40")]
 
     return {
-        "generated": time.time(), "filters": {"days": days, "loops": loops, "mode": mode}, "total_orders": len(main_order),
-        "mode": mode, "per": 1 if mode == "adv" else 6,
+        "generated": time.time(), "filters": {"days": days, "loops": loops}, "total_orders": len(order),
+        "parts": [{"name": "冒险模式", "from": 0, "to": n_adv}, {"name": "剩下的关卡", "from": n_adv, "to": len(order)}],
         "kpi": {"players": players, "sessions": sessions, "starts": ev.get("start", 0), "delivers": ev.get("deliver", 0),
                 "fails": ev.get("fail", 0), "quits": ev.get("quit", 0), "wins": ev.get("win", 0),
                 "winners": q("SELECT COUNT(DISTINCT pid) FROM events WHERE {W} AND ev='win'")[0][0],
@@ -232,8 +242,8 @@ def stats(con, public: Path, days: float, loops: str, mode: str = "main") -> dic
     }
 
 
-def events_csv(con, days: float, loops: str, mode: str = "main") -> bytes:
-    where, args = _where(days, loops, mode)
+def events_csv(con, days: float, loops: str) -> bytes:
+    where, args = _where(days, loops)
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["time_utc", "player", "session", "seq", "event", "ms", "country", "data"])

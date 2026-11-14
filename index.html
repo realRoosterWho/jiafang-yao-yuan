@@ -305,8 +305,6 @@ const mq = q => !!(window.matchMedia && matchMedia(q).matches);
 const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
-// 冒险模式：网址带 ?mode=adventure 时只玩精选的十单（见 ADVENTURE）
-const ADV = (() => { try { return new URLSearchParams(location.search).get('mode') === 'adventure'; } catch (e) { return false; } })();
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
@@ -474,7 +472,7 @@ const MATS = {
     } },
 };
 const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'octobear'];
-const PER = ADV ? 1 : 6;   // 每班六单（冒险模式每一站一单）
+const PER = 6;   // 原来每班六单。现在只有成就里「某个班交齐」还按原来的班算（见 MAIN_ORDER）
 const CHAPS = [
   { name: '试用期', intro: '' },
   { name: '甲方的厨房', intro: '甲方饿了。可在他们的星球上，不圆的东西不许上桌。' },
@@ -556,10 +554,9 @@ if (EN) {
 }
 
 /* ---------- 冒险模式 ----------
-   给试玩准备的精选路线：每种花样都有一单，再加上故事里最有名的几单，普通的、重复的留给完整版。
-   打开方式：网址加 ?mode=adventure。ORDER / CHAPS 原地换成下面这套，PER 变成 1（一站一单）。
-   每站 [单子, 站名, 开工前的说明]：说明是空的就直接弹订单卡；说明只讲这一站新出现的机制，或者换场景时交代一句。
-   存档和完整版共用（同一单的最高酬劳、星级），上报的数据都带 mode: 'adv'，成就在冒险模式里不算。 */
+   游戏的顺序 = 先做冒险模式这几单，再做剩下的关卡。冒险模式挑的是每种花样都有一单、再加上故事里最有名的几单；
+   普通的、重复的都在剩下的关卡里，按 ORDER 原来的先后排。
+   每站 [单子, 站名, 开工前的说明]：说明是空的就直接弹订单卡；说明只讲这一站新出现的机制，或者换场景时交代一句。 */
 const ADVENTURE = [
   // 地球上的东西：基础和手感
   ['wood', ['上工', 'Clocking In'], ['', '']],
@@ -589,11 +586,18 @@ const ADVENTURE = [
   // 收尾
   ['octobear', ['特邀嘉宾', 'Special Guest'], ['最后一位客人：芬兰游戏社区 Games Now! 的吉祥物章鱼熊。一见面甲方就说：可爱是可爱，就是不够圆。它也是活的，拍太狠会疼。', "One last guest: the octo-bear, mascot of the Finnish games community Games Now!. The moment they met, the Client said: adorable, but not round enough. It's alive too, so don't hit it too hard."]],
 ];
-const MAIN_COUNT = ORDER.length;
-if (ADV) {
-  ORDER.splice(0, ORDER.length, ...ADVENTURE.map(a => a[0]));
-  CHAPS.splice(0, CHAPS.length, ...ADVENTURE.map(([, n, t]) => ({ name: L(n[0], n[1]), intro: L(t[0], t[1]) })));
-}
+/* ORDER 原地重排成：冒险模式 + 剩下的关卡。CHAPS 换成「章」：冒险模式每站一章，剩下的关卡算一章（开头一张过渡卡）。
+   订单簿按 PARTS 分两档。原来的顺序和班数留在 MAIN_ORDER / MAIN_SHIFTS，只给成就用。 */
+const MAIN_ORDER = ORDER.slice(), MAIN_SHIFTS = CHAPS.length;
+const ADV_LIST = ADVENTURE.filter(a => MATS[a[0]]), ADV_N = ADV_LIST.length;
+ORDER.splice(0, ORDER.length, ...ADV_LIST.map(a => a[0]), ...MAIN_ORDER.filter(id => !ADV_LIST.some(a => a[0] === id)));
+const REST_N = ORDER.length - ADV_N;
+CHAPS.splice(0, CHAPS.length, ...ADV_LIST.map(([, n, t], i) => ({ name: L(n[0], n[1]), intro: L(t[0], t[1]), from: i, to: i + 1, adv: true })));
+if (REST_N) CHAPS.push({ name: L('剩下的关卡', 'More Orders'), from: ADV_N, to: ORDER.length,
+  intro: L(`冒险模式做完了。甲方很满意，可仓库里还堆着 ${REST_N} 单。前面学过的花样这里都会再遇到，没有新规则，就是更多、更杂。`, `That's adventure mode done. The Client is pleased, but there are still ${REST_N} orders piled up in the warehouse. Every trick you've learned turns up again: no new rules, just more of them, all mixed up.`) });
+const PARTS = [{ name: L('冒险模式', 'Adventure'), from: 0, to: ADV_N }, { name: L('剩下的关卡', 'More orders'), from: ADV_N, to: ORDER.length }];
+const chapAt = i => { for (let k = CHAPS.length - 1; k > 0; k--) if (i >= CHAPS[k].from) return k; return 0; };
+const chapStart = i => CHAPS[chapAt(i)].from === i;
 
 /* ---------- 形状：以质心为原点的极坐标半径数组 ---------- */
 // 圣诞老人的帽子、驯鹿的一边鹿角（另一边对称）：形状和贴图共用
@@ -1293,8 +1297,7 @@ function saveBest(id, pay, stars) {
   if (up) { persist(); if (NAME) cloudSync(NAME).catch(() => {}); }
   return old;
 }
-let ADV_AT = 0; if (ADV) try { ADV_AT = clamp(parseInt(localStorage.getItem('yuan.adv.at'), 10) || 0, 0, ORDER.length); } catch (e) {}
-function firstOpen() { if (ADV) return ADV_AT >= ORDER.length ? 0 : ADV_AT; const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
+function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
 /* 匿名游戏数据：随机玩家 ID（只存在本机）+ 每单的过程数字，不收集任何个人信息。
    本地打开（file:// 或 localhost）不发，免得开发时弄脏数据。
    不看“请勿追踪”/GPC：数据匿名、不存 IP、不跨站，说明卡里写明了；Firefox 隐私模式默认开 GPC，看它会漏掉一大片玩家。 */
@@ -1307,7 +1310,7 @@ const TRACK = (() => {
   const sid = rid(), t0 = performance.now(); let seq = 0;
   return (ev, data) => {
     try {
-      const body = JSON.stringify({ v: 1, pid, sid, seq: seq++, ev, ms: Math.round(performance.now() - t0), data: ADV ? Object.assign({ mode: 'adv' }, data) : (data || {}) });
+      const body = JSON.stringify({ v: 1, pid, sid, seq: seq++, ev, ms: Math.round(performance.now() - t0), data: data || {} });
       if (!(navigator.sendBeacon && navigator.sendBeacon(URL_, body))) fetch(URL_, { method: 'POST', body, mode: 'no-cors', keepalive: true }).catch(() => {});
     } catch (e) {}
   };
@@ -1356,7 +1359,7 @@ async function setName(raw) {
    有 goal / prog 的是进度类，achCheck() 发现够了就自动解锁，列表页画进度条；其余由游戏里的事件直接 achUnlock()。
    在交货 / 失败 / 全部交付的结算过程中解锁的（G.collect），列在结算卡上；游戏中解锁的弹底部提示条；其他时候弹顶部提示条。 */
 const sumBest = () => ORDER.reduce((a, id) => a + (SAVE.best[id] || 0), 0);
-const shiftIds = k => ORDER.slice(k * PER, (k + 1) * PER);
+const shiftIds = k => MAIN_ORDER.slice(k * PER, (k + 1) * PER);   // 原来的第 k 班（成就用）
 const FOOD = ['meat', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'coconut', 'walnut', 'bonbon', 'butter', 'jelly', 'choco', 'honey', 'salmiak'];
 const SHIFT_ACH = [
   [['转正', '试用期六单交齐。转正的意思是不能走了。'], ['Hired', "Probation done. You're permanent now, which means you can't leave."]],
@@ -1408,7 +1411,7 @@ const ACH = [
   { id: 'pie_in_the_sky', g: 'live', hid: 1, t: ['给甲方画饼', '把面团拍成了饼。平时都是甲方给你画饼，这回你还回去了。', '厨房里有一单，拍过头会变成别的东西。'], e: ['Pie in the Sky', 'Flattened the dough into a pancake. Usually the Client is the one promising pie in the sky.', 'One kitchen order turns into something else if you overdo it.'] },
   { id: 'stood_on_end', g: 'live', hid: 1, t: ['金鸡独立', '钢筋竖着落地，自己站住了。甲方觉得这样不圆，但很稳。', '有一单能立起来。'], e: ['Stood on End', 'The rebar landed on its end and stayed up. Not round, the Client notes, but very stable.', 'One order can stand up.'] },
   // 进度：从存档就能算出来，老玩家打开新版本会补发
-  ...CHAPS.map((ch, k) => {
+  ...Array.from({ length: MAIN_SHIFTS }, (_, k) => {
     const d = SHIFT_ACH[k] || [[`第 ${k + 1} 班交齐`, `第 ${k + 1} 班交齐了。`], [`Shift ${k + 1} Done`, `Shift ${k + 1} complete.`]];
     return { id: 'shift_' + (k + 1), g: 'prog', goal: () => shiftIds(k).length, prog: () => shiftIds(k).filter(id => SAVE.best[id]).length, t: d[0], e: d[1] };
   }),
@@ -1420,7 +1423,7 @@ const ACH = [
   // 手艺
   { id: 'hat_trick', g: 'craft', goal: () => 3, prog: () => A.three.length, t: ['连中三圆', '连续 3 单三星。古人叫连中三元，甲方叫连中三圆。'], e: ['Hat Trick', 'Three three-star orders in a row. The Client offers you a hat. It is round.'] },
   { id: 'steady_10', g: 'craft', goal: () => 10, prog: () => A.clean.length, t: ['手稳', '连续 10 单一次没砸过头。甲方怀疑你根本不是地球人。'], e: ['Steady Hands', 'Ten orders in a row without a single overhit. The Client suspects you are not from Earth.'] },
-  { id: 'spotless_shift', g: 'craft', goal: () => PER, prog: () => Math.max(0, ...CHAPS.map((c, k) => shiftIds(k).length === PER ? shiftIds(k).filter(id => SAVE.stars[id] === 3).length : 0)), t: ['无可挑剔', '一个班六单全是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Shift', 'A whole shift at three stars. Finding nothing wrong, the Client criticised your hair.'] },
+  { id: 'spotless_shift', g: 'craft', goal: () => PER, prog: () => Math.max(0, ...Array.from({ length: MAIN_SHIFTS }, (_, k) => shiftIds(k).length === PER ? shiftIds(k).filter(id => SAVE.stars[id] === 3).length : 0)), t: ['无可挑剔', '一个班六单全是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Shift', 'A whole shift at three stars. Finding nothing wrong, the Client criticised your hair.'] },
   { id: 'banquet', g: 'craft', goal: () => FOOD.length, prog: () => FOOD.filter(id => SAVE.best[id]).length, t: ['满圆全席', '能吃的单全都交了。地球人叫满汉全席，甲方叫满圆全席。'], e: ['Balanced Diet', 'Every edible order delivered. A balanced diet, to the Client, means all of it round.'] },
   { id: 'marathon', g: 'craft', t: ['一条龙', `从第 1 单一口气做到第 ${ORDER.length} 单，中间没回过首页。甲方给你倒了杯水。圆的。`], e: ['Marathon', `Orders 1 to ${ORDER.length} in one go, never pressing Home. The Client poured you a glass of water. Round.`] },
   { id: 'zero_rework', g: 'craft', hid: 1, t: ['零返工', `${ORDER.length} 单一口气做完，一次没失败、一次没重来。甲方说了声谢谢，然后假装没说过。`, '一口气。不失手。不回头。'], e: ['Zero Rework', `All ${ORDER.length} in one go: no fails, no retries. The Client said thank you, then pretended they had not.`, 'One go. No slips. No do-overs.'] },
@@ -1441,7 +1444,7 @@ const ACH = [
   { id: 'mesmerised', g: 'odd', hid: 1, t: ['看呆了', '盯着封面看了一分钟。那块木头圆了又方，方了又圆。你看懂了：这就是上班。', '开工之前，先看看那块木头是怎么干活的。'], e: ['Mesmerised', 'Watched the title screen for a minute. Round, square, round again. You get it now: that is the job.', 'Before you start, watch how the block does it.'] },
 ];
 const ACH_BY = {}; for (const a of ACH) ACH_BY[a.id] = a;
-const achOn = a => !ADV && (!a.cloud || !!CLOUD);
+const achOn = a => !a.cloud || !!CLOUD;
 const achText = a => EN ? a.e : a.t;
 const achList = () => ACH.filter(achOn);
 const achGot = () => achList().filter(a => A.got[a.id]).length;
@@ -1454,7 +1457,7 @@ try {
     const v = s[k]; if (v === undefined || v === null || typeof v !== typeof A[k] || Array.isArray(v) !== Array.isArray(A[k])) continue;
     if (k === 'n') { for (const c in A.n) if (typeof v[c] === 'number') A.n[c] = v[c]; } else A[k] = v;
   }
-  if (!ADV) for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
+  for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
 } catch (e) {}
 function achSave() { try { localStorage.setItem('yuan.ach.v1', JSON.stringify(A)); } catch (e) {} }
 let achSyncT = 0;
@@ -1624,19 +1627,21 @@ function roundInfo() {
 }
 function startAt(i) {
   G.idx = clamp(i | 0, 0, ORDER.length - 1); G.loop = 0; G.score = 0; G.done = 0; G.slips = 0;
-  if (G.idx && G.idx % PER === 0) showChapter(); else showOrder();
+  if (G.idx && chapStart(G.idx)) showChapter(); else showOrder();
 }
+/* 订单簿分两档：冒险模式、剩下的关卡 */
 function showBook() {
   G.state = 'menu'; const at = firstOpen(); let html = '';
-  CHAPS.forEach((ch, k) => {
-    if (!ADV || !k) html += `<p class="chap">${ADV ? L(`冒险模式 · ${ORDER.length} 站`, `Adventure · ${ORDER.length} stops`) : `${L(`第 ${k + 1} 班`, `Shift ${k + 1}`)} · ${ch.name}`}</p><div class="grid">`;
-    for (let i = k * PER; i < Math.min((k + 1) * PER, ORDER.length); i++) {
+  for (const part of PARTS) {
+    if (part.to <= part.from) continue;
+    html += `<p class="chap">${part.name} · ${L(`${part.to - part.from} 单`, `${part.to - part.from} orders`)}</p><div class="grid">`;
+    for (let i = part.from; i < part.to; i++) {
       const id = ORDER[i], best = SAVE.best[id] || 0;
       const st = SAVE.stars[id] || 0;
       html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="${L(`第 ${i + 1} 单`, `Order ${i + 1}`)} ${MATS[id].name}${best ? L(`，${st} 星，最高酬劳 `, `, ${st} star${st > 1 ? 's' : ''}, best pay `) + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span><i class="${st ? '' : 'dim'}" aria-hidden="true">${best ? starStr(st) : ''}</i></button>`;
     }
-    if (!ADV || k === CHAPS.length - 1) html += '</div>';
-  });
+    html += '</div>';
+  }
   setCard(`
     <p class="eyebrow">${L('订单簿', 'Order book')}</p>
     <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
@@ -1645,14 +1650,16 @@ function showBook() {
     <p class="note">${L('绿色是交付过的，哪单都能开工。', 'Green = delivered. Start anywhere.')}</p>
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
+/* 章节卡：冒险模式里有说明的站开工前弹一张；做完冒险模式、进剩下的关卡前弹一张过渡卡 */
 function showChapter() {
-  if (ADV && !CHAPS[G.idx].intro) return showOrder();
-  setupRound(); const k = G.idx / PER | 0, ch = CHAPS[k]; G.state = 'chapter';
+  const k = chapAt(G.idx), ch = CHAPS[k], n = ch.to - ch.from;
+  if (!ch.intro) return showOrder();
+  setupRound(); G.state = 'chapter';
   setCard(`
-    <p class="eyebrow">${ADV ? L(`第 ${k + 1} 站 · 共 ${CHAPS.length} 站 · 新花样`, `Stop ${k + 1} of ${CHAPS.length} · Something new`) : L(`第 ${k + 1} 班 · 共 ${CHAPS.length} 班`, `Shift ${k + 1} of ${CHAPS.length}`)}</p>
+    <p class="eyebrow">${ch.adv ? L(`冒险模式 · 第 ${k + 1} 站 · 新花样`, `Adventure · stop ${k + 1} · Something new`) : L('冒险模式通关', 'Adventure complete')}</p>
     <h2>${ch.name}</h2>
     <p>${ch.intro}</p>
-    <p class="note">${(n => n === 1 ? (ADV ? L('这一站：', 'This stop: ') : L('这一班只有一单：', 'Just one order this shift: ')) : n === PER ? L('这一班六单：', 'Six orders this shift: ') : L(`这一班 ${n} 单：`, `${n} orders this shift: `))(ORDER.slice(k * PER, (k + 1) * PER).length)}${ORDER.slice(k * PER, (k + 1) * PER).map(id => MATS[id].name).join(L('、', ', '))}${L('。', '.')}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
+    <p class="note">${n === 1 ? L(`这一站：${MATS[ORDER[ch.from]].name}。`, `This stop: ${MATS[ORDER[ch.from]].name}.`) : L(`这一段 ${n} 单，订单簿里也能挑着做。`, `${n} orders here; you can also pick any of them from the order book.`)}${G.score ? L('目前累计酬劳 ◎ ', ' Total pay so far: ◎ ') + G.score + L('。', '.') : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
@@ -1693,17 +1700,16 @@ function showMenu() {
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
   const at = firstOpen();
   setCard(`
-    <p class="eyebrow">${ADV ? L(`冒险模式 · ${ORDER.length} 单精选`, `Adventure mode · ${ORDER.length} picked orders`) : L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
+    <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
     <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
-    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${ADV ? L(`这一趟精选 ${ORDER.length} 单，每种花样都有，从一块木头一路做到 Games Now! 的章鱼熊。`, ` This run is ${ORDER.length} picked orders with every kind of trick, from a block of wood all the way to the Games Now! octo-bear.`) : ''}</p>
+    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`前 ${ADV_N} 单是冒险模式：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到；做完还有 ${REST_N} 单。`, ` The first ${ADV_N} orders are adventure mode: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. After that, ${REST_N} more.`)}</p>
     <ul class="how">
       <li><b>${L('拎', '1')}</b><span>${L('按住材料拎起来，抓哪头，对面那头朝下。', '<strong>Lift.</strong> Hold to pick it up; the far end points down.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。右边力度表绿区有效，红区会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>${ADV ? '' : `<button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button>`}<button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
-    ${ADV ? `<p class="note">${L('冒险模式和完整版共用存档：每单的最高酬劳和星级是同一份。成就只在完整版里算。', 'Adventure mode shares your save with the full game: best pay and stars per order are the same. Achievements only count in the full game.')} <a class="link" href="${location.pathname}${EN ? '?lang=en' : ''}">${L('去玩完整版', 'Play the full game')}</a></p>` : ''}
-    ${!ADV && A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    ${A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
     ${whoRow()}
     <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars and achievements.')}</p>`);
 }
@@ -1711,7 +1717,7 @@ function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
   const lines = G.lines.map((v, k) => `<span class="nw">${'★'.repeat(k + 1)} <strong>${pct(v)}</strong></span>`).join(' · ');
   setCard(`
-    <p class="eyebrow">${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)} · ${CHAPS[G.idx / PER | 0].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
+    <p class="eyebrow">${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)} · ${CHAPS[chapAt(G.idx)].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
     <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
     <p>${m.blurb}</p>
     <dl class="spec">
@@ -1742,7 +1748,6 @@ function deliver() {
   const id = ORDER[G.idx];
   G.res = { n, oldStars: SAVE.stars[id] || 0, old: 0 };
   G.res.old = saveBest(id, p.total, n);
-  if (ADV && G.idx + 1 > ADV_AT) { ADV_AT = G.idx + 1; try { localStorage.setItem('yuan.adv.at', ADV_AT); } catch (e) {} }
   achRound('deliver');
   TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: G.res.old, stars: n, ach: G.newAch.join(',').slice(0, 64) }));
   celebrate(n);
@@ -1857,19 +1862,18 @@ function showWin() {
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
     <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的星线都会再高一点。', '. Next round, every star line goes a little higher.')}</p>
-    ${ADV ? `<p class="note">${L(`冒险模式到这里就做完了，谢谢试玩！完整版一共 ${MAIN_COUNT} 单。`, `That's the end of adventure mode. Thanks for playing! The full game has ${MAIN_COUNT} orders.`)} <a class="link" href="${location.pathname}${EN ? '?lang=en' : ''}">${L('去玩完整版', 'Play the full game')}</a></p>` : ''}
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function act(a) {
   audioInit(); sfx.ui();
-  if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to + (ADV ? '&mode=adventure' : ''); return; }
+  if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();
   else if (a === 'enter') showOrder();
   else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
-  else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (G.idx % PER === 0) showChapter(); else showOrder(); } }
+  else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (chapStart(G.idx)) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
   else if (a === 'redo') {   // 交货后再来一次：这一单的酬劳不算进这一趟，料和时间换新的，直接开工
     G.score = G.startScore; G.done = Math.max(0, G.done - 1);
