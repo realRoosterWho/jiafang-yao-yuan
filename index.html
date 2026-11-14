@@ -459,6 +459,9 @@ const MATS = {
     base: '#3a3940', outline: '#e0702c', chips: ['#4a4950', '#2a292e', '#ff8a3c'], over: '崩掉一块！', dead: '桑拿石碎了一地。甲方的桑拿房今晚只能干蒸了。', blurb: '<strong>烫手</strong>：抓起来，举高，松手。' },
   oldphone: { name: '老手机', unit: '部', hard: 48, brittle: 88, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .15, fric: .7, accel: 15000, jig: 0, target: .82, time: 160, floor: 1,
     base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '它砸不坏，地板会。得抡。' },
+  /* 幕后功臣：这个游戏不少是 AI 帮着做的，AI 跑在显卡上。又长又扁，挡板、金手指都得磨掉；烫手（借桑拿石的 hot），只能失手一次 */
+  gpu: { name: '显卡', unit: '张', hard: 32, brittle: 60, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 13, hp: 2, rest: .15, fric: .6, accel: 20000, jig: 0, target: .84, time: 150, hot: 2,
+    base: '#262a33', outline: '#0e1014', chips: ['#3a3f4a', '#f2c230', '#1f6e3a', '#7de8ff'], over: '显存爆了！', dead: '显卡碎了。做这个游戏的 AI 就是在它上面跑的，没有它，你现在玩的这个游戏根本不存在。续集也没了。', blurb: '做这个游戏的 AI 就跑在它上面。刚陪 AI 熬完夜，<strong>烫手</strong>。只能失手一次。' },
   /* 第九班：特邀嘉宾。Games Now!（阿尔托大学的游戏社区）的吉祥物章鱼熊。像一块软肉：一碰就变形、不掉料，最后拍成一个圆滚滚的球。
      活的（flee），快圆了放在地上会自己滚正、脸朝前（upright：圆度到多少开始）。会说话：talk 里每种场合几句 [中文, 英文]，头顶冒自己的小气泡；glow 是轮廓外的一圈光 */
   octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 52, loose: 1, plastic: 1, smooth: .5, passes: 6, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .93, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
@@ -474,7 +477,7 @@ const MATS = {
       flee: [['我回 Games Now! 了，哼！', "I'm going back to Games Now!. Hmph!"]],
     } },
 };
-const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'octobear'];
+const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'gpu', 'octobear'];
 const PER = 6;   // 原来每班六单。现在只有成就里「某组交齐」还按原来的分组算（见 MAIN_ORDER、SHIFT_ACH）
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -538,6 +541,7 @@ const MATS_EN = {
   aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', 'Knock off the "!" first, then the A. One slip only.'],
   sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", '<strong>Hot</strong>: grab, lift, let go.'],
   oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "It can't break; the floor can. Swing it."],
+  gpu: ['Graphics Card', 'Out of memory!', 'The graphics card broke. The AI that helped make this game ran on it. Without it, the game you are playing would not exist. No sequel either.', 'The AI behind this game ran on it. Up all night training, so it is <strong>hot</strong>. One slip only.'],
   octobear: ['Octo-Bear', 'Octo-Bear is crying!', 'The octo-bear crawled back to Games Now! in tears and says it will only be a mascot at game jams from now on.', "The <strong>Games Now!</strong> mascot, headphones and all. Soft as meat: it bulges, never loses material, and ends up a ball. Never mind the headphones. It talks, and it can get hurt."],
 };
 const CHAPS_EN = [
@@ -587,6 +591,7 @@ const ADVENTURE = [
   ['santa', ['活的', 'Alive'], ['圣诞老人也被请上了飞碟。活的东西砸过头不会碎，但会急：急够三次，他就坐上雪橇走了。', "Santa came along on the saucer too. Living things don't break when you hit too hard, but they get upset, and after three times he leaves on his sleigh."]],
   ['reindeer', ['圣诞老人的驯鹿', "Santa's Reindeer"], ['', '']],
   // 收尾
+  ['gpu', ['幕后功臣', 'Behind the Scenes'], ['说句实话：这个游戏有不少是 AI 帮着做的，AI 又是在这张显卡上跑出来的。没有它，就没有你现在玩的这个游戏。它刚陪 AI 熬完夜，烫手，跟桑拿石一样：抓起来，举高，松手。只能失手一次。', "Full disclosure: an AI helped make a lot of this game, and that AI ran on this graphics card. Without it, there would be no game for you to play. It has been up all night training and it is hot, just like the sauna stone: grab, lift, let go. One slip only."]],
   ['octobear', ['特邀嘉宾', 'Special Guest'], ['最后一位客人：芬兰游戏社区 Games Now! 的吉祥物章鱼熊。一见面甲方就说：可爱是可爱，就是不够圆。它也是活的，拍太狠会疼。', "One last guest: the octo-bear, mascot of the Finnish games community Games Now!. The moment they met, the Client said: adorable, but not round enough. It's alive too, so don't hit it too hard."]],
 ];
 /* ORDER 原地重排成：冒险模式 + 剩下的关卡。CHAPS 换成「章」：冒险模式每站一章，剩下的关卡算一章（开头一张过渡卡）。
@@ -638,6 +643,7 @@ const SHAPES = {
 
   cube: () => rectPts(84, 84),
   phone: () => superPts(56, 106, 9),
+  gpu: () => [[-131, -65], [-115, -65], [-115, -45], [137, -45], [137, 35], [67, 35], [67, 55], [-37, 55], [-37, 35], [-115, 35], [-115, 63], [-131, 63]],   // 左边铁挡板、底下金手指
   record: () => polarPts(90, () => 94),
   crown: () => [[-98, 72], [98, 72], [106, -66], [56, -8], [0, -86], [-56, -8], [-106, -66]],
   star: () => { const p = []; for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k / 10 * TAU, rr = k % 2 ? 66 : 114; p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; },
@@ -961,6 +967,7 @@ const HIT = {
   ufo: p => { tone(260, .3, .22 * p, 'triangle', 240); tone(690, .35, .12 * p); noise(.06, .4 * p, 'bandpass', 1400, .8); tone(1800, .12, .07, 'sine', 900, .05); },
   santa: p => { tone(150, .14, .45 * p, 'sine', 122); tone(128, .2, .4 * p, 'sine', 104, .15); noise(.07, .3 * p, 'lowpass', 420); },   // “嗬嗬”
   reindeer: p => { HIT.wood(p); tone(2600, .25, .05, 'sine', 0, .03); tone(3300, .2, .04, 'sine', 0, .08); },   // 角磕一下 + 一串铃铛
+  gpu: p => { HIT.pc(p); noise(.35, .12 + .2 * p, 'highpass', 3500); },   // 电脑声 + 一声“嘶”
   sauna: p => { HIT.stone(p); noise(.4, .18 + .25 * p, 'highpass', 3500); },   // 石头声 + 一声“嘶”
   oldphone: p => { tone(150, .12, .5 * p, 'square', 90); noise(.06, .45 * p, 'bandpass', 1100, 1); tone(1320, .09, .08, 'square', 0, .1); },   // 闷响，再“嘀”一声
   octobear: p => { HIT.meat(p); tone(620, .1, .14 * p, 'sine', 1150, .03); },   // 软软一声 + 往上挑的“啾”
@@ -1244,6 +1251,7 @@ const MATFX = {
   reindeer: (x, p) => { puff(x, 2 + 4 * p, '#f2e2c0'); if (p > .5) fxp(x, FLOOR - 14, 1, 'glyph', ['#ffd35c'], { ch: ['♪'], s0: 14, s1: 20, g: 120, up: 200, life: 1.3 }); },
   salmiak: (x, p, over) => { puff(x, 2 + 3 * p, '#e6e6ee'); if (over) shards(x, 8, ['#2a2a32', '#4a4a56']); },
   aalto: (x, p, over) => { fxp(x, FLOOR - 14, over ? 6 : 1 + Math.round(2 * p), 'glyph', ['#ffffff', '#cfe7f1'], { ch: ['!', '?', '”'], s0: 16, s1: 24, g: 400, up: 220, life: 1.3 }); if (over) shards(x, 10, ['#d6ecf5', '#ffffff']); },
+  gpu: (x, p, over) => { steam(x, 3 + 6 * p); fxp(x, FLOOR - 12, over ? 8 : 2 + 3 * p, 'glyph', ['#7de8ff', '#ffffff'], { ch: over ? ['OOM', 'NaN', 'Out of memory'] : ['CUDA', '0', '1', 'AI'], s0: 13, s1: 19, g: 420, v0: 80, v1: 240, up: 170, life: 1.4 }); },
   sauna: (x, p) => { steam(x, 4 + 8 * p); sparks(x, 2 + 4 * p, ['#ffb070', '#ff7a30'], p); },
   oldphone: (x, p, over) => {   // 手机没事，地板有事
     dust(x, 4 + 4 * p);
@@ -1416,6 +1424,7 @@ const ACH = [
   { id: 'won_lying_down', g: 'live', t: ['躺赢', '最后那点圆度是它自己塌出来的。你什么都没干。'], e: ['Won Lying Down', 'The last bit of roundness came from it slumping on its own. You did nothing.'] },
   { id: 'maxed_out', g: 'live', t: ['力拔山兮', '力度顶到 100，东西居然还好好的。地板不太好。'], e: ['Maxed Out', 'Force pinned at 100 and it is still in one piece. The floor is less fine.'] },
   { id: 'honorary_finn', g: 'live', t: ['荣誉芬兰人', '交了桑拿石，一次都没被烫得撒手。芬兰人坐在旁边享受，你也是。'], e: ['Honorary Finn', 'Delivered the sauna stone without once being forced to drop it. Finns sit next to it for fun. So do you.'] },
+  { id: 'remember_roots', g: 'live', t: ['饮水思源', '显卡一下没砸过头就交了货。没有它就没有 AI，没有 AI 就没有这个游戏。'], e: ['Remember Your Roots', 'Delivered the graphics card without a single overhit. No card, no AI. No AI, no game.'] },
   { id: 'gentle_octo', g: 'live', t: ['摸摸头', '章鱼熊一次都没喊疼就被弄圆了。它说下次 game jam 还请你。'], e: ['Gentle Hands', 'Rounded the octo-bear without a single ouch. You are invited to the next game jam.'] },
   { id: 'on_the_line', g: 'live', t: ['压线', '力度正好顶到上限，没碎。再多一点，圆的就是你。'], e: ['On the Line', 'Hit exactly at the limit and it held. Any harder and you would be the round one.'] },
   { id: 'buzzer_beater', g: 'live', t: ['压哨', '最后一秒交货。甲方的耐心已经缩成了一个点。'], e: ['Buzzer Beater', "Delivered in the final second. The Client's patience had shrunk to a dot."] },
@@ -1429,6 +1438,7 @@ const ACH = [
   { id: 'peaked_too_soon', g: 'live', hid: 1, t: ['高开低走', '一度砸到三星，交货时只剩一星。甲方都看见了。', '砸得越多，不一定越圆。'], e: ['Peaked Too Soon', 'It hit three stars at one point. You delivered it at one. The Client saw.', 'More hits is not always more round.'] },
   { id: 'if_it_aint_broke', g: 'live', hid: 1, t: ['画蛇添足', '唱片本来就是圆的，你非要砸它。现在不是了。', '有的东西不用砸。'], e: ["If It Ain't Broke", 'The record was already round. You hit it anyway. Now it is not.', 'Some things need no hitting.'] },
   { id: 'wandering_earth', g: 'live', hid: 1, t: ['流浪地球', '你把地球砸碎了。现在流浪的是你。', '小心你的老家。'], e: ['The Wandering Earthling', 'You smashed the Earth. Now you are the one wandering.', 'Mind your home planet.'] },
+  { id: 'ai_winter', g: 'live', hid: 1, t: ['AI 寒冬', '把显卡砸碎了。AI 没地方跑了，这个游戏的续集也没人做了。', '有一单是这个游戏的幕后功臣。'], e: ['AI Winter', 'Smashed the graphics card. The AI has nowhere to run, and nobody is making the sequel now.', 'One order helped make this game.'] },
   { id: 'overheated', g: 'live', hid: 1, t: ['热情过头', '焐过头了，一碰就碎。甲方说你对它太热情了。', '手心太热也不行。'], e: ['Overheated', 'Overheated it and it broke at a touch. The Client says you are too warm.', 'Warm hands, but not too warm.'] },
   { id: 'early_withdrawal', g: 'live', hid: 1, t: ['零存整取', '把存钱罐砸碎了。取款成功，收款人：甲方。', '有一单里面装着钱。'], e: ['Early Withdrawal', 'Smashed the piggy bank. Withdrawal complete. Payee: the Client.', 'One order has money inside.'] },
   { id: 'naughty_list', g: 'live', hid: 1, t: ['淘气名单', '把圣诞老人惹急了，他坐上雪橇走了。你上了淘气名单。', '有一位客人脾气不太好。'], e: ['Naughty List', 'You upset Santa until he left on his sleigh. You are on the Naughty List.', 'One guest has a temper.'] },
@@ -1534,6 +1544,7 @@ function achRound(kind, reason) {
     if (G.round >= .95 && id !== 'record') U('rounder_than_compass');
     if (b.c && !b.c.some((c, i) => b.r[i] - c < 2.5)) U('poker_face');
     if (id === 'octobear' && G.started && s.over === 0) U('gentle_octo');
+    if (id === 'gpu' && G.started && s.over === 0) U('remember_roots');
     if (G.loop >= 1) U('ot_first');
     if (id !== 'record' && (A.failBy[id] || 0) >= 5) U('at_last');
     if (new Date().getHours() < 5) U('night_shift');
@@ -1554,7 +1565,7 @@ function achRound(kind, reason) {
       if (k === 'floor') U('phone_is_fine');
       if (k === 'shatter') {
         const w = m.warm; if (w && w.hot && (b.heat || 0) >= w.peak + .15) U('overheated');
-        const S = { egg: 'humpty_dumpty', record: 'if_it_aint_broke', earth: 'wandering_earth', piggy: 'early_withdrawal', dough: 'pie_in_the_sky' }[id]; if (S) U(S);
+        const S = { egg: 'humpty_dumpty', record: 'if_it_aint_broke', earth: 'wandering_earth', piggy: 'early_withdrawal', dough: 'pie_in_the_sky', gpu: 'ai_winter' }[id]; if (S) U(S);
       }
     }
     if ((A.failBy[id] || 0) >= 5) U('grudge');
@@ -2595,6 +2606,35 @@ Object.assign(ART, {
       c.fillStyle = 'rgba(190,230,255,.85)'; c.beginPath(); c.ellipse(x, y, q, q * .7, 0, 0, TAU); c.fill();
       c.fillStyle = 'rgba(255,255,255,.9)'; c.beginPath(); c.arc(x - q * .35, y - q * .3, q * .3, 0, TAU); c.fill();
     }
+  },
+  gpu(c, b, t) {
+    const hurt = G.hp < b.mat.hp;
+    // 外壳：深灰，上亮下暗
+    let g = c.createLinearGradient(0, -45, 0, 35); g.addColorStop(0, '#454b58'); g.addColorStop(1, '#1c1f26'); c.fillStyle = g; c.fillRect(-200, -200, 400, 400);
+    // 底下一条绿色电路板，金手指
+    c.fillStyle = '#1f6e3a'; c.fillRect(-120, 27, 262, 9); c.fillRect(-40, 33, 110, 26);
+    for (let x = -33; x < 65; x += 6) { c.fillStyle = '#f2c230'; c.fillRect(x, 39, 4, 17); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x, 39, 1.3, 17); }
+    // 左边铁挡板，上面一排散热孔
+    g = c.createLinearGradient(-131, 0, -115, 0); g.addColorStop(0, '#8a909c'); g.addColorStop(.45, '#e3e7ee'); g.addColorStop(1, '#7a808c'); c.fillStyle = g; c.fillRect(-140, -75, 25, 150);
+    c.fillStyle = '#2a2d35'; for (let y = -54; y < 48; y += 12) { rr(c, -127, y, 8, 8, 2); c.fill(); }
+    // 顶上一条 RGB 灯带，颜色一直在转
+    for (let x = -115; x < 137; x += 6) { c.fillStyle = `hsl(${(x * 1.4 + t * 120) % 360},90%,62%)`; c.fillRect(x, -45, 6, 4); }
+    // 两个风扇，扇叶一直转；伤过一次就转得一顿一顿，外圈发红
+    for (const [fx, ph] of [[-45, 0], [72, 1.3]]) {
+      c.save(); c.translate(fx, -5);
+      c.beginPath(); c.arc(0, 0, 35, 0, TAU); c.fillStyle = '#121418'; c.fill();
+      c.strokeStyle = hurt ? `rgba(255,86,131,${.5 + .4 * Math.sin(t * 9)})` : 'rgba(125,232,255,.55)'; c.lineWidth = 2.5; c.stroke();
+      c.rotate(ph + (hurt ? Math.floor(t * 3) * .9 : t * 14));
+      c.fillStyle = '#3a3f4a';
+      for (let k = 0; k < 7; k++) { c.rotate(TAU / 7); c.beginPath(); c.moveTo(8, -3); c.quadraticCurveTo(24, -12, 32, -2); c.quadraticCurveTo(22, 4, 8, 4); c.closePath(); c.fill(); }
+      c.restore();
+      c.beginPath(); c.arc(fx, -5, 11, 0, TAU); c.fillStyle = '#2a2d35'; c.fill();
+      c.fillStyle = '#7de8ff'; c.font = `700 9px ${NUM}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('AI', fx, -5);
+    }
+    c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(-115, -41, 252, 10);
+    // 发烫：沿着现在的轮廓一圈红光（同桑拿石）
+    const k = .78 + .22 * Math.sin(t * 2.4); artOutline(c, b); c.lineJoin = 'round';
+    c.strokeStyle = `rgba(255,84,20,${.18 * k})`; c.lineWidth = 30; c.stroke(); c.strokeStyle = `rgba(255,140,60,${.3 * k})`; c.lineWidth = 5; c.stroke(); c.lineJoin = 'miter';
   },
   oldphone(c, b, t) {
     // 机身：深蓝，左边一道高光
