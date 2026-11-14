@@ -206,6 +206,7 @@ function newStone() {
   const m = Y.MATS.tutor; m.loose = 1;
   G.mat = m; G.body = Y.makeBody('tutor'); G.target = TUT.target; G.hp = m.hp; G.timeLeft = G.timeMax = m.time;
   G.round = G.shown = Y.roundness(G.body.r); G.wasReady = false; deliverBtn.hidden = true;
+  if (Y.starLines) { G.lines = Y.starLines(G.target, G.round); G.tier = 0; }   // 星级线按这块石头重算（setupRound 算的是第 1 单的）
   G.idx = -1;   // 界面上显示成“第 0 单”：试工不算在 48 单里
   T = { grabbed: false, rotated: false, hit: null, before: G.round, note: null, keyL: false, keyR: false, light: 0 };
 }
@@ -404,9 +405,12 @@ const SCRAWL = `<svg class="fd-scrawl" viewBox="0 0 140 70" aria-hidden="true"><
 const PRINT = `<svg viewBox="0 0 60 60" aria-hidden="true"><g fill="none" stroke="#c0281c" stroke-width="2.6" stroke-linecap="round" opacity=".88"><ellipse cx="30" cy="31" rx="21" ry="26" fill="rgba(192,40,28,.16)" stroke="none"/><path d="M14 38c-3-16 4-28 16-28s19 12 16 28"/><path d="M19 42c-3-14 2-25 11-25s14 11 11 25"/><path d="M24 45c-2-11 1-21 6-21s8 10 6 21"/><path d="M29 46c-1-6 0-14 1-14s2 8 1 14"/><path d="M17 50c8 4 18 4 26 0"/></g></svg>`;
 const HANDSVG = `<svg class="fd-hand" viewBox="0 0 120 104" aria-hidden="true"><g fill="none" stroke-linecap="round"><path d="M-10 -6L66 60" stroke="#4f9c33" stroke-width="30"/><path d="M-10 -6L66 60" stroke="#93e85a" stroke-width="23"/><path d="M68 58l30-6M70 64l26 16M62 68l8 30" stroke="#4f9c33" stroke-width="17"/><path d="M68 58l30-6M70 64l26 16M62 68l8 30" stroke="#93e85a" stroke-width="11"/></g></svg>`;
 
+// 游戏顺序是「冒险模式 + 剩下的关卡」（index.html 里的 PARTS）；老版本没有 PARTS 时全算冒险模式
+const parts = () => { const p = X.PARTS && X.PARTS[0], n = Y.ORDER.length, a = p ? p.to - p.from : n; return { advN: a, restN: n - a }; };
 function openContract(round) {
   phase = 'contract';
-  const no = contractNo(), now = new Date(), orders = Y.ORDER.length, shifts = X.CHAPS.length, name0 = X.NAME || FL.name || '';
+  const no = contractNo(), now = new Date(), orders = Y.ORDER.length, name0 = X.NAME || FL.name || '';
+  const { advN, restN } = parts();
   const date = EN ? now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
   const trial = round ? L(`乙方试工一单，圆度 ${pct(round)}，甲方点了点头，决定雇用。`, `The Artisan completed one trial order at ${pct(round)} roundness. The Client nodded and decided to hire.`) : L('乙方试工合格，甲方决定雇用。', 'The Artisan passed the trial and the Client decided to hire.');
   const layer = document.createElement('div'); layer.id = 'flow-deal'; layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-labelledby', 'fd-title');
@@ -422,7 +426,7 @@ function openContract(round) {
     </div>
     <p class="fd-lead">${trial}${L('双方订立条款如下：', ' The parties agree as follows:')}</p>
     <ol class="fd-terms">
-      <li><b>${L('第一条　工作内容', '1. Work.')}</b>${L(`甲方送来什么，乙方就把什么做成圆的。共 ${orders} 单，分 ${shifts} 班。`, `Whatever the Client sends, the Artisan makes round. ${orders} orders in ${shifts} shifts.`)}</li>
+      <li><b>${L('第一条　工作内容', '1. Work.')}</b>${L(`甲方送来什么，乙方就把什么做成圆的。共 ${orders} 单，先做冒险模式 ${advN} 单，再做其余 ${restN} 单。`, `Whatever the Client sends, the Artisan makes round. ${orders} orders: the ${advN} adventure orders first, then the other ${restN}.`)}</li>
       <li><b>${L('第二条　验收标准', '2. Acceptance.')}</b>${L('每单圆度不低于达标线，并在甲方耐心耗尽之前交货。', "Each order must reach its roundness target before the Client's patience runs out.")}</li>
       <li><b>${L('第三条　酬劳', '3. Pay.')}</b>${L('达标即付，以 ◎ 结算。越圆、越快，给得越多。', 'Paid on delivery, in ◎. Rounder and faster pays more.')}</li>
       <li><b>${L('第四条　违约责任', '4. Breach.')}</b>${L('乙方完不成任务的，由<em>乙方本人被做成圆形</em>，抵作该单货物。', 'If the Artisan fails an order, <em>the Artisan will be made round</em> in place of the goods.')}<span class="fd-note">${L('← 这条是认真的', '← we mean it')}</span></li>
@@ -517,7 +521,7 @@ function showChoice(name, how, no) {
   X.setCard(`
     <p class="eyebrow">${L('合同生效 · 圆字第 ' + no + ' 号', 'Contract R-' + no + ' in effect')}</p>
     <h2>${L(`签好了，${escH(name)}。开工吧`, `Signed, ${escH(name)}. Get to work`)}</h2>
-    <p>${L(`一共 <strong>${Y.ORDER.length} 单</strong>，分 ${X.CHAPS.length} 班。完不成会怎样，合同第四条写着。`, `<strong>${Y.ORDER.length} orders</strong> in ${X.CHAPS.length} shifts. What happens if you fail is in clause 4.`)}</p>
+    <p>${(({ advN, restN }) => L(`一共 <strong>${Y.ORDER.length} 单</strong>：前 ${advN} 单是冒险模式，后面还有 ${restN} 单。完不成会怎样，合同第四条写着。`, `<strong>${Y.ORDER.length} orders</strong>: ${advN} in adventure mode first, then ${restN} more. What happens if you fail is in clause 4.`))(parts())}</p>
     <div class="flow-go">
       <button class="btn flow-big" type="button" data-act="resume">${L('下一关', 'Next level')}<small>${L(`第 ${at + 1} 单 · ${mat ? mat.name : ''}`, `Order ${at + 1} · ${mat ? mat.name : ''}`)}</small></button>
       <button class="btn ghost" type="button" data-act="${escH(CONFIG.collectionAct)}">${L('去收藏室选关', 'Collection room')}</button>

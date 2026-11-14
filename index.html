@@ -1493,6 +1493,7 @@ function achSave() { try { localStorage.setItem(slotKey('yuan.ach.v1', NAME), JS
 let achSyncT = 0;
 function achSyncSoon() { if (!NAME || !CLOUD) return; clearTimeout(achSyncT); achSyncT = setTimeout(() => cloudSync(NAME).catch(() => {}), 2500); }
 function achUnlock(id, quiet) {
+  if (G.state === 'play' && G.body && G.body.id === 'tutor') return false;   // flow.js 的新手关不算成就（试工不进存档）
   const a = ACH_BY[id]; if (!a || A.got[id] || !achOn(a)) return false;
   A.got[id] = Math.round(Date.now() / 1000); achSave(); achSyncSoon();
   if (!quiet) { if (G.collect) G.newAch.push(id); else TOAST.q.push(id); }
@@ -3101,7 +3102,7 @@ function sim(id, t, hits, aimErr) {
 }
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
-window.__yuanFlow = { SHAPES, ART, CHAPS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; } };
+window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; } };
 
 function boot(data) {
   const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);
