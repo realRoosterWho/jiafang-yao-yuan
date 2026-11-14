@@ -222,7 +222,7 @@ function newStone() {
   const b = G.body; let armed = !!b.armed;
   Object.defineProperty(b, 'armed', { configurable: true, enumerable: true, get() { return armed && !this.held; }, set(v) { armed = !!v && !this.held; } });
   T = { grabbed: false, hit: null, before: G.round, note: null, keyL: false, keyR: false,
-    held: false, holdT0: 0, preHeld: false, rot: 0, rotT: -9, prevVy: 0, prevClear: 0, slamT: -9, high: false, stage: '' };
+    held: false, holdT0: 0, preHeld: false, prevVy: 0, prevClear: 0, slamT: -9, high: false, stage: '' };
 }
 const note = text => { T.note = { text, t: G.time }; };
 function startTutorial() {
@@ -255,7 +255,7 @@ const TXT = {
   lift: L('往上拎，拎过虚线', 'Lift it above the dashed line'),
   liftSub: TOUCH ? L('这根手指先别松开', 'Keep this finger down') : L('鼠标先别松开', 'Keep the mouse button down'),
   turn: L('把凸起转到朝下', 'Turn the bump to face down'),
-  turnSub: TOUCH ? L('拎着的手指不动，另一根手指在空白处左右滑', 'Keep holding; slide a second finger left or right on empty space') : L('拎着不松，按住 A 或 D', 'Keep holding and press A or D'),
+  turnSub: TOUCH ? L('拎着的手指别松开', 'Keep the lifting finger down') : L('拎着不松，按住 A 或 D', 'Keep holding and press A or D'),
   drop: TOUCH ? L('松开手指，让它自己掉下去', 'Lift your finger and let it fall') : L('松开鼠标，让它自己掉下去', 'Release the mouse and let it fall'),
   slam: L('拿着往下砸不算。拎高，松手让它自己掉', "Slamming while holding doesn't count. Lift it and let go"),
   early: L('凸起还没朝下就松手了', 'You let go before the bump faced down'),
@@ -263,10 +263,11 @@ const TXT = {
   good: L('就是这样：掉下去，凸起就扁了', 'That is it: the drop flattened the bump'),
   miss: L('没砸到凸起：先让凸起朝下再松手', 'Missed the bump: point it down before letting go'),
   ready: TOUCH ? L('够圆了，点「交货」', 'Round enough. Tap Deliver') : L('够圆了，按空格交货', 'Round enough. Press Space to deliver'),
-  readySub: TOUCH ? L('记住：一指拎，一指转，松手掉', 'Remember: one finger lifts, one turns, let go to drop') : L('记住：拎高，A / D 转好，松手掉', 'Remember: lift, A / D to turn, let go to drop'),
-  steps: TOUCH ? [L('一指拎高', 'Lift'), L('二指转向', '2nd finger turns'), L('松手', 'Let go')] : [L('拎高', 'Lift'), L('A / D 转向', 'A / D turns'), L('松手', 'Let go')],
+  readySub: TOUCH ? L('记住：一指拎，二指推摇杆转，松手掉', 'Remember: one finger lifts, a second finger is the joystick, let go to drop') : L('记住：拎高，A / D 转好，松手掉', 'Remember: lift, A / D to turn, let go to drop'),
+  steps: TOUCH ? [L('一指拎高', 'Lift'), L('二指推摇杆', 'Push joystick'), L('松手', 'Let go')] : [L('拎高', 'Lift'), L('A / D 转向', 'A / D turns'), L('松手', 'Let go')],
   line: L('拎过这条线', 'Lift above this line'),
-  finger: L('第二根手指', 'Second finger'),
+  joy: [L('第二根手指按这里，往左推', 'Second finger here, push left'), L('第二根手指按这里，往右推', 'Second finger here, push right')],   // [往左, 往右]
+  push: [L('往左推', 'Push left'), L('往右推', 'Push right')],
   bump: L('凸起', 'bump')
 };
 const HINT_TEXT = Object.values(TXT).flat().join('');
@@ -310,19 +311,81 @@ function keycap(c, x, y, letter, glyph, on, want, t) {
   c.fillStyle = on || want ? C.coin : C.dim; c.font = `22px ${BODY}`; c.fillText(glyph, 0, -s / 2 - 17);
   c.restore();
 }
-/* 手机：在石头另一边的空地上画一个半透明的指尖，左右来回滑，示范第二根手指该在哪、怎么动 */
-function ghostFinger(c, v, b, dir, t) {
-  const left = v.CAMX + 70, right = v.CAMX + v.VW - 70, mid = v.CAMX + v.VW / 2;
-  const cx = clamp(b.x > mid ? mid - v.VW * .22 : mid + v.VW * .22, left, right), y = FLOOR - 58, amp = 46;
-  const k = Math.sin(t * 2.6) * dir, x = cx + amp * k;
-  c.save();
-  c.strokeStyle = C.coin; c.fillStyle = C.coin; c.lineWidth = 3; c.globalAlpha = .55;
-  c.beginPath(); c.moveTo(cx - amp - 8, y + 38); c.lineTo(cx + amp + 8, y + 38); c.stroke();
-  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(cx + s * (amp + 16), y + 38); c.lineTo(cx + s * (amp + 4), y + 31); c.lineTo(cx + s * (amp + 4), y + 45); c.closePath(); c.fill(); }
-  c.globalAlpha = .9; c.beginPath(); c.arc(x, y, 22, 0, TAU); c.fillStyle = 'rgba(244,240,255,.28)'; c.fill(); c.strokeStyle = C.ink; c.lineWidth = 3; c.stroke();
-  c.globalAlpha = .35 + .25 * Math.sin(t * 5); c.beginPath(); c.arc(x, y, 32, 0, TAU); c.strokeStyle = C.coin; c.lineWidth = 2; c.stroke();
-  c.globalAlpha = 1; c.font = `${v.PORT ? 17 : 15}px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.lineWidth = 5; c.strokeStyle = 'rgba(17,13,43,.85)'; c.strokeText(TXT.finger, cx, y - 44); c.fillStyle = C.coin; c.fillText(TXT.finger, cx, y - 44);
+/* ---------- 光做的引导：不画手，三步各用一种光 ----------
+   ① 没拎：石头中心一个亮点，光环一圈圈往外扩（按这里）
+   ② 拎着没过线：光环从石头底下一圈圈升到虚线上（拎到这儿）；过线了没对准：手机上在空地画一个虚的摇杆示范（第二根手指按这里、往哪推）
+   ③ 拎高也对准了：石头描一圈绿光，绿光环一圈圈往下落到地板（松手让它掉） */
+const COIN = '255,211,92', GREEN = '147,232,90';
+const easeOut = f => 1 - Math.pow(1 - f, 3);
+function glowRing(c, x, y, rx, ry, al, rgb) {   // 发光的环：一道宽的淡光 + 一道细的亮线
+  if (al <= .01) return;
+  c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU);
+  c.lineWidth = 11; c.strokeStyle = `rgba(${rgb},${.16 * al})`; c.stroke();
+  c.lineWidth = 3; c.strokeStyle = `rgba(${rgb},${.9 * al})`; c.stroke();
+}
+function glowSpot(c, x, y, rx, ry, al, rgb) {   // 一团扁的柔光
+  c.save(); c.translate(x, y); c.scale(1, ry / rx);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(${rgb},${.55 * al})`); g.addColorStop(.5, `rgba(${rgb},${.2 * al})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx, 0, TAU); c.fill(); c.restore();
+}
+function outline(c, b, pad) {   // 石头的轮廓往外放 pad
+  const n = b.r.length, dphi = TAU / n; c.beginPath();
+  for (let i = 0; i < n; i += 2) { const a = b.a + i * dphi, r = b.r[i] + pad, x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r; i ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.closePath();
+}
+function lightPress(c, b, t) {
+  const R = b.meanR, g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, R * 1.3);
+  g.addColorStop(0, `rgba(${COIN},.3)`); g.addColorStop(.6, `rgba(${COIN},.08)`); g.addColorStop(1, `rgba(${COIN},0)`);
+  c.fillStyle = g; c.beginPath(); c.arc(b.x, b.y, R * 1.3, 0, TAU); c.fill();
+  for (let k = 0; k < 2; k++) { const f = (t * .7 + k / 2) % 1, r = R * .2 + (R * .85 + 44) * easeOut(f); glowRing(c, b.x, b.y, r, r, Math.min(1, f * 5) * Math.pow(1 - f, 1.3), COIN); }
+  const p = .5 + .5 * Math.sin(t * 4.4); c.fillStyle = `rgba(255,240,190,${.6 + .3 * p})`; c.beginPath(); c.arc(b.x, b.y, 6 + 3 * p, 0, TAU); c.fill();
+}
+function lightRise(c, b, t) {   // 虚线上方一个发光的石头轮廓（拎到这儿），光环从石头一圈圈升上去
+  const d = TUT.lift - b.clear + 6; if (d < 6) return;
+  const p = .5 + .5 * Math.sin(t * 4), bx = b.x, by = b.y;
+  c.save(); c.translate(0, -d);
+  outline(c, b, 2); c.fillStyle = `rgba(${COIN},${.05 + .05 * p})`; c.fill();
+  c.lineWidth = 12; c.strokeStyle = `rgba(${COIN},${.1 + .1 * p})`; c.stroke(); c.setLineDash([10, 9]); c.lineDashOffset = -t * 20;
+  c.lineWidth = 2.5; c.strokeStyle = `rgba(${COIN},${.5 + .35 * p})`; c.stroke(); c.setLineDash([]);
+  c.restore();
+  const rx = b.meanR * .8, ry = rx * .24;
+  for (let k = 0; k < 3; k++) { const f = (t * .8 + k / 3) % 1; glowRing(c, bx, by - d * easeOut(f), rx, ry, Math.min(1, f * 4) * (1 - f), COIN); }
+}
+function lightDrop(c, b, t) {
+  const p = .5 + .5 * Math.sin(t * 6);
+  outline(c, b, 7); c.lineWidth = 12; c.strokeStyle = `rgba(${GREEN},${.12 + .12 * p})`; c.stroke(); c.lineWidth = 3; c.strokeStyle = `rgba(${GREEN},${.55 + .35 * p})`; c.stroke();
+  const y0 = FLOOR - b.clear + 6, d = FLOOR - y0, rx = b.meanR * .6; if (d < 10) return;
+  for (let k = 0; k < 3; k++) { const f = (t * 1.1 + k / 3) % 1; glowRing(c, b.lowX, y0 + d * f * f, rx * (1 - .25 * f), rx * .22 * (1 - .25 * f), Math.pow(Math.sin(Math.PI * f), .7), GREEN); }
+  glowSpot(c, b.lowX, FLOOR, rx * 1.5, 12, .6 + .4 * p, GREEN);   // 地板上会砸到的地方
+}
+/* 摇杆在这块屏幕上的比例：画面单位 / CSS 像素（跟 index.html 里真摇杆一样大） */
+const joyScale = v => { const w = cv.getBoundingClientRect().width; return w ? v.VW / w : 1; };
+function label(c, v, text, x, y, rgb) {
+  c.font = `${v.PORT ? 18 : 16}px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 5; c.strokeStyle = 'rgba(17,13,43,.85)'; c.strokeText(text, x, y); c.fillStyle = `rgb(${rgb})`; c.fillText(text, x, y);
+}
+/* 手机、第二根手指还没按下：在石头下面、地板上方那片空地画一个虚的摇杆（石头拎过线了，这里一定空着；石头偏到一边时往另一边让）。
+   先从中间扩出一圈光（按这里），再把钮推向该推的那边，一遍遍重复 */
+function ghostJoy(c, v, b, push, t) {
+  const s = joyScale(v), R = X.JOY_R * s, kr = X.JOY_KNOB * s, h = kr * 1.3, half = R + h / 2 + 12, mid = v.CAMX + v.VW / 2;
+  const x0 = clamp(mid + (mid - b.x) * .6, v.CAMX + half, v.CAMX + v.VW - half), y = FLOOR - 55;
+  const u = (t % 2) / 2, k = u < .15 ? 0 : u < .45 ? .9 * easeOut((u - .15) / .3) : u < .78 ? .9 : .9 * (1 - easeOut((u - .78) / .22));
+  if (u < .4) { const f = u / .4, r = kr * (1 + 1.5 * easeOut(f)); glowRing(c, x0, y, r, r, 1 - f, COIN); }
+  glowSpot(c, x0 + k * push * R, y, kr * 1.5, kr * 1.5, .3 + .4 * k, COIN);
+  X.joyDraw(x0, y, k * push, s, .7);
+  label(c, v, TXT.joy[push > 0 ? 1 : 0], x0, y - h / 2 - 25 * s - 16, COIN);
+}
+/* 真摇杆出来了、但还没往对的方向推：槽里一串光点往该推的那头流，那头上方写「往左推 / 往右推」 */
+function joyNudge(c, v, joy, push, t) {
+  if (joy.k * push > X.JOY_DEAD) return;
+  const s = joy.s, R = X.JOY_R * s, h = X.JOY_KNOB * s * 1.3;
+  c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = 3.2 * s;
+  for (let k = 0; k < 3; k++) {
+    const f = (t * 1.3 + k / 3) % 1, x = joy.x0 + push * R * (.3 + .75 * f);
+    c.strokeStyle = `rgba(${COIN},${.95 * Math.sin(Math.PI * f)})`; c.beginPath(); c.moveTo(x - push * 5 * s, joy.y - 7 * s); c.lineTo(x + push * 2 * s, joy.y); c.lineTo(x - push * 5 * s, joy.y + 7 * s); c.stroke();
+  }
+  glowSpot(c, joy.x0 + push * R, joy.y - h / 2 - 17 * s, 16 * s, 16 * s, .6 + .4 * Math.sin(t * 6), COIN);   // 该推那头的弯箭头亮一下
+  label(c, v, TXT.push[push > 0 ? 1 : 0], joy.x0 + push * R, joy.y - h / 2 - 25 * s - 16, COIN);
   c.restore();
 }
 /* 拎过虚线了没有。过线以后往下掉一点（转的时候手会晃）还算，免得提示来回跳 */
@@ -333,7 +396,7 @@ function drawHints(b, g, ready) {
   const bumpy = g.hgt > 7, aligned = !bumpy || Math.abs(g.err) < TUT.aim, high = isHigh(b);
   if (!ready && bumpy) {
     // 凸起上标两个字
-    if (!(b.held && aligned)) {   // 对准以后这里要画往下的箭头，两个字让开
+    if (!(b.held && aligned)) {   // 对准以后石头描一圈绿光、往下落光环，两个字让开
       const lx = b.x + Math.cos(g.ang) * (g.rmax + 22), ly = b.y + Math.sin(g.ang) * (g.rmax + 22);
       c.font = `${v.PORT ? 20 : 17}px ${DISPLAY}`; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.lineWidth = 5; c.strokeStyle = 'rgba(17,13,43,.85)'; c.strokeText(TXT.bump, lx, ly); c.fillStyle = C.coin; c.fillText(TXT.bump, lx, ly);
@@ -349,9 +412,7 @@ function drawHints(b, g, ready) {
       }
     }
   }
-  if (!ready && !b.held) {   // 没拎着：石头外面一圈呼吸的光圈
-    const k = (t * .9) % 1; c.strokeStyle = C.coin; c.lineWidth = 3; c.globalAlpha = .75 * (1 - k); c.beginPath(); c.arc(b.x, b.y, b.meanR + 12 + 34 * k, 0, TAU); c.stroke(); c.globalAlpha = 1;
-  }
+  if (!ready && !b.held) lightPress(c, b, t);   // ① 没拎着：按这里
   if (!ready && (b.held || T.grabbed)) {   // 要拎到的高度：一条虚线，过了变绿
     const y = FLOOR - TUT.lift, x0 = v.CAMX + 14, x1 = v.CAMX + v.VW - 14;
     c.globalAlpha = high ? .9 : b.held ? .75 + .2 * Math.sin(t * 5) : .4; c.strokeStyle = high ? C.alien : C.coin; c.lineWidth = 3; c.setLineDash([12, 10]); c.lineDashOffset = -t * 30;
@@ -362,13 +423,12 @@ function drawHints(b, g, ready) {
     }
     c.globalAlpha = 1;
   }
-  if (!ready && b.held && aligned && high) {   // 拎高了也对准了：往下的箭头，示意松手让它掉
-    const x = b.lowX, y0 = FLOOR - b.clear + 12, span = Math.min(90, FLOOR - 14 - y0);
-    c.strokeStyle = C.alien; c.lineWidth = 5;
-    for (let k = 0; k < 3; k++) { const f = ((t * 1.6 + k / 3) % 1), y = y0 + span * f; c.globalAlpha = Math.sin(Math.PI * f); c.beginPath(); c.moveTo(x - 14, y - 8); c.lineTo(x, y + 6); c.lineTo(x + 14, y - 8); c.stroke(); }
-    c.globalAlpha = 1;
+  if (!ready && b.held && !high) lightRise(c, b, t);              // ① 拎着还没过线：拎到这儿
+  if (!ready && b.held && aligned && high) lightDrop(c, b, t);     // ③ 拎高了也对准了：松手让它掉
+  if (TOUCH && !ready && high && !aligned) {   // ② 手机：第二根手指还没按就画虚摇杆示范；按下了就在真摇杆上指方向
+    const joy = X.joy, push = (g.err > 0 ? 1 : -1) * (X.JOY_DIR || 1);   // 凸起要顺时针转（err > 0）就往 JOY_DIR 那边推
+    if (joy) joyNudge(c, v, joy, push, t); else ghostJoy(c, v, b, push, t);
   }
-  if (TOUCH && !ready && high && !aligned && t - T.rotT > .7) ghostFinger(c, v, b, g.err > 0 ? -1 : 1, t);   // 第二根手指没在滑：示范一下
   // 一句话提示 + 三步进度。横屏时提示条躲到石头的另一边（拎高以后石头会顶到提示条那一层）
   if (!v.PORT) T.side = b.x > 560 ? -1 : b.x < 440 ? 1 : T.side || -1;
   const px = v.PORT ? 0 : T.side < 0 ? 330 : 670;
@@ -398,9 +458,8 @@ function tutFrame() {
     G.started = false; G.timeLeft = G.timeMax; G.hp = b.mat.hp;   // 不计时、砸不坏
     const g = geom(b), bumpy = g.hgt > 7, aligned = !bumpy || Math.abs(g.err) < TUT.aim, ready = G.round >= G.target;
     if (b.held) {
-      if (!T.held) { T.held = true; T.high = false; T.holdT0 = G.time; T.rot = b.userRot; }
+      if (!T.held) { T.held = true; T.high = false; T.holdT0 = G.time; }
       T.grabbed = true;
-      if (Math.abs(b.userRot - T.rot) > .004) { T.rotT = G.time; T.rot = b.userRot; }
       if (b.clear >= TUT.lift) T.high = true; else if (b.clear < TUT.lift - 40) T.high = false;
       // 拎着往下砸到地板：不算数（armed 拦住了），提示一句
       if (T.prevClear > 20 && b.clear < 1 && T.prevVy > 420 && G.time - T.slamT > 1) { T.slamT = G.time; X.sfx.thud(.25); if (!ready) note(TXT.slam); }

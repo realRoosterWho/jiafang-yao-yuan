@@ -208,7 +208,7 @@ body {
 .lv.now b { color: var(--coin); box-shadow: inset 0 0 0 2px var(--coin); }
 .lv:hover { background: var(--hull-hi); }
 .lv:focus-visible { outline: 3px solid var(--coin); outline-offset: 1px; }
-/* 触屏的微调角度：一只手拎着材料，另一只手按这两个键（或者在画面上左右滑） */
+/* 触屏的微调角度按钮：现在不显示（display: none），触屏改用第二根手指按下去出现的摇杆（见“输入”里的 JOY） */
 #rot { display: none; position: absolute; left: 2%; top: 56%; flex-direction: column; gap: calc(var(--u) * 14); }
 #rot button {
   width: max(44px, calc(var(--u) * 64)); height: max(44px, calc(var(--u) * 64)); border-radius: 50%; border: 0; padding: 0;
@@ -1892,7 +1892,7 @@ function showMenu(msg) {
     </div><button class="alien-tap" type="button" data-act="alien" aria-label="${L('外星甲方', 'The alien Client')}">${ALIEN_SVG}<i></i></button></div>
     <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`冒险模式 ${ADV_N} 单：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到。做完前 ${ENDLESS.unlock} 单就能玩无尽模式：${ORDER.length} 样东西随机来，甲方越来越没耐心。`, ` Adventure mode is ${ADV_N} orders: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. Finish the first ${ENDLESS.unlock} to unlock endless mode: ${ORDER.length} kinds of things at random, and the Client gets less patient every order.`)}</p>
     <ul class="how">
-      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来，另一根手指左右滑调角度。', '<strong>Lift.</strong> One finger holds it up; a second finger slides to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来；另一根手指按在空白处就出一根摇杆，往左推、往右推调角度。', '<strong>Lift.</strong> One finger holds it up; a second finger on empty space becomes a joystick: push left or right to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('举高松手，让它自己掉下去；拿着往下砸是进阶手法。右边力度表绿区有效，红区会碎。', '<strong>Drop.</strong> Lift it high and let go; slamming while holding is the advanced move. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
     </ul>
@@ -2185,19 +2185,32 @@ function tryGrab() {
   if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 4.5, lines: null }; mood('angry', 2); }
   return true;
 }
-function release() { const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远
-// 第一根手指拎材料；拎着的时候第二根手指落在画面上，左右滑就是微调角度
-let grabId = null, rotId = null, rotX = 0;
+function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
+/* 第一根手指拎材料；拎着的时候第二根手指落在哪，哪里就出一根横向的摇杆（只有左右一个轴）。
+   速率控制：钮推离中心越远转得越快，中间一小段是死区，推到头是 JOY_MAX 弧度/秒（A / D 是 2.4）；钮被限制在槽里。
+   往右推 = 顺时针，跟 D 键一样（JOY_DIR 改成 -1 就反过来）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
+   尺寸按 CSS 像素算（槽的半长 ≈ 两个拇指宽），画的时候换成画面单位，所以不同屏幕上手感一样 */
+const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
+const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = 1;
+function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
+function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; }
+function joyMove(e) { JOY.x = joyAt(e).x; JOY.k = clamp((JOY.x - JOY.x0) / (JOY_R * JOY.s), -1, 1); }
+/* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
+function joyRate() {
+  const a = Math.abs(JOY.k); if (rotId === null || a <= JOY_DEAD) return 0;
+  return Math.sign(JOY.k) * JOY_DIR * JOY_MAX * Math.pow((a - JOY_DEAD) / (1 - JOY_DEAD), JOY_EXP);
+}
+let grabId = null, rotId = null;
 cv.addEventListener('pointerdown', e => {
   if (G.state === 'cover') { e.preventDefault(); leaveCover(); return; }
   audioInit();
   if (G.state === 'result' && overlay.hidden) { e.preventDefault(); showResult(); return; }
-  if (G.body && G.body.held && grabId !== null && e.pointerId !== grabId) { rotId = e.pointerId; rotX = e.clientX; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} return; }
+  if (G.body && G.body.held && grabId !== null && e.pointerId !== grabId) { rotId = e.pointerId; joyStart(e); e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} return; }
   setPointer(e);
   if (tryGrab()) { grabId = e.pointerId; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
 });
 cv.addEventListener('pointermove', e => {
-  if (e.pointerId === rotId) { const b = G.body; if (b && b.held) b.userRot -= (e.clientX - rotX) * .012; /* 往右滑 = 逆时针 */ rotX = e.clientX; return; }
+  if (e.pointerId === rotId) { joyMove(e); return; }
   if (grabId !== null && e.pointerId !== grabId) return;
   setPointer(e); const b = G.body;
   cv.style.cursor = b && b.held ? 'grabbing' : (b && !b.dead && G.state === 'play' && toLocal(b, P.x, P.y).inside ? 'grab' : 'default');
@@ -2241,7 +2254,7 @@ function update(dt) {
     b.fleeT += dt; b.x += 640 * dt; b.y = b.fleeY - Math.abs(Math.sin(b.fleeT * 13)) * 34; b.a += (0 - b.a) * Math.min(1, dt * 10); b.clear = b.fleeY - b.y; b.flash = Math.max(0, b.flash - dt * 3); b.jig *= 1 - Math.min(1, dt * 6);
     if (Math.random() < dt * 18) dust(b.x - b.meanR * .6, 1);
   } else if (b && !b.dead) {
-    if (b.held) b.userRot += ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * 2.4 * dt;
+    if (b.held) b.userRot += (((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * 2.4 + joyRate()) * dt;
     // 烫手：拎着超过 hot 秒就得撒手；平时也一直冒热气
     if (b.mat.hot && G.state === 'play') {
       if (b.held && (b.holdT = (b.holdT || 0) + dt) > b.mat.hot) {
@@ -3256,19 +3269,52 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger slides to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
-  : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指左右滑来转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
-/* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
+  ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger anywhere = joystick: push ← → to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
+  : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指按哪儿哪儿就是摇杆，左右推来转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
+/* 触屏拎着材料、还没出摇杆时的提示：另一根手指按下去就是摇杆。摇杆出来以后它自己会说往哪推转哪边，这条就不画了 */
 function drawRotHint() {
-  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor') return;   // 新手关（flow.js）自己画第二根手指的提示
-  const on = rotId !== null, x = PORT ? midX() : 440, y = 30, fs = PORT ? 18 : 15;
-  const txt = on ? L('← 顺时针 · 逆时针 →', '← clockwise · counter →') : L('另一根手指 ← 左右滑 → 转', 'Second finger: ← slide → to turn');
+  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor' || rotId !== null) return;   // 新手关（flow.js）自己画第二根手指的提示
+  const x = PORT ? midX() : 440, y = 30, fs = PORT ? 18 : 15;
+  const txt = L('另一根手指按住空白处，左右推来转', 'Second finger on empty space: push ← → to turn');
   ctx.font = `${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(txt).width + 30, h = fs * 2;
-  ctx.globalAlpha = on ? 1 : .55 + .25 * Math.sin(G.time * 4);
-  rr(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fillStyle = on ? C.coin : 'rgba(17,13,43,.75)'; ctx.fill();
+  ctx.globalAlpha = .55 + .25 * Math.sin(G.time * 4);
+  rr(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.75)'; ctx.fill();
   ctx.strokeStyle = C.coin; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.fillStyle = on ? C.space : C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
+  ctx.fillStyle = C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
+}
+/* 小的弯箭头，cw = 顺时针。缺口在左上（或右上），箭头在缺口一端 */
+function curlArrow(c, x, y, r, cw, lw) {
+  const d = cw ? 1 : -1, a0 = -Math.PI / 2 + d * .5, a1 = a0 + d * (TAU - 1.3);
+  c.lineWidth = lw; c.beginPath(); c.arc(x, y, r, a0, a1, !cw); c.stroke();
+  const ex = x + Math.cos(a1) * r, ey = y + Math.sin(a1) * r, tx = -Math.sin(a1) * d, ty = Math.cos(a1) * d, nx = Math.cos(a1), ny = Math.sin(a1), h = lw * 2.1;
+  c.beginPath(); c.moveTo(ex + tx * h, ey + ty * h); c.lineTo(ex - tx * h * .3 + nx * h * .9, ey - ty * h * .3 + ny * h * .9); c.lineTo(ex - tx * h * .3 - nx * h * .9, ey - ty * h * .3 - ny * h * .9); c.closePath(); c.fill();
+}
+/* 横向摇杆：半透明的槽 + 钮，槽两头上方是往那边推会怎么转。x0, y 中心（画面坐标），k 钮推了多少（-1…1），s 画面单位 / CSS 像素，a 整体不透明度。
+   新手关（flow.js）也拿它画示范用的虚影 */
+function drawJoyAt(x0, y, k, s, a) {
+  const R = JOY_R * s, kr = JOY_KNOB * s, h = kr * 1.3, kx = x0 + clamp(k, -1, 1) * R, on = Math.abs(k) > JOY_DEAD, dir = Math.sign(k);
+  ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  rr(ctx, x0 - R - h / 2, y - h / 2, 2 * R + h, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.42)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(244,240,255,.42)'; ctx.lineWidth = 1.5 * s; ctx.stroke();
+  if (on) {   // 推出去的那一截亮起来，推得越远越亮
+    const xa = x0 + dir * JOY_DEAD * R, w = Math.abs(kx - xa), hh = h * .44;
+    ctx.globalAlpha = a * (.3 + .5 * Math.abs(k)); ctx.fillStyle = C.coin; rr(ctx, Math.min(xa, kx), y - hh / 2, w, hh, Math.min(hh / 2, w / 2)); ctx.fill(); ctx.globalAlpha = a;
+  }
+  ctx.fillStyle = 'rgba(244,240,255,.5)'; ctx.fillRect(x0 - s, y - h * .3, 2 * s, h * .6);   // 中间的刻度：钮在这附近不转
+  for (const d of [-1, 1]) {
+    const lit = on && dir === d; ctx.strokeStyle = ctx.fillStyle = lit ? C.coin : 'rgba(244,240,255,.62)';
+    curlArrow(ctx, x0 + d * R, y - h / 2 - 17 * s, 8 * s, d * JOY_DIR > 0, 2.4 * s);
+  }
+  ctx.beginPath(); ctx.arc(kx, y, kr, 0, TAU); ctx.fillStyle = on ? 'rgba(255,211,92,.5)' : 'rgba(244,240,255,.24)'; ctx.fill();
+  ctx.strokeStyle = on ? C.coin : 'rgba(244,240,255,.85)'; ctx.lineWidth = 2.2 * s; ctx.stroke();
+  ctx.restore();
+}
+function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住它），不跟着震屏
+  const b = G.body; if (rotId === null || !b || !b.held || G.state !== 'play') return;
+  const pop = clamp((G.time - JOY.t0) / .12, 0, 1);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.translate(-CAMX, TOP);
+  drawJoyAt(JOY.x0, JOY.y, JOY.k, JOY.s * (.85 + .15 * pop), .5 + .45 * pop);
 }
 function drawHints() {
   if (G.state !== 'play' || (!PORT && toastInPlay())) return;
@@ -3370,6 +3416,7 @@ function draw() {
   drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); if (G.cele) drawCelebrate(t); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
+  drawJoy();
 }
 
 /* ---------- 缩放与主循环 ---------- */
@@ -3387,12 +3434,12 @@ function fit() {
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
-if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 另一根手指滑动来转'; }
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 二指按住当摇杆转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
   document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 49-order whacking game.';
   document.getElementById('help').textContent = TOUCH
-    ? 'Lift with one finger, let go to drop · Second finger slides to turn'
+    ? 'Lift with one finger, let go to drop · 2nd finger = joystick to turn'
     : 'Hold to lift, let go to drop · A / D to turn · Space delivers';
   deliverBtn.innerHTML = 'Deliver<span class="st"></span><kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
@@ -3415,7 +3462,8 @@ function sim(id, t, hits, aimErr) {
 }
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
-window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; } };
+window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
+  joyDraw: drawJoyAt, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x0: JOY.x0, y: JOY.y, k: JOY.k, s: JOY.s } : null; } };
 
 function boot(data) {
   const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);
