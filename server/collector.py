@@ -32,6 +32,7 @@ DB_PATH = Path(os.environ.get("FC_DB", HERE / "data" / "events.db"))
 
 EVENTS = {"open", "start", "deliver", "fail", "quit", "retry", "win"}
 MAX_BODY = 4096
+MAX_SAVE_BODY = 16384  # 云存档带着星级和成就，比事件大
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
 STATIC = {"/": ("index.html", "text/html; charset=utf-8")}
 
@@ -257,12 +258,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204, extra=self._cors())
 
     def _save(self):
-        """云存档：{name, pid, best} -> 合并后的 {name, best}。"""
+        """云存档：{name, pid, best, stars, ach} -> 合并后的 {name, best, stars, ach}。"""
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             n = -1
-        if n <= 0 or n > MAX_BODY:
+        if n <= 0 or n > MAX_SAVE_BODY:
             self._note = f"save-bad-length:{n}"
             return self._send(400, b"bad length", extra=self._cors())
         raw = self.rfile.read(n)
@@ -276,7 +277,8 @@ class Handler(BaseHTTPRequestHandler):
             self._note = "save-bad-json"
             return self._send(400, b"bad json", extra=self._cors())
         with _db_lock:
-            out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"))
+            out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"),
+                             msg.get("stars"), msg.get("ach"))
         if out is None:
             self._note = "save-bad-name"
             return self._send(422, json.dumps({"error": "bad-name"}).encode(), "application/json", self._cors())

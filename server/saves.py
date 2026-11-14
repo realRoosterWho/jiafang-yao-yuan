@@ -1,7 +1,8 @@
 """甲方要圆：按名字存的云存档。
 
-没有密码：同一个名字就是同一份存档。存的只是“每一单拿过的最高酬劳”，合并时取较大值，
-所以别人用了你的名字，最多让成绩变高，抹不掉你的进度。名字不合适的可以在后台删掉。
+没有密码：同一个名字就是同一份存档。存的是每一单拿过的最高酬劳和最高星数（合并时取较大值），
+加上解锁过的成就（合并时取并集），所以别人用了你的名字，最多让成绩变高，抹不掉你的进度。
+名字不合适的可以在后台删掉。
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ NAME_MAX = 16
 EXTRA_CHARS = set(" -_·.'")
 MAX_ORDERS = 120
 MAX_PAY = 1_000_000
+MAX_ACH = 200
 
 
 def schema(con) -> None:
@@ -33,6 +35,9 @@ def schema(con) -> None:
         )"""
     )
     con.execute("CREATE INDEX IF NOT EXISTS save_pids_pid ON save_pids(pid, last)")
+    # 后加的一列：{"stars": {订单 id: 1-3}, "ach": [成就 id, ...]}
+    if "extra" not in {r[1] for r in con.execute("PRAGMA table_info(saves)")}:
+        con.execute("ALTER TABLE saves ADD COLUMN extra TEXT NOT NULL DEFAULT '{}'")
 
 
 def clean_name(raw) -> tuple[str, str] | None:
@@ -59,30 +64,75 @@ def clean_best(raw) -> dict[str, int]:
     return out
 
 
-def sync(con, raw_name, pid: str | None, raw_best) -> dict | None:
-    """把客户端的进度合并进这个名字的存档，返回合并后的 {name, best}。名字不合法返回 None。"""
+def clean_stars(raw) -> dict[str, int]:
+    out: dict[str, int] = {}
+    if not isinstance(raw, dict):
+        return out
+    for k, v in list(raw.items())[:MAX_ORDERS]:
+        if isinstance(k, str) and 1 <= len(k) <= 24 and k.replace("_", "").isalnum() \
+                and isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 3:
+            out[k] = v
+    return out
+
+
+def clean_ach(raw) -> list[str]:
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for a in raw[:MAX_ACH]:
+        if isinstance(a, str) and 1 <= len(a) <= 32 and a.replace("_", "").isalnum() and a.isascii() and a not in out:
+            out.append(a)
+    return out
+
+
+def load_extra(raw) -> tuple[dict[str, int], list[str]]:
+    try:
+        e = json.loads(raw or "{}")
+    except ValueError:
+        e = {}
+    if not isinstance(e, dict):
+        e = {}
+    return clean_stars(e.get("stars")), clean_ach(e.get("ach"))
+
+
+def sync(con, raw_name, pid: str | None, raw_best, raw_stars=None, raw_ach=None) -> dict | None:
+    """把客户端的进度合并进这个名字的存档，返回合并后的 {name, best, stars, ach}。名字不合法返回 None。"""
     nk = clean_name(raw_name)
     if not nk:
         return None
     name, key = nk
     incoming, now = clean_best(raw_best), time.time()
-    row = con.execute("SELECT name, best FROM saves WHERE key = ?", (key,)).fetchone()
+    in_stars, in_ach = clean_stars(raw_stars), clean_ach(raw_ach)
+    row = con.execute("SELECT name, best, extra FROM saves WHERE key = ?", (key,)).fetchone()
     if row:
         name, best = row[0], json.loads(row[1])
+        stars, ach = load_extra(row[2])
         for k, v in incoming.items():
             if v > best.get(k, 0):
                 best[k] = v
-        con.execute("UPDATE saves SET best = ?, updated = ?, syncs = syncs + 1 WHERE key = ?",
-                    (json.dumps(best, separators=(",", ":")), now, key))
+        for k, v in in_stars.items():
+            if v > stars.get(k, 0):
+                stars[k] = v
+        ach += [a for a in in_ach if a not in ach]
+        ach = ach[:MAX_ACH]
+        con.execute("UPDATE saves SET best = ?, extra = ?, updated = ?, syncs = syncs + 1 WHERE key = ?",
+                    (json.dumps(best, separators=(",", ":")),
+                     json.dumps({"stars": stars, "ach": ach}, separators=(",", ":")), now, key))
     else:
-        best = incoming
-        con.execute("INSERT INTO saves (key, name, best, created, updated, syncs) VALUES (?,?,?,?,?,1)",
-                    (key, name, json.dumps(best, separators=(",", ":")), now, now))
+        best, stars, ach = incoming, in_stars, in_ach
+        con.execute("INSERT INTO saves (key, name, best, extra, created, updated, syncs) VALUES (?,?,?,?,?,?,1)",
+                    (key, name, json.dumps(best, separators=(",", ":")),
+                     json.dumps({"stars": stars, "ach": ach}, separators=(",", ":")), now, now))
     if pid:
         con.execute("""INSERT INTO save_pids (key, pid, first, last) VALUES (?,?,?,?)
                        ON CONFLICT(key, pid) DO UPDATE SET last = excluded.last""", (key, pid, now, now))
     con.commit()
-    return {"name": name, "best": best}
+    return {"name": name, "best": best, "stars": stars, "ach": ach}
+
+
+def star_total(best: dict, stars: dict, known) -> int:
+    """交付过的单按记下的星数算；有星级以前交付的单没有记录，那时交付就是到了达标线，算三星。"""
+    return sum(stars.get(k) or 3 for k, v in best.items() if k in known and v > 0)
 
 
 def names_by_pid(con) -> dict[str, str]:
@@ -97,16 +147,18 @@ def names_by_pid(con) -> dict[str, str]:
 def players(con, order: list[str], limit: int = 300) -> list[dict]:
     idx = {k: i for i, k in enumerate(order)}
     rows = con.execute("""
-        SELECT s.key, s.name, s.best, s.created, s.updated, s.syncs,
+        SELECT s.key, s.name, s.best, s.extra, s.created, s.updated, s.syncs,
                (SELECT COUNT(*) FROM save_pids sp WHERE sp.key = s.key),
                (SELECT MAX(e.ts) FROM events e JOIN save_pids sp ON sp.pid = e.pid WHERE sp.key = s.key)
         FROM saves s ORDER BY s.updated DESC LIMIT ?""", (limit,)).fetchall()
     out = []
-    for key, name, best, created, updated, syncs, devices, last_play in rows:
+    for key, name, best, extra, created, updated, syncs, devices, last_play in rows:
         b = json.loads(best)
+        stars, ach = load_extra(extra)
         done = [idx[k] for k, v in b.items() if v > 0 and k in idx]
         out.append({"key": key, "name": name, "delivered": len(done), "furthest": max(done) if done else None,
-                    "total": sum(b.values()), "devices": devices, "created": created,
+                    "total": sum(v for k, v in b.items() if k in idx), "stars": star_total(b, stars, idx),
+                    "ach": len(ach), "devices": devices, "created": created,
                     "last": max(x for x in (updated, last_play) if x)})
     return out
 
@@ -124,12 +176,13 @@ def leaderboard(con, order: list[str], me=None, limit: int = 50) -> dict:
     """公开排行榜：按每单最高酬劳的合计排，同分看交付单数，再看谁先存的。只给名字和成绩。"""
     known = set(order)
     rows = []
-    for key, name, best, created in con.execute("SELECT key, name, best, created FROM saves"):
+    for key, name, best, extra, created in con.execute("SELECT key, name, best, extra, created FROM saves"):
         b = {k: v for k, v in json.loads(best).items() if k in known and v > 0}
         if b:
-            rows.append((sum(b.values()), len(b), -created, key, name))
+            rows.append((sum(b.values()), len(b), -created, key, name, star_total(b, load_extra(extra)[0], known)))
     rows.sort(reverse=True)
-    board = [{"rank": i + 1, "name": r[4], "total": r[0], "delivered": r[1], "_key": r[3]} for i, r in enumerate(rows)]
+    board = [{"rank": i + 1, "name": r[4], "total": r[0], "delivered": r[1], "stars": r[5], "_key": r[3]}
+             for i, r in enumerate(rows)]
     nk = clean_name(me) if me else None
     mine = next((dict(p) for p in board if nk and p["_key"] == nk[1]), None)
     strip = lambda p: {k: v for k, v in p.items() if k != "_key"}

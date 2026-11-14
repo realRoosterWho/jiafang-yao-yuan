@@ -69,6 +69,7 @@ body {
   animation: pulse 1s ease-in-out infinite alternate;
 }
 #deliver kbd { font: 500 .55em var(--num); opacity: .7; margin-left: .4em; }
+#deliver .st { font: 400 .7em/1 var(--body); letter-spacing: .05em; margin-left: .45em; vertical-align: .08em; }
 @keyframes pulse { to { box-shadow: 0 0 0 calc(var(--u) * 9) rgb(147 232 90 / .25); } }
 #mute {
   position: absolute; left: 1.6%; bottom: 2.6%;
@@ -139,6 +140,31 @@ body {
 .w-ok { background: var(--alien); }
 .w-break { background: var(--alarm); }
 .pips { letter-spacing: .15em; color: var(--coin); margin-right: .5em; }
+/* 星级 */
+.nw { white-space: nowrap; }
+.stars { color: var(--coin); letter-spacing: .08em; white-space: nowrap; font-family: var(--body); }
+/* 结算卡：三颗星排成一道弧，中间那颗大一号；拿到的从 0 弹出来，带一圈光 */
+#card.win { animation: cardin .38s cubic-bezier(.2, 1.3, .4, 1) both; box-shadow: 0 0 0 1px rgb(255 211 92 / .25), 0 1.2em 3em rgb(0 0 0 / .45); }
+@keyframes cardin { from { transform: translateY(1.2em) scale(.94); opacity: 0; } }
+.result { display: grid; justify-items: center; text-align: center; gap: .35em; }
+.result h2 { margin-top: -.1em; }
+.stars.big { display: flex; align-items: flex-end; justify-content: center; gap: .08em; margin: .1em 0 0; font-size: 3.4em; line-height: 1; letter-spacing: 0; }
+.stars.big i { font-style: normal; color: var(--hull-hi); -webkit-text-stroke: 2px var(--rim); display: inline-block; }
+.stars.big i:nth-child(2) { font-size: 1.32em; transform: translateY(-.12em); }
+.stars.big i.on { color: var(--coin); -webkit-text-stroke: 0; text-shadow: 0 0 .25em rgb(255 211 92 / .55), 0 .06em 0 #c98a12; animation: starpop .5s cubic-bezier(.3, 1.7, .5, 1) both; animation-delay: calc(var(--k) * .18s); }
+.stars.big i.on:nth-child(2) { animation-name: starpop2; }
+@keyframes starpop { from { transform: scale(0) rotate(-50deg); opacity: 0; } }
+@keyframes starpop2 { from { transform: translateY(-.12em) scale(0) rotate(-50deg); opacity: 0; } }
+.rnd { color: var(--dim); font-size: .95em; }
+.rnd b { font: 400 1.5em/1 var(--display); color: var(--alien); margin-left: .2em; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: .4em; }
+.chip { padding: .2em .7em; border-radius: 999px; font-size: .85em; background: var(--hull-hi); color: var(--coin); box-shadow: inset 0 0 0 1.5px rgb(255 211 92 / .45); }
+.chip.gold { background: var(--coin); color: var(--space); box-shadow: none; font-weight: 700; animation: chippop .5s .9s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes chippop { from { transform: scale(0); } }
+.spec .sum.done { animation: sumpop .3s ease-out; transform-origin: right center; }
+@keyframes sumpop { 50% { transform: scale(1.18); color: #fff3b0; } }
+.lv i { font-style: normal; font-size: .62em; line-height: 1; letter-spacing: .02em; color: var(--coin); min-height: 1em; }
+.lv i.dim { color: var(--rim); }
 .note { font-size: .85em; color: var(--dim); }
 /* 排行榜 */
 .board { margin: 0; padding: 0; list-style: none; display: grid; gap: .2em; max-height: min(52vh, 24em); overflow-y: auto; }
@@ -197,7 +223,54 @@ body {
 .touch #deliver kbd { display: none; }
 #stage.cover #rot { display: none; }
 @media (max-height: 520px) { #help { display: none; } body { padding-top: 6px; padding-bottom: 6px; } }
-@media (prefers-reduced-motion: reduce) { #deliver { animation: none; } }
+/* 成就：圆章没解锁是方的灰块，解锁了是圆的金章。提示条里那一下「方块被砸圆」就是解锁 */
+.medal { flex: none; display: grid; place-items: center; width: 1.9em; height: 1.9em; border-radius: .32em; font: 700 .9em/1 var(--num); color: var(--dim);
+  background: var(--hull); box-shadow: inset 0 0 0 2px var(--rim); }
+.medal.on, #toast .medal { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, var(--coin) 45%, #d99a1c); box-shadow: inset 0 0 0 .2em rgb(255 255 255 / .25), inset 0 0 0 .32em rgb(122 82 0 / .35), 0 0 .6em rgb(255 211 92 / .35); }
+#toast { box-sizing: border-box; position: absolute; z-index: 3; left: 46%; bottom: 2.2%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .6em; max-width: calc(var(--u) * 420); padding: .38em 1.1em .38em .42em;
+  border-radius: 999px; font: 400 max(12px, calc(var(--u) * 17))/1.15 var(--display); white-space: nowrap;
+  background: rgb(30 23 71 / .95); color: var(--ink); box-shadow: inset 0 0 0 2px var(--coin), 0 6px 18px rgb(0 0 0 / .35); pointer-events: none; }
+#toast .medal { width: 1.75em; height: 1.75em; }
+#toast .tx { display: flex; align-items: baseline; gap: .55em; min-width: 0; }
+#toast .tl { flex: none; font: 500 .62em var(--body); letter-spacing: .14em; color: var(--coin); }
+#toast .tn { overflow: hidden; text-overflow: ellipsis; }
+#toast .td { display: none; }
+#stage.port #toast { left: 50%; bottom: auto; top: calc(var(--u) * 102); max-width: calc(var(--u) * 262); font-size: max(12px, calc(var(--u) * 16)); }
+#stage.port #toast .medal { width: 1.5em; height: 1.5em; }
+:lang(en) #stage.port #toast .tl { display: none; }
+/* 不在干活时：钉在页面顶上，多一行描述 */
+#stage #toast.menu, #stage.port #toast.menu { position: fixed; z-index: 6; top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; left: 50%;
+  width: max-content; max-width: min(26em, calc(100vw - 32px)); font-size: 17px; white-space: normal; padding: .6em 1.3em .6em .6em; border-radius: 1.4em; }
+#stage #toast.menu .medal, #stage.port #toast.menu .medal { width: 2.4em; height: 2.4em; }
+#toast.menu .tx { flex-direction: column; align-items: flex-start; gap: .2em; }
+#toast.menu .td { display: block; font: 400 .78em/1.45 var(--body); color: var(--dim); }
+:lang(en) #stage.port #toast.menu .tl { display: inline; }
+#toast.in { animation: achIn .26s cubic-bezier(.2, 1.4, .4, 1) both; }
+#toast.in .medal { animation: stamp .42s .1s cubic-bezier(.3, 1.6, .5, 1) both; }
+#toast.out { animation: achOut .28s ease-in both; }
+@keyframes achIn { from { opacity: 0; transform: translate(-50%, 40%) scale(.9); } }
+@keyframes achOut { to { opacity: 0; transform: translate(-50%, -30%); } }
+@keyframes stamp { from { border-radius: .3em; background: var(--rim); box-shadow: none; transform: scale(1.6) rotate(-45deg); } }
+/* 成就列表（成就页、结算卡上的「新成就」） */
+.achs { margin: 0; padding: 0; list-style: none; display: grid; gap: .3em; }
+.achs li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .75em; align-items: center; padding: .5em .8em; border-radius: .9em; background: var(--hull-hi); }
+.achs li > span:not([class]) { display: grid; gap: .15em; min-width: 0; }
+.achs .nm { font: 400 1.08em/1.2 var(--display); }
+.achs .ds { font-size: .82em; line-height: 1.45; color: var(--dim); }
+.achs .when, .achs .pg { font: 500 .78em var(--num); color: var(--dim); white-space: nowrap; }
+.achs .bar { display: block; height: .3em; margin-top: .2em; border-radius: 999px; background: var(--hull); overflow: hidden; }
+.achs .bar i { display: block; height: 100%; background: var(--coin); border-radius: inherit; }
+.achs li:not(.on) .nm { color: var(--dim); }
+.achs li.secret .ds { font-style: italic; }
+.achs .new { font: 700 .55em/1 var(--body); font-style: normal; vertical-align: .35em; margin-left: .5em; padding: .2em .45em; border-radius: 999px; background: var(--alarm); color: #fff; }
+.ach-new { display: grid; gap: .45em; }
+.ach-new .achs li { box-shadow: inset 0 0 0 2px rgb(255 211 92 / .45); animation: achRow .45s cubic-bezier(.2, 1.3, .4, 1) both; animation-delay: calc(1.1s + var(--i) * .12s); }
+.ach-new .achs li .medal { animation: stamp .45s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(1.18s + var(--i) * .12s); }
+@keyframes achRow { from { opacity: 0; transform: translateY(.6em); } }
+.btn .cnt { font: 500 .7em var(--num); opacity: .75; }
+.btn .dot { display: inline-block; width: .42em; height: .42em; margin-left: .35em; vertical-align: .5em; border-radius: 50%; background: var(--alarm); }
+@media (prefers-reduced-motion: reduce) { #deliver, .stars.big i.on, #card.win, .chip.gold, .spec .sum.done, #toast.in, #toast.out, #toast .medal, .ach-new .achs li, .ach-new .achs li .medal { animation: none; } }
 </style>
 </head>
 <body>
@@ -206,10 +279,11 @@ body {
   <div id="wrap">
     <div id="stage">
       <canvas id="cv" aria-label="游戏画面：材料、地板、甲方和力度表"></canvas>
-      <button id="deliver" type="button" hidden>交货<kbd>空格</kbd></button>
+      <button id="deliver" type="button" hidden>交货<span class="st"></span><kbd>空格</kbd></button>
       <button id="mute" type="button" aria-pressed="false">声音 开</button>
       <button id="replay" type="button" hidden>重来<kbd>R</kbd></button>
       <button id="home" type="button" hidden>回首页<kbd>Esc</kbd></button>
+      <div id="toast" role="status" aria-live="polite" hidden></div>
       <div id="rot"><button id="rotL" type="button" aria-label="向左转">↺</button><button id="rotR" type="button" aria-label="向右转">↻</button></div>
       <div id="overlay" hidden><section id="card"></section></div>
     </div>
@@ -742,7 +816,7 @@ function creep(b, dt, sag) {
   for (let i = 0; i < N; i++) { const d = i * DPHI - alpha, c = Math.cos(d); if (c > 0 && b.r[i] * c > top - 3) { const lat = b.r[i] * Math.sin(d); if (lat < lo) lo = lat; if (lat > hi) hi = lat; } }
   const flat = sag * 40 * t * clamp(b.meanR * .5 / Math.max(hi - lo, 6) - .5, 0, 2.5);
   const cut = cutShape(b.r, alpha, flat); bulge(b.r, alpha, cut, cut.removed);
-  recenter(b); snapToFloor(b); updateRoundness();
+  recenter(b); snapToFloor(b); updateRoundness('sag');
   b.sleeping = false; b.sleepT = 0;   // 形状变了就让物理重新算一遍：会不会歪倒、会不会顶到墙
   const depth = e * (h1 - h0) + cut.removed / Math.max(hi - lo, 20);
   if (depth < .05) return;   // 已经塌稳了：不颤、不飘字   // 这一下一共沉了多少
@@ -791,7 +865,7 @@ function snapToFloor(b) { const [maxY, lowX] = lowest(b); b.y += FLOOR - maxY; b
 /* ---------- 状态 ---------- */
 const G = { state: 'menu', idx: 0, loop: 0, score: 0, startScore: 0, done: 0, body: null, mat: MATS.wood, target: .78, timeLeft: 60, timeMax: 60,
   hp: 3, round: 0, shown: 0, started: false, time: 0, shake: 0, lastHit: null, stats: { good: 0, over: 0, light: 0 }, failT: 0, failReason: '',
-  doom: null, bubble: null, mood: 'calm', moodT: 0, needle: 0, warned: false, wasReady: false, pay: null };
+  doom: null, bubble: null, mood: 'calm', moodT: 0, needle: 0, warned: false, lines: [.74, .77, .8], tier: 0, pay: null, slips: 0, newAch: [], collect: false, silent: false };
 const P = { x: W / 2, y: 200, k: 1 };   // k：一个屏幕像素等于多少世界单位
 const keys = { left: false, right: false };
 let parts = [], frags = [], floats = [], stains = [];
@@ -847,6 +921,8 @@ const sfx = {
   crack: () => { noise(.3, .6, 'highpass', 1800); for (let k = 0; k < 4; k++) noise(.03, .5, 'bandpass', rand(2500, 5000), 3, k * .04); },
   shatter: () => { noise(.7, .8, 'highpass', 1200); for (let k = 0; k < 9; k++) tone(rand(900, 3200), .12, .12, 'triangle', 0, k * .05); },
   ready: () => { tone(880, .14, .25, 'sine'); tone(1320, .3, .25, 'sine', 0, .1); },
+  ach: (d = 0) => { noise(.05, .22, 'lowpass', 500, 1, d); tone(1175, .1, .14, 'triangle', 0, d + .03); tone(1568, .3, .13, 'triangle', 0, d + .12); },
+  star: n => { (n >= 3 ? [1047, 1319, 1568, 2093] : [988, 1480]).forEach((f, k) => tone(f, .2, .2, 'sine', 0, k * .07)); },
   win: () => { [523, 659, 784, 1047].forEach((f, k) => tone(f, .22, .25, 'triangle', 0, k * .1)); },
   fail: () => { tone(330, .5, .3, 'sawtooth', 70); tone(220, .7, .25, 'sawtooth', 50, .2); },
   ui: () => tone(660, .06, .15, 'triangle'),
@@ -856,16 +932,19 @@ const sfx = {
 
 /* ---------- 甲方的台词 ---------- */
 const LINES = {
-  start: m => [L(`把这${m.unit}${m.name}给我弄圆。圆度不到 ${pct(G.target)}，圆的就是你。`, `Make this ${lc(m.name)} round. Under ${pct(G.target)}, and the round one is you.`)],
+  start: m => [L(`把这${m.unit}${m.name}给我弄圆。圆度不到 ${pct(G.lines[0])}，圆的就是你。`, `Make this ${lc(m.name)} round. Under ${pct(G.lines[0])}, and the round one is you.`)],
   light: () => EN ? ['Are you tickling it?', 'Are all Earthlings this weak?', 'Harder.'] : ['你在给它挠痒痒吗？', '地球人都这么没力气？', '用点力。'],
   good: () => EN ? ['Hm. A little rounder.', 'Keep going.', 'Yes. That corner.', 'Not round enough.'] : ['嗯，圆了一点。', '继续。', '对，就砸那个角。', '还不够圆。'],
   worse: () => EN ? ['You flattened it.', 'You call that round?', "It's getting less round!"] : ['你把它砸扁了。', '这也叫圆？', '越砸越不圆了！'],
   over: () => EN ? ['Gently! That is mine!', 'Break it again and the round one is you.', 'Can you pay for that?'] : ['轻点！那是我的东西！', '再碎一次，圆的就是你。', '你赔得起吗？'],
-  ready: () => EN ? ['…Barely round. You may deliver.', 'Round enough. Polish it more and I pay more.'] : ['……勉强算圆。可以交货了。', '够圆了。再磨一磨，酬劳更高。'],
+  ready: () => EN ? ['…Barely round. You may deliver.', 'One star. Polish it more and I pay more.'] : ['……勉强算圆。可以交货了。', '一星。再磨一磨，酬劳更高。'],
+  ready3: () => EN ? ['Now THAT is round.', 'Perfect. This goes on my nightstand.'] : ['这才叫圆。', '完美。我要把它摆在床头。'],
   hurry: () => EN ? ['My patience is shrinking to a dot.', 'Hurry up, Earthling.'] : ['我的耐心快缩成一个点了。', '快点，地球人。'],
   fail: () => EN ? ['Not round enough. We will round you instead.'] : ['不够圆。那就把你弄圆吧。'],
   shatter: () => EN ? ['Broken?! Guards, grind this artisan round.'] : ['碎了？！来人，把这个工匠磨圆。'],
-  done: () => EN ? ['Very round. I am pleased.', 'Hm. Round. Next order.'] : ['很圆。我很满意。', '嗯。圆。下一单。'],
+  done: () => G.tier >= 3 ? (EN ? ['Very round. I am pleased.', 'Three stars. Next order.'] : ['很圆。我很满意。', '三星。下一单。'])
+    : G.tier === 2 ? (EN ? ['Hm. Round. Next order.', 'Acceptable.'] : ['嗯。圆。下一单。', '还行。'])
+    : (EN ? ['…Fine. I will take it.', 'One star. I will remember this.'] : ['……行吧，勉强收下。', '一星。我会记住你的。']),
   flee: () => EN ? ['It ran off?! Guards, grind this artisan round.'] : ['跑了？！来人，把这个工匠磨圆。'],
   hot: () => EN ? ['Too hot? Finns sit next to that for fun.', 'If it burns, be quicker.'] : ['烫？芬兰人可是坐在旁边享受的。', '怕烫就快一点。'],
 };
@@ -941,6 +1020,7 @@ function stepBody(b, dt) {
     resolve(b, cx, FLOOR, 0, -1, vn > 160 ? m.rest : 0, m.fric);
     b.w *= 1 - 1.6 * dt; b.vx *= 1 - .8 * dt;
   } else if (b.clear > ARM) b.armed = true;
+  if ((lS > 0 || rS > 0) && fS > 0 && b.id === 'ice' && G.state === 'play' && Math.abs(b.vx) > 250) achUnlock('curling');
   if (lS > 0) { b.x += lP; resolve(b, WALL_L, lY / lS, 1, 0, .3, .3); }
   if (rS > 0) { b.x -= rP; resolve(b, WALL_R, rY / rS, -1, 0, .3, .3); }
   if (touch && Math.hypot(b.vx, b.vy) < 14 && Math.abs(b.w) < .1) { b.sleepT += dt; if (b.sleepT > .3) { b.sleeping = true; b.vx = b.vy = b.w = 0; } } else b.sleepT = 0;
@@ -957,7 +1037,7 @@ function impact(b, F, cx) {
   if (F < lm.hard) {
     sfx.thud(.4 + power); dust(cx, 2 + F * .08); b.jigV += power * m.jig * 6;
     if (primary) {
-      G.lastHit = { F, t: G.time, kind: 'light' }; G.stats.light++;
+      G.lastHit = { F, t: G.time, kind: 'light' }; G.stats.light++; achUnlock('tickled');
       floatText(cx, FLOOR - 46, L('太轻 ', 'Too soft ') + Math.round(F), C.dim, 20);
       if (Math.random() < .45) say('light'); if (Math.random() < .5) talk('light');
     }
@@ -972,8 +1052,9 @@ function impact(b, F, cx) {
   burst(cx, lm.plastic ? Math.round(n * .5) : n, lm.chips, power, lm.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
   if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b, res.core);
   HIT[lm.snd || b.id](.45 + .55 * power);
+  if (b.c && !res.core && faceMat(b).isCore) achUnlock('spilled_beans');
   if (b.c && !res.core && faceMat(b).isCore) floatText(cx, FLOOR - 92, L('露出', 'Exposed: ') + L(m.core.label[0], lc(m.core.label[1])) + L('了', ''), C.coin, 22);
-  const before = G.round; updateRoundness(); const gain = G.round - before;
+  G.readyBefore = G.tier; const before = G.round; updateRoundness(); const gain = G.round - before;
   if (res.over) {
     G.hp--; G.stats.over++; (m.flee ? sfx.huff : sfx.crack)(); mood('angry', 2.2);
     floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
@@ -982,9 +1063,13 @@ function impact(b, F, cx) {
     say('over', true); talk('over', true);
   } else {
     G.stats.good++;
+    if (b.held) G.stats.held++; else if ((b.dropGood = (b.dropGood || 0) + 1) >= 2) achUnlock('two_for_one');   // 松手一次砸出两下（路锥会蹦）
+    if (res.t >= .75) achUnlock('full_swing');
+    if (F >= 99.5) achUnlock('maxed_out'); else if (Math.round(F) === lm.brittle && lm.brittle < 97) achUnlock('on_the_line');   // 上限 ≥ 97 的满力一抡就压线，不算
     if (m.harden && !lm.isCore) {
       const old = b.hardAdd || 0; b.hardAdd = Math.min(m.brittle - (m.minWin || 10) - m.hard, old + m.harden);
       if (b.hardAdd > old) floatText(cx, FLOOR - 84, L('变硬 → ', 'Harder → ') + Math.round(m.hard + b.hardAdd), C.dim, 16);
+      const cap = m.brittle - (m.minWin || 10) - m.hard; if (b.hardAdd >= cap && old < cap) achUnlock('work_hardened');
     }
     const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
@@ -992,11 +1077,17 @@ function impact(b, F, cx) {
     if (Math.random() < .55) talk('good');
   }
 }
-function updateRoundness() {
+function updateRoundness(by) {
   G.round = roundness(G.body.r);
-  const ready = G.round >= G.target;
-  if (ready && !G.wasReady && G.state === 'play') { sfx.ready(); say('ready', true); talk('ready', true, .7); mood('happy', 3); }
-  G.wasReady = ready; deliverBtn.hidden = !(ready && G.state === 'play');
+  const t = starsOf(G.round), play = G.state === 'play';
+  if (play) G.peak = Math.max(G.peak, G.round);
+  if (play && t > G.tier) {
+    G.lastUp = by || 'hit';   // 往上跨了一档：第一颗星 = 能交货了；后面每多一颗响一声
+    if (!G.tier) { sfx.ready(); say(t >= 3 ? 'ready3' : 'ready', true); talk('ready', true, .7); mood('happy', 3); } else { sfx.star(t); if (t >= 3) say('ready3', true); }
+    if (G.body) floatText(G.body.x, FLOOR - 132, '★'.repeat(t), C.coin, 34);
+  }
+  G.tier = t; deliverBtn.hidden = !(t && play);
+  if (deliverBtn.dataset.t !== String(t)) { deliverBtn.dataset.t = t; const s = deliverBtn.querySelector('.st'); if (s) s.textContent = starStr(t); }
 }
 function shatter(b) {
   if (b.mat.flee) {   // 活的：急够了站直了就跑，不碎
@@ -1122,21 +1213,42 @@ function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L +
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute'), homeBtn = document.getElementById('home'), replayBtn = document.getElementById('replay');
-function setCard(html) { stage.classList.remove('cover'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
+function setCard(html) { stage.classList.remove('cover'); card.classList.remove('win'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
+/* 星级：★★★ 就是达标线；★★、★ 各往下让 3、6 个点，拿一星就能交货。
+   起始圆度离达标线很近的单（晶洞、铜块）让得少，让出来的不超过「起始到达标」这段的 35%，免得一接单就能交 */
+function starLines(target, r0) {
+  const tp = Math.round(target * 100), g = clamp(Math.round((target - r0) * 35), 0, 6);
+  return [(tp - g) / 100, (tp - Math.round(g / 2)) / 100, target];
+}
+function starsOf(r) { const l = G.lines; return r >= l[2] ? 3 : r >= l[1] ? 2 : r >= l[0] ? 1 : 0; }
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 function pips(v) { const k = clamp(Math.round(v), 1, 5); return '●'.repeat(k) + '○'.repeat(5 - k); }
 function setupRound() {
   const id = ORDER[G.idx], m = MATS[id];
   G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = m.time; G.hp = m.hp;
-  G.stats = { good: 0, over: 0, light: 0 }; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
-  G.warned = false; G.wasReady = false; G.startScore = G.score; G.bubble = null; G.talk = null; G.mood = 'calm'; G.moodT = 0;
+  G.stats = { good: 0, over: 0, light: 0, held: 0 }; G.acc = { good: 0, over: 0, light: 0 }; G.newAch = []; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
+  G.lines = starLines(G.target, G.round); G.tier = 0; G.cele = null; G.resultT = 0; G.res = null;
+  G.round0 = G.peak = G.round; G.lastUp = ''; G.readyBefore = 0;   // 成就用：接单时的圆度、本单最高圆度、最后一次升星是砸的还是塌的
+  G.warned = false; G.startScore = G.score; G.bubble = null; G.talk = null; G.mood = 'calm'; G.moodT = 0;
   parts = []; frags = []; floats = []; stains = [];
 }
 /* 存档只记每一单拿过的最高酬劳。不锁关：订单簿里哪一单都能直接开工 */
-const SAVE = { best: {} };
-try { const s = JSON.parse(localStorage.getItem('yuan.save.v2') || 'null'); if (s && s.best && typeof s.best === 'object') for (const id of ORDER) if (s.best[id] > 0) SAVE.best[id] = +s.best[id]; } catch (e) {}
-function saveBest(id, pay) {
-  const old = SAVE.best[id] || 0;
-  if (pay > old) { SAVE.best[id] = pay; try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} if (NAME) cloudSync(NAME).catch(() => {}); }
+/* stars：每单拿过的最高星数。没有星级以前交付的单，交付就意味着到了达标线，所以补成三星 */
+const SAVE = { best: {}, stars: {} };
+try {
+  const s = JSON.parse(localStorage.getItem('yuan.save.v2') || 'null');
+  if (s && s.best && typeof s.best === 'object') for (const id of ORDER) if (s.best[id] > 0) SAVE.best[id] = +s.best[id];
+  if (s && s.stars && typeof s.stars === 'object') for (const id of ORDER) { const v = s.stars[id] | 0; if (v >= 1 && v <= 3) SAVE.stars[id] = v; }
+} catch (e) {}
+function backfillStars() { let ch = false; for (const id in SAVE.best) if (!SAVE.stars[id]) { SAVE.stars[id] = 3; ch = true; } return ch; }
+function persist() { try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {} }
+if (backfillStars()) persist();
+const starTotal = () => ORDER.reduce((a, id) => a + (SAVE.stars[id] || 0), 0);
+function saveBest(id, pay, stars) {
+  const old = SAVE.best[id] || 0, up = pay > old || stars > (SAVE.stars[id] || 0);
+  if (pay > old) SAVE.best[id] = pay;
+  if (stars > (SAVE.stars[id] || 0)) SAVE.stars[id] = stars;
+  if (up) { persist(); if (NAME) cloudSync(NAME).catch(() => {}); }
   return old;
 }
 function firstOpen() { const i = ORDER.findIndex(id => !SAVE.best[id]); return i < 0 ? 0 : i; }
@@ -1167,35 +1279,273 @@ const CLOUD = (() => {
 let NAME = ''; try { NAME = localStorage.getItem('yuan.name') || ''; } catch (e) {}
 const WHO = { busy: false, err: '' };
 const escH = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
-function mergeBest(best) {
-  let changed = false;
-  for (const id of ORDER) { const v = +((best || {})[id]) || 0; if (v > (SAVE.best[id] || 0)) { SAVE.best[id] = v; changed = true; } }
-  if (changed) try { localStorage.setItem('yuan.save.v2', JSON.stringify(SAVE)); } catch (e) {}
+function mergeBest(d) {
+  let changed = false; const best = d.best || {}, stars = d.stars || {};
+  for (const id of ORDER) {
+    const v = +best[id] || 0; if (v > (SAVE.best[id] || 0)) { SAVE.best[id] = v; changed = true; }
+    const n = stars[id] | 0; if (n >= 1 && n <= 3 && n > (SAVE.stars[id] || 0)) { SAVE.stars[id] = n; changed = true; }
+  }
+  if (backfillStars()) changed = true;   // 云端的老存档没有星级
+  if (changed) persist();
+  if (achMerge(d.ach) + achCheck(true)) changed = true;
   return changed;
 }
 async function cloudSync(name) {
   if (!CLOUD || !name) return null;
   // 字符串 body = text/plain，跨域也不用预检
-  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best }), keepalive: true });
+  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best, stars: SAVE.stars, ach: Object.keys(A.got) }), keepalive: true });
   if (r.status === 422) throw new Error('bad-name');
   if (!r.ok) throw new Error('http ' + r.status);
-  const d = await r.json(); mergeBest(d.best); return d;
+  const d = await r.json(); mergeBest(d); return d;
 }
 function refreshCard() { if (card.querySelector('[data-who]')) showMenu(); else if (card.querySelector('.grid')) showBook(); }
 async function setName(raw) {
   const name = String(raw || '').trim().replace(/\s+/g, ' ');
   if (!name || WHO.busy) return;
   WHO.busy = true; WHO.err = ''; refreshCard();
-  try { const d = await cloudSync(name); NAME = d.name; try { localStorage.setItem('yuan.name', NAME); } catch (e) {} }
+  try { const d = await cloudSync(name); NAME = d.name; try { localStorage.setItem('yuan.name', NAME); } catch (e) {} achUnlock('name_tag'); }
   catch (e) { WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
   WHO.busy = false; refreshCard();
+}
+/* ---------- 成就 ----------
+   一条成就：g 分组；hid 解锁前不露名字，只给提示；cloud 只在有云存档时才算；t / e = [名字, 描述, 隐藏提示]。
+   描述写成「条件句。笑话句。」：没解锁时列表里只显示第一句当条件，解锁后显示整句。
+   有 goal / prog 的是进度类，achCheck() 发现够了就自动解锁，列表页画进度条；其余由游戏里的事件直接 achUnlock()。
+   在交货 / 失败 / 全部交付的结算过程中解锁的（G.collect），列在结算卡上；游戏中解锁的弹底部提示条；其他时候弹顶部提示条。 */
+const sumBest = () => ORDER.reduce((a, id) => a + (SAVE.best[id] || 0), 0);
+const shiftIds = k => ORDER.slice(k * PER, (k + 1) * PER);
+const FOOD = ['meat', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'coconut', 'walnut', 'bonbon', 'butter', 'jelly', 'choco', 'honey', 'salmiak'];
+const SHIFT_ACH = [
+  [['转正', '试用期六单交齐。转正的意思是不能走了。'], ['Hired', "Probation done. You're permanent now, which means you can't leave."]],
+  [['开饭了', '厨房六单交齐。甲方吃上了全圆的一顿饭，面条是一粒一粒的。'], ['Dinner Is Served', 'Kitchen done. The noodles came as beads.']],
+  [['清仓', '仓库六单交齐。再也没有棱角，甲方终于敢进去了。'], ['No Edges Left', 'Warehouse done. Not a corner left; the Client finally dares go in.']],
+  [['镇馆之宝', '收藏室六单交齐。甲方顺手把你也登记成了藏品。'], ['Museum Piece', 'Collection done. The Client catalogued you as an exhibit too.']],
+  [['表里如一', '「表里不一」六单交齐。壳和芯都圆了，甲方说这叫表里如一。'], ['Round to the Core', 'Shell-and-core shift done. Consistent, the Client calls it.']],
+  [['软硬兼施', '「软硬不吃」六单交齐。软的塌了，硬的服了。'], ['Hard and Soft', 'Stubborn Stuff done. The soft ones slumped; the hard ones gave in.']],
+  [['拿捏了', '「拿捏」六单交齐。甲方下意识把手揣进了兜里。'], ['Got a Grip', 'Handle With Care done. The Client quietly put their hands in their pockets.']],
+  [['Sisu', '芬兰特供交齐。芬兰人说这叫 sisu，甲方说这叫圆。'], ['Sisu', 'Finnish Specials done. The Finns call it sisu. The Client calls it round.']],
+  [['宾至如圆', '特邀嘉宾也弄圆了。宾至如归，在甲方这儿叫宾至如圆。'], ['Guest of Honour', 'The guest is round too. Nobody leaves here any other shape.']],
+];
+const ACH_G = [['live', '现场', 'On the job'], ['prog', '进度', 'Progress'], ['craft', '手艺', 'Craft'], ['grit', '坚持', 'Grit'], ['odd', '怪癖', 'Quirks']];
+const ACH = [
+  // 现场：一单之内发生的事
+  { id: 'tickled', g: 'live', t: ['挠痒痒', '砸得太轻，纹丝不动。甲方问你是不是在给它挠痒痒。'], e: ['Tickled', 'Too soft; nothing happened. The Client asks if you are tickling it.'] },
+  { id: 'full_swing', g: 'live', t: ['抡圆了', '来了一下「重击」。甲方要的不是这种圆，不过也行。'], e: ['Full Swing', 'Landed a Smash. Not the kind of round the Client meant, but fine.'] },
+  { id: 'falling_objects', g: 'live', t: ['高空抛物', '举到快碰天花板才松手。甲方的星球不禁高空抛物，只禁不圆。'], e: ['Falling Objects', 'Let go from near the ceiling. Dropping things is legal here. Not being round is not.'] },
+  { id: 'barely_round', g: 'live', t: ['勉强算圆', '刚过一星线就交货，一下都不多砸。甲方：……勉强算圆。'], e: ['Barely Round', 'Delivered the moment it crossed the one-star line. The Client: "…barely round."'] },
+  { id: 'by_a_thread', g: 'live', t: ['命悬一线', '只剩最后一格耐久时交了货。甲方没发现，你也别说。'], e: ['By a Thread', 'Delivered on your last HP. The Client did not notice. Do not mention it.'] },
+  { id: 'it_still_boots', g: 'live', t: ['能开机就行', '电脑屏幕都花了，照样交货。甲方：能开机就行。'], e: ['It Still Boots', 'Delivered the computer with a glitching screen. The Client: as long as it boots.'] },
+  { id: 'two_for_one', g: 'live', t: ['一举两得', '松手一次，落地又蹦起来，砸出两下有效。路锥说蹦是它的本职工作。'], e: ['Two for One', 'One drop, two good hits. The cone says bouncing is its day job.'] },
+  { id: 'spilled_beans', g: 'live', t: ['露馅了', '壳砸穿了，芯露了出来。藏不住了。'], e: ['Spilled the Beans', 'Broke through the shell and the core showed. The secret is out.'] },
+  { id: 'wu_wei', g: 'live', t: ['无为而治', '一下都没碰就交货。甲方：它本来就是圆的。'], e: ['Wu Wei', 'Delivered without touching it. The Client: it was already round.'] },
+  { id: 'clean_sheet', g: 'live', t: ['稳准狠', '一整单没有一下太轻、没有一下太重。甲方挑不出毛病，有点不习惯。'], e: ['Clean Sheet', 'A whole order with no soft hits and no overhits. The Client has nothing to complain about and finds it unsettling.'] },
+  { id: 'hands_off', g: 'live', t: ['甩手掌柜', '一整单全靠松手让它自己掉，一下都没攥着砸。甲方问你是不是在偷懒。是。'], e: ['Hands-Off', 'Every good hit came from letting go. The Client asks if you are slacking. You are.'] },
+  { id: 'won_lying_down', g: 'live', t: ['躺赢', '最后那点圆度是它自己塌出来的。你什么都没干。'], e: ['Won Lying Down', 'The last bit of roundness came from it slumping on its own. You did nothing.'] },
+  { id: 'maxed_out', g: 'live', t: ['力拔山兮', '力度顶到 100，东西居然还好好的。地板不太好。'], e: ['Maxed Out', 'Force pinned at 100 and it is still in one piece. The floor is less fine.'] },
+  { id: 'honorary_finn', g: 'live', t: ['荣誉芬兰人', '交了桑拿石，一次都没被烫得撒手。芬兰人坐在旁边享受，你也是。'], e: ['Honorary Finn', 'Delivered the sauna stone without once being forced to drop it. Finns sit next to it for fun. So do you.'] },
+  { id: 'gentle_octo', g: 'live', t: ['摸摸头', '章鱼熊一次都没喊疼就被弄圆了。它说下次 game jam 还请你。'], e: ['Gentle Hands', 'Rounded the octo-bear without a single ouch. You are invited to the next game jam.'] },
+  { id: 'on_the_line', g: 'live', t: ['压线', '力度正好顶到上限，没碎。再多一点，圆的就是你。'], e: ['On the Line', 'Hit exactly at the limit and it held. Any harder and you would be the round one.'] },
+  { id: 'buzzer_beater', g: 'live', t: ['压哨', '最后一秒交货。甲方的耐心已经缩成了一个点。'], e: ['Buzzer Beater', "Delivered in the final second. The Client's patience had shrunk to a dot."] },
+  { id: 'rounder_than_compass', g: 'live', t: ['比圆规还圆', '交货时圆度 95% 以上。甲方把圆规收起来了，用不上。'], e: ['Rounder Than a Compass', 'Delivered at 95% roundness or more. The Client put the compass away.'] },
+  { id: 'poker_face', g: 'live', t: ['深藏不露', '两层的东西，芯一点没露就交了货。甲方到现在都不知道里面是什么。'], e: ['Poker Face', 'Delivered a two-layer order without exposing the core. The Client still does not know what is inside.'] },
+  { id: 'curling', g: 'live', t: ['冰壶', '冰块在地上一路溜过去撞了墙。甲方说：很圆滑。'], e: ['Curling', 'The ice slid across the floor into the wall. Smooth, says the Client.'] },
+  { id: 'work_hardened', g: 'live', t: ['百炼成钢', '把金属砸到再也硬不上去了。铜都快被你炼成钢了。'], e: ['Work-Hardened', 'Hammered the metal until it could not get any harder. Nearly turned copper into steel.'] },
+  { id: 'humpty_dumpty', g: 'live', hid: 1, t: ['以卵击地', '把鸡蛋砸碎了。地板赢了，毫无悬念。', '有一单，一次都碎不起。'], e: ['Humpty Dumpty', 'Broke the egg. The floor won, as expected.', 'One order cannot survive a single slip.'] },
+  { id: 'self_service', g: 'live', hid: 1, t: ['甲方自取', '时间到了你还在磨，甲方自己伸手拿走了。剩余耐心奖励：0。', '够一星了还不交？'], e: ['Self-Service', 'Time ran out while you were still polishing, so the Client just took it. Patience bonus: 0.', 'Good enough, and still not delivered?'] },
+  { id: 'counted_chickens', g: 'live', hid: 1, t: ['煮熟的鸭子飞了', '明明能交货了，你偏要接着砸，最后没交上。', '见好就收。'], e: ['Counted Your Chickens', 'It was ready to deliver. You kept going and lost it.', 'Quit while you are ahead.'] },
+  { id: 'peaked_too_soon', g: 'live', hid: 1, t: ['高开低走', '一度砸到三星，交货时只剩一星。甲方都看见了。', '砸得越多，不一定越圆。'], e: ['Peaked Too Soon', 'It hit three stars at one point. You delivered it at one. The Client saw.', 'More hits is not always more round.'] },
+  { id: 'if_it_aint_broke', g: 'live', hid: 1, t: ['画蛇添足', '唱片本来就是圆的，你非要砸它。现在不是了。', '有的东西不用砸。'], e: ["If It Ain't Broke", 'The record was already round. You hit it anyway. Now it is not.', 'Some things need no hitting.'] },
+  { id: 'wandering_earth', g: 'live', hid: 1, t: ['流浪地球', '你把地球砸碎了。现在流浪的是你。', '小心你的老家。'], e: ['The Wandering Earthling', 'You smashed the Earth. Now you are the one wandering.', 'Mind your home planet.'] },
+  { id: 'overheated', g: 'live', hid: 1, t: ['热情过头', '焐过头了，一碰就碎。甲方说你对它太热情了。', '手心太热也不行。'], e: ['Overheated', 'Overheated it and it broke at a touch. The Client says you are too warm.', 'Warm hands, but not too warm.'] },
+  { id: 'early_withdrawal', g: 'live', hid: 1, t: ['零存整取', '把存钱罐砸碎了。取款成功，收款人：甲方。', '有一单里面装着钱。'], e: ['Early Withdrawal', 'Smashed the piggy bank. Withdrawal complete. Payee: the Client.', 'One order has money inside.'] },
+  { id: 'naughty_list', g: 'live', hid: 1, t: ['淘气名单', '把圣诞老人惹急了，他坐上雪橇走了。你上了淘气名单。', '有一位客人脾气不太好。'], e: ['Naughty List', 'You upset Santa until he left on his sleigh. You are on the Naughty List.', 'One guest has a temper.'] },
+  { id: 'phone_is_fine', g: 'live', hid: 1, t: ['手机还是好的', '你把甲方的地板砸穿了。手机没事，贪吃蛇还在爬。', '有一单砸不坏，但别的东西会坏。'], e: ['The Phone Is Fine', 'You smashed through the floor. The phone is fine. Snake is still running.', 'One order cannot break. Something else can.'] },
+  { id: 'rounding_error', g: 'live', hid: 1, t: ['四舍五入', '时间到了，圆度四舍五入正好够一星线。甲方不四舍五入。', '差一点点，也是差。'], e: ['Rounding Error', 'Time ran out at a roundness that rounds up to the line. The Client does not round.', 'Close is not there.'] },
+  { id: 'made_it_worse', g: 'live', hid: 1, t: ['越描越黑', '忙活一整单没交上，东西比接单时还不圆。甲方几乎有点佩服。', '有时候不砸更好。'], e: ['Made It Worse', 'A whole order of work, and it ended less round than it started. The Client is almost impressed.', 'Sometimes doing nothing is better.'] },
+  { id: 'pie_in_the_sky', g: 'live', hid: 1, t: ['给甲方画饼', '把面团拍成了饼。平时都是甲方给你画饼，这回你还回去了。', '厨房里有一单，拍过头会变成别的东西。'], e: ['Pie in the Sky', 'Flattened the dough into a pancake. Usually the Client is the one promising pie in the sky.', 'One kitchen order turns into something else if you overdo it.'] },
+  { id: 'stood_on_end', g: 'live', hid: 1, t: ['金鸡独立', '钢筋竖着落地，自己站住了。甲方觉得这样不圆，但很稳。', '有一单能立起来。'], e: ['Stood on End', 'The rebar landed on its end and stayed up. Not round, the Client notes, but very stable.', 'One order can stand up.'] },
+  // 进度：从存档就能算出来，老玩家打开新版本会补发
+  ...CHAPS.map((ch, k) => {
+    const d = SHIFT_ACH[k] || [[`第 ${k + 1} 班交齐`, `第 ${k + 1} 班交齐了。`], [`Shift ${k + 1} Done`, `Shift ${k + 1} complete.`]];
+    return { id: 'shift_' + (k + 1), g: 'prog', goal: () => shiftIds(k).length, prog: () => shiftIds(k).filter(id => SAVE.best[id]).length, t: d[0], e: d[1] };
+  }),
+  { id: 'all_round', g: 'prog', goal: () => ORDER.length, prog: () => ORDER.filter(id => SAVE.best[id]).length, t: ['一切皆圆', `全部 ${ORDER.length} 单交付。墙上那句厂训，不再是口号了。`], e: ['All Is Round', `All ${ORDER.length} orders delivered. The motto on the wall is now just a fact.`] },
+  { id: 'stars_all', g: 'prog', goal: () => ORDER.length * 3, prog: () => starTotal(), t: ['满天星', '每一单都拿满三星。甲方把这些星挂上了天，补上被砸碎的那颗。'], e: ['Full Sky', 'Three stars on every order. The Client hung them up to replace the one that got smashed.'] },
+  { id: 'wan_yuan', g: 'prog', goal: () => 10000, prog: () => sumBest(), t: ['万圆户', '各单最高酬劳加起来过了 ◎ 10000。地球上叫万元户，这儿叫万圆户。'], e: ['Ten-Grand Club', 'Best pays add up to ◎ 10000. Nothing here to spend it on. Very round money, though.'] },
+  { id: 'big_ticket', g: 'prog', goal: () => 3000, prog: () => Math.max(0, ...ORDER.map(id => SAVE.best[id] || 0)), t: ['开张吃三年', '一单拿了 ◎ 3000 以上。三年不开张，开张吃三年。'], e: ['Big Ticket', '◎ 3000 or more for one order. The Client paid in coins. Round ones, naturally.'] },
+  { id: 'ot_first', g: 'prog', t: ['自愿加班', '在加班里交了一单。甲方强调加班是自愿的。门是锁着的。'], e: ['Voluntary Overtime', 'Delivered an order on overtime. Strictly voluntary, the Client stresses. The door is locked.'] },
+  // 手艺
+  { id: 'hat_trick', g: 'craft', goal: () => 3, prog: () => A.three.length, t: ['连中三圆', '连续 3 单三星。古人叫连中三元，甲方叫连中三圆。'], e: ['Hat Trick', 'Three three-star orders in a row. The Client offers you a hat. It is round.'] },
+  { id: 'steady_10', g: 'craft', goal: () => 10, prog: () => A.clean.length, t: ['手稳', '连续 10 单一次没砸过头。甲方怀疑你根本不是地球人。'], e: ['Steady Hands', 'Ten orders in a row without a single overhit. The Client suspects you are not from Earth.'] },
+  { id: 'spotless_shift', g: 'craft', goal: () => PER, prog: () => Math.max(0, ...CHAPS.map((c, k) => shiftIds(k).length === PER ? shiftIds(k).filter(id => SAVE.stars[id] === 3).length : 0)), t: ['无可挑剔', '一个班六单全是三星。甲方挑不出毛病，于是挑了你的发型。'], e: ['Spotless Shift', 'A whole shift at three stars. Finding nothing wrong, the Client criticised your hair.'] },
+  { id: 'banquet', g: 'craft', goal: () => FOOD.length, prog: () => FOOD.filter(id => SAVE.best[id]).length, t: ['满圆全席', '能吃的单全都交了。地球人叫满汉全席，甲方叫满圆全席。'], e: ['Balanced Diet', 'Every edible order delivered. A balanced diet, to the Client, means all of it round.'] },
+  { id: 'marathon', g: 'craft', t: ['一条龙', `从第 1 单一口气做到第 ${ORDER.length} 单，中间没回过首页。甲方给你倒了杯水。圆的。`], e: ['Marathon', `Orders 1 to ${ORDER.length} in one go, never pressing Home. The Client poured you a glass of water. Round.`] },
+  { id: 'zero_rework', g: 'craft', hid: 1, t: ['零返工', `${ORDER.length} 单一口气做完，一次没失败、一次没重来。甲方说了声谢谢，然后假装没说过。`, '一口气。不失手。不回头。'], e: ['Zero Rework', `All ${ORDER.length} in one go: no fails, no retries. The Client said thank you, then pretended they had not.`, 'One go. No slips. No do-overs.'] },
+  // 坚持
+  { id: 'grudge', g: 'grit', t: ['杠上了', '同一单失败了 5 次。甲方开始怀疑是不是材料的问题。不是。'], e: ['Grudge Match', 'Failed the same order 5 times. The Client wonders if it is the material. It is not.'] },
+  { id: 'at_last', g: 'grit', t: ['终于', '栽了 5 次的那一单，交了。甲方说从没怀疑过你。怀疑过。'], e: ['At Long Last', "Delivered an order you had failed 5 times. The Client says they never doubted you. They did."] },
+  { id: 'broken_10', g: 'grit', goal: () => 10, prog: () => A.n.shatter, t: ['碎碎平安', '累计砸碎 10 件。地球人说碎碎平安，甲方不这么认为。'], e: ['Broken Record', 'Broke 10 things. You keep doing that. You keep doing that.'] },
+  { id: 'well_rounded', g: 'grit', goal: () => 20, prog: () => A.n.fail, t: ['圆滑', '被做成圆形 20 次。你现在很圆滑，字面意义上的。'], e: ['Well-Rounded', 'Made round 20 times. You are now the roundest Earthling on the planet.'] },
+  { id: 'connoisseur', g: 'grit', goal: () => 4, prog: () => Object.keys(A.kinds).length, t: ['失败品鉴师', '砸碎过、气跑过、砸穿过地板、超过时。失败的花样你集齐了。'], e: ['Connoisseur of Failure', 'Shattered, scared off, through the floor, out of time. A complete collection.'] },
+  { id: 'slowpoke', g: 'grit', goal: () => 5, prog: () => A.n.timeout, t: ['磨洋工', '让甲方等到耐心归零 5 次。你磨得很认真，只是磨的是洋工。'], e: ['Clock Watcher', 'Ran the Client out of patience 5 times. Round things take time. Not that much.'] },
+  { id: 'homesick', g: 'grit', goal: () => 10, prog: () => A.n.quit, t: ['想家', '干到一半回首页 10 次。甲方提醒你：首页不是家。'], e: ['Homesick', 'Pressed Home mid-order 10 times. Not that home, the Client reminds you.'] },
+  { id: 'thousand', g: 'grit', goal: () => 1000, prog: () => A.n.good + A.n.over, t: ['千锤百炼', '累计砸了 1000 下。千锤百炼，主要炼的是地板。'], e: ['Thousand Blows', '1000 hits. Mostly, the floor got tougher.'] },
+  // 怪癖
+  { id: 'bilingual', g: 'odd', goal: () => 2, prog: () => Object.keys(A.lang).length, t: ['双语工匠', '中文、英文各交过一单。甲方两种语言都只会一个字：圆。'], e: ['Bilingual', 'Delivered in both Chinese and English. In either, the Client knows one word: round.'] },
+  { id: 'name_tag', g: 'odd', cloud: 1, t: ['工牌', '起了名字存档。甲方给你做了块工牌，圆的，别不住。'], e: ['Name Tag', 'You picked a name. The Client made you a badge. It is round. It will not stay pinned.'] },
+  { id: 'night_shift', g: 'odd', hid: 1, t: ['夜班', '凌晨交了一单。甲方的星球没有夜晚，你的黑眼圈倒是挺圆。', '月亮出来以后交的货，看起来更圆。'], e: ['Night Shift', "Delivered between midnight and 5. The Client's planet has no night. Your dark circles are very round.", 'Orders delivered under the moon look rounder.'] },
+  { id: 'stealth', g: 'odd', hid: 1, t: ['上班摸鱼', '关着声音交了一单。上班时间玩的吧？甲方也是。', '旁边有人的时候，你会怎么干活？'], e: ['Stealth Mode', 'Delivered with the sound off. Playing at work? So is the Client.', 'How do you work when someone is nearby?'] },
+  { id: 'mesmerised', g: 'odd', hid: 1, t: ['看呆了', '盯着封面看了一分钟。那块木头圆了又方，方了又圆。你看懂了：这就是上班。', '开工之前，先看看那块木头是怎么干活的。'], e: ['Mesmerised', 'Watched the title screen for a minute. Round, square, round again. You get it now: that is the job.', 'Before you start, watch how the block does it.'] },
+];
+const ACH_BY = {}; for (const a of ACH) ACH_BY[a.id] = a;
+const achOn = a => !a.cloud || !!CLOUD;
+const achText = a => EN ? a.e : a.t;
+const achList = () => ACH.filter(achOn);
+const achGot = () => achList().filter(a => A.got[a.id]).length;
+/* 存在 yuan.ach.v1：got 解锁时刻（unix 秒）；n 累计计数；failBy 每单失败次数；kinds 失败过的花样；lang 用哪种语言交过货；
+   clean / three 正在进行的「连续不砸过头 / 连续三星」里的单（同一单不重复算，免得反复交唱片刷）；seen 上次看成就页的时刻 */
+const A = { v: 1, got: {}, n: { good: 0, over: 0, light: 0, deliver: 0, fail: 0, shatter: 0, timeout: 0, retry: 0, quit: 0 }, failBy: {}, kinds: {}, lang: {}, clean: [], three: [], seen: 0, bf: 0, bfN: 0 };
+try {
+  const s = JSON.parse(localStorage.getItem('yuan.ach.v1') || 'null');
+  if (s && typeof s === 'object') for (const k in A) {
+    const v = s[k]; if (v === undefined || v === null || typeof v !== typeof A[k] || Array.isArray(v) !== Array.isArray(A[k])) continue;
+    if (k === 'n') { for (const c in A.n) if (typeof v[c] === 'number') A.n[c] = v[c]; } else A[k] = v;
+  }
+  for (const id in A.got) if (!ACH_BY[id]) delete A.got[id];
+} catch (e) {}
+function achSave() { try { localStorage.setItem('yuan.ach.v1', JSON.stringify(A)); } catch (e) {} }
+let achSyncT = 0;
+function achSyncSoon() { if (!NAME || !CLOUD) return; clearTimeout(achSyncT); achSyncT = setTimeout(() => cloudSync(NAME).catch(() => {}), 2500); }
+function achUnlock(id, quiet) {
+  const a = ACH_BY[id]; if (!a || A.got[id] || !achOn(a)) return false;
+  A.got[id] = Math.round(Date.now() / 1000); achSave(); achSyncSoon();
+  if (!quiet) { if (G.collect) G.newAch.push(id); else TOAST.q.push(id); }
+  return true;
+}
+function achCheck(quiet) { let k = 0; for (const a of ACH) if (a.goal && !A.got[a.id] && achOn(a) && a.prog() >= a.goal() && achUnlock(a.id, quiet)) k++; return k; }
+/* 云端存的成就（另一台设备上解锁的）：只收认识的 id，悄悄记上 */
+function achMerge(ids) { let k = 0; if (Array.isArray(ids)) for (const id of ids) if (ACH_BY[id] && !A.got[id]) { A.got[id] = Math.round(Date.now() / 1000); k++; } if (k) achSave(); return k; }
+/* 敲击按增量记：回合结束和关页面都能调，不会重复算 */
+function achFlush() {
+  const s = G.stats, a = G.acc || (G.acc = { good: 0, over: 0, light: 0 }), n = A.n;
+  for (const k of ['good', 'over', 'light']) { n[k] += (s[k] || 0) - a[k]; a[k] = s[k] || 0; }
+  achSave();
+}
+const achRun = (arr, id, ok) => { if (!ok) arr.length = 0; else if (!arr.includes(id)) arr.push(id); };
+/* 一单结束时（交货 / 失败 / 按 R 重来 / 中途回首页）统一结算 */
+function achRound(kind, reason) {
+  const id = ORDER[G.idx], n = A.n, s = G.stats, b = G.body || {}, m = G.mat, U = achUnlock;
+  G.collect = kind === 'deliver' || kind === 'fail';
+  achFlush();
+  if (kind === 'deliver') {
+    n.deliver++; A.lang[LANG] = 1;
+    const live = G.started && G.timeLeft > 0;
+    if (G.tier === 1 && G.round - G.lines[0] < .005 && live) U('barely_round');
+    if (G.hp === 1 && m.hp >= 2) U('by_a_thread');
+    if (id === 'pc' && s.over >= 1) U('it_still_boots');
+    if (!G.started) U('wu_wei');
+    if (G.started && G.timeLeft <= 0) U('self_service');
+    if (s.light === 0 && s.over === 0 && s.good >= 5) U('clean_sheet');
+    if (s.held === 0 && s.good >= 5) U('hands_off');
+    if (G.tier === 1 && starsOf(G.peak) === 3) U('peaked_too_soon');
+    if (G.lastUp === 'sag') U('won_lying_down');
+    if (m.hot && G.started && !b.burned) U('honorary_finn');
+    if (live && G.timeLeft < 1) U('buzzer_beater');
+    if (G.round >= .95 && id !== 'record') U('rounder_than_compass');
+    if (b.c && !b.c.some((c, i) => b.r[i] - c < 2.5)) U('poker_face');
+    if (id === 'octobear' && G.started && s.over === 0) U('gentle_octo');
+    if (G.loop >= 1) U('ot_first');
+    if (id !== 'record' && (A.failBy[id] || 0) >= 5) U('at_last');
+    if (new Date().getHours() < 5) U('night_shift');
+    if (G.silent && muted) U('stealth');
+    achRun(A.clean, id, s.over === 0); achRun(A.three, id, G.tier === 3);
+  } else if (kind === 'fail') {
+    n.fail++; G.slips++;
+    if (id !== 'record') A.failBy[id] = (A.failBy[id] || 0) + 1;
+    const k = reason === 'time' ? 'time' : m.flee ? 'flee' : m.floor ? 'floor' : 'shatter';
+    A.kinds[k] = 1; if (k === 'shatter') n.shatter++; if (k === 'time') n.timeout++;
+    if (k === 'time') {
+      if (starsOf(G.peak) > 0) U('counted_chickens');
+      if (Math.round(G.round * 100) >= Math.round(G.lines[0] * 100)) U('rounding_error');
+      if (G.round < G.round0 - .02) U('made_it_worse');
+    } else {
+      if (G.readyBefore > 0) U('counted_chickens');
+      if (k === 'flee' && id === 'santa') U('naughty_list');
+      if (k === 'floor') U('phone_is_fine');
+      if (k === 'shatter') {
+        const w = m.warm; if (w && w.hot && (b.heat || 0) >= w.peak + .15) U('overheated');
+        const S = { egg: 'humpty_dumpty', record: 'if_it_aint_broke', earth: 'wandering_earth', piggy: 'early_withdrawal', dough: 'pie_in_the_sky' }[id]; if (S) U(S);
+      }
+    }
+    if ((A.failBy[id] || 0) >= 5) U('grudge');
+    A.clean.length = 0; A.three.length = 0;
+  } else {   // retry / quit：只有真开工了才算
+    if (G.started) { n[kind]++; if (kind === 'retry') G.slips++; }
+    if (s.over > 0) A.clean.length = 0;
+  }
+  achCheck(); G.collect = false; achSave();
+}
+/* 全部交付：一条龙、零返工 */
+function achWin() {
+  G.newAch = []; G.collect = true;
+  if (G.loop === 0 && G.done >= ORDER.length) { achUnlock('marathon'); if (!G.slips) achUnlock('zero_rework'); }
+  achCheck(); G.collect = false;
+}
+/* 结算卡上的「新成就」：最多列 3 条；这一块里不能有 .btn，空格 / 回车按的是卡片里第一个 .btn */
+function achNewHtml() {
+  const ids = G.newAch || []; if (!ids.length) return '';
+  return `<div class="ach-new"><p class="eyebrow">${L('新成就', 'New achievements')}</p><ul class="achs">${ids.slice(0, 3).map((id, i) => { const x = achText(ACH_BY[id]); return `<li style="--i:${i}"><b class="medal on"></b><span><span class="nm">${x[0]}</span><span class="ds">${x[1]}</span></span></li>`; }).join('')}</ul>${ids.length > 3 ? `<p class="note">${L(`还有 ${ids.length - 3} 个，回首页点「成就」看。`, `+${ids.length - 3} more under Achievements on the home screen.`)}</p>` : ''}</div>`;
+}
+/* 提示条：一次一个，先进先出；排了 4 个以上就合成一条。游戏中弹在底部（竖屏在顶栏），其他时候弹在页面顶上 */
+const toastEl = document.getElementById('toast');
+const TOAST = { q: [], cur: null, t: 0, out: false };
+function toastTick() {
+  const c = TOAST.cur;
+  if (c) {
+    const dur = c.play ? (TOAST.q.length ? 1.6 : 2.4) : (TOAST.q.length ? 2.2 : 3.6) + (c.n > 1 ? 1 : 0);
+    if (!TOAST.out && (G.time - TOAST.t > dur || (c.play && G.state !== 'play'))) { TOAST.out = true; TOAST.t = G.time; toastEl.className = (c.play ? '' : 'menu ') + 'out'; }
+    else if (TOAST.out && G.time - TOAST.t > .3) { TOAST.cur = null; toastEl.hidden = true; toastEl.className = ''; }
+    return;
+  }
+  if (!TOAST.q.length) return;
+  const ids = TOAST.q.length >= 4 ? TOAST.q.splice(0) : [TOAST.q.shift()], play = G.state === 'play', x = achText(ACH_BY[ids[0]]);
+  const name = ids.length > 1 ? L(`新成就 ×${ids.length}：`, `${ids.length} new: `) + ids.slice(0, 2).map(i => achText(ACH_BY[i])[0]).join(L('、', ', ')) + L(' 等', '…') : x[0];
+  toastEl.innerHTML = `<b class="medal"></b><span class="tx"><span class="tl">${L('成就', 'Achievement')}</span><span class="tn">${name}</span>${!play && ids.length === 1 ? `<span class="td">${x[1]}</span>` : ''}</span>`;
+  toastEl.className = (play ? '' : 'menu ') + 'in'; toastEl.hidden = false;
+  TOAST.cur = { play, n: ids.length }; TOAST.t = G.time; TOAST.out = false; sfx.ach();
+}
+const toastInPlay = () => !!(TOAST.cur && TOAST.cur.play && !TOAST.out);
+/* 成就页：五组，进度类画进度条，隐藏的显示 ？？？ 和提示 */
+const firstSentence = s => { const m = s.match(/^.*?(?:[。！？]|[.!?](?=\s|$))/); return m ? m[0] : s; };
+function showAch() {
+  G.state = 'menu'; const list = achList(), got = achGot(), seen = A.seen; let html = '';
+  for (const [g, zh, en] of ACH_G) {
+    const items = list.filter(a => a.g === g); if (!items.length) continue;
+    html += `<p class="chap">${L(zh, en)} · ${items.filter(a => A.got[a.id]).length}/${items.length}</p><ul class="achs list">`;
+    for (const a of items) {
+      const on = !!A.got[a.id], x = achText(a), secret = a.hid && !on;
+      let side = '', bar = '';
+      if (on) { const d = new Date(A.got[a.id] * 1000); side = `<span class="when">${d.getMonth() + 1}·${d.getDate()}</span>`; }
+      else if (a.goal) { const gl = a.goal(), p = Math.min(a.prog(), gl); side = `<span class="pg">${p}/${gl}</span>`; bar = `<span class="bar"><i style="width:${(p / gl * 100).toFixed(1)}%"></i></span>`; }
+      const desc = on ? x[1] : secret ? (x[2] || '') : firstSentence(x[1]);
+      html += `<li class="${on ? 'on' : ''}${secret ? ' secret' : ''}"><b class="medal${on ? ' on' : ''}" aria-hidden="true">${secret ? '?' : ''}</b><span><span class="nm">${secret ? L('？？？', '???') : x[0]}${on && A.got[a.id] > seen ? `<i class="new">${L('新', 'NEW')}</i>` : ''}</span><span class="ds">${desc}</span>${bar}</span>${side}</li>`;
+    }
+    html += '</ul>';
+  }
+  setCard(`
+    <p class="eyebrow">${L('成就', 'Achievements')}</p>
+    <h2>${L(`盖了 ${got} / ${list.length} 个圆章`, `${got} / ${list.length} stamps`)}</h2>
+    <div class="window" role="img" aria-label="${L(`解锁了 ${got} / ${list.length}`, `${got} of ${list.length} unlocked`)}"><i class="w-ok" style="width:${(got / list.length * 100).toFixed(1)}%"></i><i class="w-light" style="flex:1"></i></div>
+    ${html}
+    <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+  A.seen = Math.round(Date.now() / 1000); A.bfN = 0; achSave();
 }
 /* 排行榜：按每单最高酬劳的合计排，只有起了名字的玩家上榜 */
 const BOARD = { data: null, err: false, seq: 0 };
 function showBoard(refetch = true) {
   G.state = 'menu';
   const d = BOARD.data;
-  const row = p => `<li class="${NAME && p.name.toLowerCase() === NAME.toLowerCase() ? 'me' : ''}"><b>${p.rank}</b><span class="nm">${escH(p.name)}</span><span class="dl">${L(`${p.delivered} 单`, `${p.delivered} orders`)}</span><span class="pt">◎ ${p.total}</span></li>`;
+  const row = p => `<li class="${NAME && p.name.toLowerCase() === NAME.toLowerCase() ? 'me' : ''}"><b>${p.rank}</b><span class="nm">${escH(p.name)}</span><span class="dl">${L(`${p.delivered} 单`, `${p.delivered} orders`)}${p.stars != null ? ` · <span class="stars">★ ${p.stars}</span>` : ''}</span><span class="pt">◎ ${p.total}</span></li>`;
   let body;
   if (!d) body = `<p class="note">${BOARD.err ? L('排行榜连不上，过一会儿再试。', 'Could not load the leaderboard. Try again in a bit.') : L('加载中…', 'Loading…')}</p>`;
   else if (!d.top.length) body = `<p class="note">${L('还没人上榜。交付一单你就是第一。', 'Nobody yet. Deliver an order to be first.')}</p>`;
@@ -1230,7 +1580,7 @@ function roundInfo() {
     good: G.stats.good, over: G.stats.over, light: G.stats.light, keep: b && b.area0 ? r3(clamp(b.area / b.area0, 0, 1)) : null };
 }
 function startAt(i) {
-  G.idx = clamp(i | 0, 0, ORDER.length - 1); G.loop = 0; G.score = 0; G.done = 0;
+  G.idx = clamp(i | 0, 0, ORDER.length - 1); G.loop = 0; G.score = 0; G.done = 0; G.slips = 0;
   if (G.idx && G.idx % PER === 0) showChapter(); else showOrder();
 }
 function showBook() {
@@ -1239,13 +1589,15 @@ function showBook() {
     html += `<p class="chap">${L(`第 ${k + 1} 班`, `Shift ${k + 1}`)} · ${ch.name}</p><div class="grid">`;
     for (let i = k * PER; i < Math.min((k + 1) * PER, ORDER.length); i++) {
       const id = ORDER[i], best = SAVE.best[id] || 0;
-      html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="${L(`第 ${i + 1} 单`, `Order ${i + 1}`)} ${MATS[id].name}${best ? L('，交付过，最高酬劳 ', ', delivered, best pay ') + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span></button>`;
+      const st = SAVE.stars[id] || 0;
+      html += `<button class="lv${best ? ' done' : i === at ? ' now' : ''}" type="button" data-lv="${i}" aria-label="${L(`第 ${i + 1} 单`, `Order ${i + 1}`)} ${MATS[id].name}${best ? L(`，${st} 星，最高酬劳 `, `, ${st} star${st > 1 ? 's' : ''}, best pay `) + best : ''}"><b>${i + 1}</b><span>${MATS[id].name}</span><i class="${st ? '' : 'dim'}" aria-hidden="true">${best ? starStr(st) : ''}</i></button>`;
     }
     html += '</div>';
   });
   setCard(`
     <p class="eyebrow">${L('订单簿', 'Order book')}</p>
     <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
+    <p class="note">${L('星星', 'Stars')} <span class="stars">★ ${starTotal()}</span> / ${ORDER.length * 3}</p>
     ${html}
     <p class="note">${L('绿色是交付过的，哪单都能开工。', 'Green = delivered. Start anywhere.')}</p>
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
@@ -1260,7 +1612,7 @@ function showChapter() {
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
-function showCover() { G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }
+function showCover() { G.coverT = 0; G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }
 function leaveCover() { audioInit(); sfx.ui(); showMenu(); }
 function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -1294,7 +1646,7 @@ function drawCover(t) {
   ctx.globalAlpha = 1;
 }
 function showMenu() {
-  G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; setupRound(); G.state = 'menu';
+  G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
   const at = firstOpen();
   setCard(`
     <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
@@ -1305,12 +1657,14 @@ function showMenu() {
       <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。右边力度表绿区有效，红区会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
     </ul>
-    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
+    ${A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
     ${whoRow()}
-    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字和最高酬劳。', 'Anonymous stats tune difficulty. A name is stored with your best pay.')}</p>`);
+    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars and achievements.')}</p>`);
 }
 function showOrder() {
-  setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0;
+  setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
+  const lines = G.lines.map((v, k) => `<span class="nw">${'★'.repeat(k + 1)} <strong>${pct(v)}</strong></span>`).join(' · ');
   setCard(`
     <p class="eyebrow">${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)} · ${CHAPS[G.idx / PER | 0].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
     <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
@@ -1325,38 +1679,111 @@ function showOrder() {
       ${m.hot ? `<dt>${L('烫手', 'Hot')}</dt><dd>${L(`最多拎 ${m.hot} 秒`, `Hold ${m.hot} s max`)}</dd>` : ''}
       <dt>${L('能失手', 'Slips')}</dt><dd>${m.flee ? L(`急 ${m.hp - 1} 次，再急就跑`, `${m.hp - 1}, then they run`) : m.floor ? L(`地板能裂 ${m.hp - 1} 次`, `Floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏', 'Unbreakable') : m.hp > 1 ? L(`${m.hp - 1} 次`, `${m.hp - 1}`) : L('<strong>0 次</strong>', '<strong>None</strong>')}</dd>
     </dl>
-    <p>${L('达标', 'Target')} <strong>${pct(G.target)}</strong> · <strong>${m.time} ${L('秒', 's')}</strong>${best ? ` · ${L('最高', 'Best')} <strong>◎ ${best}</strong>` : ''}</p>
+    <p>${lines}</p>
+    <p class="note">${L('一星就能交货，星越多酬劳越高', 'One star delivers; more stars, more pay')} · <strong>${m.time} ${L('秒', 's')}</strong>${best ? ` · ${L('最高', 'Best')} <span class="stars">${starStr(got)}</span> <strong>◎ ${best}</strong>` : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 function computePay() {
   const m = G.mat, b = G.body, base = 100 * m.value * (1 + .5 * G.loop);
-  const q = 1 + (G.round - G.target) / (1 - G.target), keep = clamp(b.area / b.area0, 0, 1);
+  const g = G.target - G.lines[0], q = G.round >= G.target ? 1 + (G.round - G.target) / (1 - G.target) : 1 - .4 * clamp((G.target - G.round) / (g || 1), 0, 1);
+  const keep = clamp(b.area / b.area0, 0, 1);
   const keepMul = .6 + .4 * keep, overMul = Math.pow(.85, G.stats.over), timeBonus = Math.round(Math.max(0, G.timeLeft) * 2 * m.value);
   return { base, q, keep, keepMul, overMul, timeBonus, total: Math.round(base * q * keepMul * overMul) + timeBonus };
 }
 function deliver() {
-  if (G.state !== 'play' || G.round < G.target || !G.body || G.body.dead) return;
-  G.body.held = false; const p = G.pay = computePay(), m = G.mat;
-  G.score += p.total; G.done++; G.state = 'result'; sfx.win(); say('done', true); mood('happy', 4);
-  const old = saveBest(ORDER[G.idx], p.total);
-  TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: old }));
+  if (G.state !== 'play' || !G.tier || !G.body || G.body.dead) return;
+  G.body.held = false; const p = G.pay = computePay(), n = G.tier;
+  G.score += p.total; G.done++; G.state = 'result'; deliverBtn.hidden = true; say('done', true); mood('happy', 4);
+  const id = ORDER[G.idx];
+  G.res = { n, oldStars: SAVE.stars[id] || 0, old: 0 };
+  G.res.old = saveBest(id, p.total, n);
+  achRound('deliver');
+  TRACK('deliver', Object.assign(roundInfo(), { pay: p.total, best: G.res.old, stars: n, ach: G.newAch.join(',').slice(0, 64) }));
+  celebrate(n);
+}
+/* 交货那一刻：材料发光、盖个「交货！」的章、两边彩纸炮，0.9 秒后弹星级卡（点一下画面可以跳过） */
+const CONFETTI = ['#ffd35c', '#93e85a', '#ff5683', '#7fd4ff', '#f4f0ff', '#c9a3ff'];
+function confetti(x, dir, n) {
+  for (let k = 0; k < n && parts.length < 320; k++) {
+    const a = dir > 0 ? rand(-1.45, -.85) : rand(-2.3, -1.7), sp = rand(650, 1150);
+    parts.push({ x: x + rand(-6, 6), y: FLOOR - 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(1.5, 2.3), t: 0, s: rand(6, 11), c: pick(CONFETTI), rot: rand(0, TAU), vr: rand(-14, 14), kind: 'confetti', g: 900 });
+  }
+}
+function celebrate(n) {
+  const b = G.body; sfx.win(); G.shake = Math.max(G.shake, 6);
+  parts = parts.slice(-60); confetti(WALL_L + 24, 1, 50 + n * 12); confetti(WALL_R - 24, -1, 50 + n * 12);
+  twinkle(b.x, b.y - b.meanR * .3, 10 + n * 6, ['#ffd35c', '#fffbe0', '#93e85a'], 300);
+  parts.push({ x: b.x, y: FLOOR - 2, vx: 0, vy: 0, g: 0, life: 1.2, t: 0, s: 320, c: C.coin, rot: 0, vr: 0, kind: 'ring' });
+  G.cele = { t0: G.time, n }; G.resultT = REDUCED ? .3 : .95;
+}
+function drawCelebrate(t) {
+  const c = G.cele, b = G.body; if (!c || !b) return;
+  const e = t - c.t0, k = clamp(e / .9, 0, 1);
+  // 材料后面一圈金光
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const R = b.meanR * (1.4 + .5 * k), g = ctx.createRadialGradient(b.x, b.y, b.meanR * .6, b.x, b.y, R);
+  g.addColorStop(0, `rgba(255,211,92,${.35 * (1 - k * .6)})`); g.addColorStop(1, 'rgba(255,211,92,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill(); ctx.restore();
+  // 盖章：从大到小砸下来，落定时晃一下
+  if (e < .08) return;
+  const s = e < .26 ? 2.4 - 1.4 * ((e - .08) / .18) : 1 + .06 * Math.exp(-(e - .26) * 9) * Math.sin((e - .26) * 40);
+  const x = clamp(b.x, WALL_L + 170, WALL_R - 170), y = Math.max(190, b.y - b.meanR - 60);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-.12); ctx.scale(s, s); ctx.globalAlpha = clamp((e - .08) * 8, 0, 1);
+  const txt = L('交货！', 'DELIVERED!'); ctx.font = `${EN ? 54 : 66}px ${DISPLAY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(txt).width + 44;
+  rr(ctx, -w / 2, -46, w, 92, 22); ctx.fillStyle = 'rgba(17,13,43,.82)'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = C.alien; ctx.stroke();
+  ctx.fillStyle = C.alien; ctx.fillText(txt, 0, 3);
+  ctx.font = `34px ${BODY}`; for (let i = 0; i < 3; i++) { ctx.fillStyle = i < c.n ? C.coin : C.rim; ctx.fillText('★', (i - 1) * 38, i === 1 ? -72 : -64); }
+  ctx.restore();
+}
+/* 星级卡：星星一颗颗弹出来（每颗响一声），酬劳从 0 往上滚，最后亮「新纪录」 */
+function showResult() {
+  if (G.state !== 'result' || !G.res) return;
+  G.resultT = 0; G.cele = null;
+  const p = G.pay, m = G.mat, { n, oldStars, old } = G.res, rec = p.total > old;
+  const head = n >= 3 ? L('甲方眼睛都亮了', "The Client's eyes light up") : n === 2 ? L('甲方点了点头', 'The Client nods') : L('甲方勉强收下了', 'The Client grudgingly accepts');
+  const tips = [];
+  if (old && rec) tips.push(`<span class="chip gold">${L('新纪录', 'New best')}</span>`);
+  if (oldStars && n > oldStars) tips.push(`<span class="chip">${'★'.repeat(oldStars)} → ${'★'.repeat(n)}</span>`);
+  const more = n < 3 ? L(`再圆到 <strong>${pct(G.lines[n])}</strong> 就是 ${'★'.repeat(n + 1)}`, `Reach <strong>${pct(G.lines[n])}</strong> for ${'★'.repeat(n + 1)}`) : L('满星。甲方没什么可挑的了', 'Full marks. The Client has nothing to add');
+  const last = G.idx + 1 >= ORDER.length;
   setCard(`
-    <p class="eyebrow">${L('交货成功', 'Delivered')}</p>
-    <h2>${L(`圆度 ${pct(G.round)}，甲方点了点头`, `${pct(G.round)} round. The Client nods`)}</h2>
+    <div class="result">
+      <p class="eyebrow">${L('交货成功', 'Delivered')} · ${L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`)}</p>
+      <p class="stars big" role="img" aria-label="${L(`${n} 星`, `${n} star${n > 1 ? 's' : ''}`)}">${[1, 2, 3].map(k => `<i class="${k <= n ? 'on' : ''}" style="--k:${k}">★</i>`).join('')}</p>
+      <p class="rnd">${L('圆度', 'Roundness')} <b>${pct(G.round)}</b></p>
+      <h2>${head}</h2>
+      ${tips.length ? `<p class="chips">${tips.join('')}</p>` : ''}
+      <p class="note">${more}</p>
+    </div>
+    ${achNewHtml()}
     <dl class="spec tally">
       <dt>${L('基础酬劳 × 价值', 'Base pay × value')} ${m.value.toFixed(1)}</dt><dd>${Math.round(p.base)}</dd>
-      <dt>${L('超出达标线', 'Above target')} ${pct(G.target)}</dt><dd>× ${p.q.toFixed(2)}</dd>
+      <dt>${G.round >= G.target ? L('超出三星线', 'Above the ★★★ line') : L('没到三星线', 'Below the ★★★ line')} ${pct(G.target)}</dt><dd>× ${p.q.toFixed(2)}</dd>
       <dt>${L('材料保留', 'Material kept')} ${pct(p.keep)}</dt><dd>× ${p.keepMul.toFixed(2)}</dd>
       <dt>${L(`砸过头 ${G.stats.over} 次`, `Overhits: ${G.stats.over}`)}</dt><dd>× ${p.overMul.toFixed(2)}</dd>
       <dt>${L('剩余耐心', 'Patience left')} ${Math.ceil(Math.max(0, G.timeLeft))} ${L('秒', 's')}</dt><dd>+ ${p.timeBonus}</dd>
-      <dt>${L('本单酬劳', 'Pay for this order')}${old && p.total > old ? L(' · 新纪录', ' · New best') : ''}</dt><dd class="sum">◎ ${p.total}</dd>
+      <dt>${L('本单酬劳', 'Pay for this order')}</dt><dd class="sum" data-to="${p.total}">◎ 0</dd>
     </dl>
-    <div class="row"><button class="btn" type="button" data-act="next">${G.idx + 1 < ORDER.length ? L('下一单', 'Next order') : L('看看甲方怎么说', 'Hear the verdict')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="next">${last ? L('看看甲方怎么说', 'Hear the verdict') : L('下一单', 'Next order')}</button><button class="btn ghost" type="button" data-act="redo">${n < 3 ? L('再来一次', 'Try again') : L('再做一次', 'Again')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
+  card.classList.add('win');
+  // 每颗星弹出来时响一声，音一颗比一颗高；全亮再来一个和弦
+  for (let k = 0; k < n; k++) tone([784, 988, 1319][k], .22, .22, 'triangle', 0, .18 * (k + 1) + .05);
+  if (n >= 3) [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, .35, .14, 'sine', 0, .78 + i * .06));
+  if (G.newAch.length) sfx.ach(1.2);
+  const sum = card.querySelector('.sum'), t0 = performance.now() + (REDUCED ? 0 : 450), dur = REDUCED ? 1 : 700, to = p.total;
+  const tick = now => {
+    if (!sum.isConnected) return;
+    const k = clamp((now - t0) / dur, 0, 1); sum.textContent = '◎ ' + Math.round(to * (1 - Math.pow(1 - k, 3)));
+    if (k < 1) requestAnimationFrame(tick); else { sum.classList.add('done'); if (rec && old) tone(1568, .25, .18, 'sine'); }
+  };
+  requestAnimationFrame(tick);
 }
 function fail(reason) {
   if (G.state !== 'play') return;
   G.state = 'failing'; G.failReason = reason; G.failT = reason === 'shatter' ? 1.5 : 1.0;
-  TRACK('fail', Object.assign(roundInfo(), { reason }));
+  achRound('fail', reason);
+  TRACK('fail', Object.assign(roundInfo(), { reason, ach: G.newAch.join(',').slice(0, 64) }));
   if (G.body) G.body.held = false; deliverBtn.hidden = true;
   say(reason === 'shatter' ? 'shatter' : 'fail', true); mood('angry', 9); sfx.fail();
   G.doom = { x: midX() - 10, y: -80, vx: 46, vy: 0, a: 0 };
@@ -1368,21 +1795,23 @@ function overWhy() {
   return `<p class="why">${L(`最后一下力度 <strong>${F}</strong>，超过了${what}的上限 <strong>${lim}</strong>，落在力度表的<span class="red">红区</span>。`, `Last hit: <strong>${F}</strong>, above ${what} limit of <strong>${lim}</strong>: the <span class="red">red zone</span> on the gauge.`)}</p>`;
 }
 function showOver() {
-  G.state = 'over'; const m = G.mat;
-  const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，达标线是 ${pct(G.target)}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; the target was ${pct(G.target)}.`);
+  G.state = 'over'; const m = G.mat; if (G.newAch.length) sfx.ach(.2);
+  const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，一星线是 ${pct(G.lines[0])}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; one star needed ${pct(G.lines[0])}.`);
   setCard(`
     <p class="eyebrow">${L('交货失败', 'Delivery failed')}</p>
     <h2>${L('你被做成了圆形', 'You have been made round')}</h2>
     <p>${why}</p>${G.failReason === 'shatter' ? overWhy() : ''}
     <p>${L(`完成 ${G.done} 单，累计酬劳`, `Orders delivered: ${G.done}. Total pay:`)} <strong>◎ ${G.startScore}</strong>${L('。', '.')}</p>
+    ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showWin() {
-  G.state = 'win'; TRACK('win', { loop: G.loop, score: G.score, done: G.done });
+  G.state = 'win'; achWin(); TRACK('win', { loop: G.loop, score: G.score, done: G.done, ach: G.newAch.join(',').slice(0, 64) }); if (G.newAch.length) sfx.ach(.3);
   setCard(`
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
-    <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的达标线都会再高一点。', '. Next round, every target goes a little higher.')}</p>
+    <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的星线都会再高一点。', '. Next round, every star line goes a little higher.')}</p>
+    ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function act(a) {
@@ -1392,19 +1821,25 @@ function act(a) {
   else if (a === 'resume') startAt(firstOpen());
   else if (a === 'book') showBook();
   else if (a === 'enter') showOrder();
-  else if (a === 'go') { G.state = 'play'; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
+  else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) }); }   // 本来就圆的那一单，一接单就能交货
   else if (a === 'next') { if (G.idx + 1 >= ORDER.length) showWin(); else { G.idx++; if (G.idx % PER === 0) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
+  else if (a === 'redo') {   // 交货后再来一次：这一单的酬劳不算进这一趟，料和时间换新的，直接开工
+    G.score = G.startScore; G.done = Math.max(0, G.done - 1);
+    setupRound(); G.state = 'play'; G.silent = muted; overlay.hidden = true; updateRoundness(); say('start', true);
+    TRACK('start', { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round), redo: 1 });
+  }
   else if (a === 'replay') {   // 干活途中直接重来：不弹订单卡，料和时间都换新的
     if (G.state !== 'play') return;
-    TRACK('retry', roundInfo());
-    G.score = G.startScore; setupRound(); G.state = 'play'; overlay.hidden = true; updateRoundness(); say('start', true); talk('start', true, 1.6);
+    TRACK('retry', roundInfo()); achRound('retry');
+    G.score = G.startScore; setupRound(); G.state = 'play'; G.silent = muted; overlay.hidden = true; updateRoundness(); say('start', true); talk('start', true, 1.6);
   }
   else if (a === 'restart') showMenu();
-  else if (a === 'home') { if (G.state === 'play') TRACK('quit', roundInfo()); showMenu(); }
+  else if (a === 'home') { if (G.state === 'play') { TRACK('quit', roundInfo()); achRound('quit'); } showMenu(); }
   else if (a === 'board') showBoard();
   else if (a === 'rename') { NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
-  else if (a === 'again') { G.loop++; G.idx = 0; showOrder(); }
+  else if (a === 'again') { G.loop++; G.idx = 0; G.slips = 0; showOrder(); }
+  else if (a === 'ach') showAch();
 }
 card.addEventListener('submit', e => { const f = e.target.closest('[data-who]'); if (!f) return; e.preventDefault(); audioInit(); sfx.ui(); setName(f.elements.who && f.elements.who.value); });
 card.addEventListener('click', e => {
@@ -1415,7 +1850,7 @@ deliverBtn.addEventListener('click', e => { e.currentTarget.blur(); deliver(); }
 replayBtn.addEventListener('click', e => { e.currentTarget.blur(); act('replay'); });
 homeBtn.addEventListener('click', e => { e.currentTarget.blur(); act('home'); });
 muteBtn.addEventListener('click', e => {
-  audioInit(); muted = !muted; muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
+  audioInit(); muted = !muted; if (!muted) G.silent = false; muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
 });
 
 /* ---------- 输入 ---------- */
@@ -1434,18 +1869,19 @@ function toLocal(b, px, py) {
 function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
   const h = toLocal(b, P.x, P.y); if (!h.inside) return false;
-  b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
+  b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
   // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 34 像素（lift 为负 = 往下）
   b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 34 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; if (Math.random() < .35) talk('grab'); return true;
 }
-function release() { const b = G.body; if (b && b.held) { b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); } }
+function release() { const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); } }
 // 第一根手指拎材料；拎着的时候第二根手指落在画面上，左右滑就是微调角度
 let grabId = null, rotId = null, rotX = 0;
 cv.addEventListener('pointerdown', e => {
   if (G.state === 'cover') { e.preventDefault(); leaveCover(); return; }
   audioInit();
+  if (G.state === 'result' && overlay.hidden) { e.preventDefault(); showResult(); return; }
   if (G.body && G.body.held && grabId !== null && e.pointerId !== grabId) { rotId = e.pointerId; rotX = e.clientX; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} return; }
   setPointer(e);
   if (tryGrab()) { grabId = e.pointerId; e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (err) {} }
@@ -1499,13 +1935,19 @@ function update(dt) {
     // 烫手：拎着超过 hot 秒就得撒手；平时也一直冒热气
     if (b.mat.hot && G.state === 'play') {
       if (b.held && (b.holdT = (b.holdT || 0) + dt) > b.mat.hot) {
-        release(); sfx.sizzle(); steam(b.x, 6, b.y - b.meanR * .5);
+        b.burned = (b.burned || 0) + 1; release(); sfx.sizzle(); steam(b.x, 6, b.y - b.meanR * .5);
         floatText(b.x, b.y - b.meanR - 30, L('烫！', 'Hot!'), C.alarm, 26); if (Math.random() < .5) say('hot');
       }
       if (Math.random() < dt * 2.5) steam(b.x + rand(-.4, .4) * b.meanR, 1, b.y - b.meanR * .7);
     }
     stage.classList.toggle('held', !!b.held);
     const h = dt / 4; for (let k = 0; k < 4 && !b.dead; k++) stepBody(b, h);
+    if (b.id === 'rebar' && G.state === 'play' && G.started) {   // 金鸡独立：没拎着、贴地、几乎不动，外框高是宽的 3 倍以上，站够 2 秒
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const ca = Math.cos(b.a), sa = Math.sin(b.a);
+      for (let i = 0; i < N; i += 2) { const px = b.r[i] * COS[i], py = b.r[i] * SIN[i], x = px * ca - py * sa, y = px * sa + py * ca; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      const up = !b.held && b.clear < 4 && Math.hypot(b.vx, b.vy) < 30 && Math.abs(b.w) < .2 && (y1 - y0) > 3 * (x1 - x0);
+      b.standT = up ? (b.standT || 0) + dt : 0; if (b.standT > 2) achUnlock('stood_on_end');
+    }
     b.jigV += (-700 * b.jig - (b.mat.jig > .3 ? 9 : 22) * b.jigV) * dt; b.jig = clamp(b.jig + b.jigV * dt, -.3, .3);
     b.flash = Math.max(0, b.flash - dt * 3);
     // 塌不靠“睡着”判断：底面很宽的东西停在地上会一直微微抖，永远睡不着。只要贴着地、几乎不动就算放着
@@ -1531,16 +1973,19 @@ function update(dt) {
   if (G.state === 'play' && G.started && b && !b.dead) {
     G.timeLeft -= dt;
     if (!G.warned && G.timeLeft < 15) { G.warned = true; say('hurry', true); }
-    if (G.timeLeft <= 0) { if (G.round >= G.target) deliver(); else fail('time'); }
+    if (G.timeLeft <= 0) { if (G.tier) deliver(); else fail('time'); }   // 时间到了，够一星就按现在的星级交
   }
   if (G.state === 'failing') { G.failT -= dt; if (G.failT <= 0) showOver(); }
+  if (G.state === 'result' && G.resultT > 0) { G.resultT -= dt; if (G.resultT <= 0) showResult(); }
+  if (G.state === 'cover') { if ((G.coverT = (G.coverT || 0) + dt) > 60) achUnlock('mesmerised'); }   // 切到后台 rAF 会停，开着走开不算
+  toastTick();
   if (replayBtn.hidden === (G.state === 'play')) replayBtn.hidden = G.state !== 'play';
   if (homeBtn.hidden === (G.state === 'play')) homeBtn.hidden = G.state !== 'play';
   G.shown += (G.round - G.shown) * Math.min(1, dt * 10);
   let live = 0; if (b && !b.dead && (b.held || !b.sleeping)) live = clamp(b.vy / VMAX * 100, 0, 100);
   G.needle += (live - G.needle) * Math.min(1, dt * 30);
   G.shake *= Math.exp(-10 * dt);
-  for (const p of parts) { p.t += dt; if (p.kind === 'dust') { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 3 * dt; } else { p.vy += (p.g === undefined ? 1500 : p.g) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > FLOOR - 2 && p.vy > 0) { p.y = FLOOR - 2; p.vy *= -.3; p.vx *= .6; } } }
+  for (const p of parts) { p.t += dt; if (p.kind === 'confetti') { p.vy = Math.min(p.vy + p.g * dt, 150); p.vx *= 1 - 1.6 * dt; p.x += (p.vx + Math.sin(p.t * 5 + p.rot) * 40) * dt; p.y += p.vy * dt; p.rot += p.vr * dt; continue; } if (p.kind === 'dust') { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - 3 * dt; } else { p.vy += (p.g === undefined ? 1500 : p.g) * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; if (p.y > FLOOR - 2 && p.vy > 0) { p.y = FLOOR - 2; p.vy *= -.3; p.vx *= .6; } } }
   parts = parts.filter(p => p.t < p.life);
   for (const f of frags) { f.vy += GRAV * .6 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.a += f.w * dt; if (f.y > FLOOR - 14 && f.vy > 0) { f.y = FLOOR - 14; f.vy *= -.3; f.vx *= .7; f.w *= .6; } if (f.x < 20 || f.x > WALL_R - 20) f.vx *= -.5; }
   for (const st of stains) st.t += dt;
@@ -2109,7 +2554,7 @@ Object.assign(ART, {
 });
 /* 章鱼熊的脸，画在原点上（外面已经挪到该放的位置）。平时 ^ ^ 加一张黑色小嘴（原版那张脸）；拎起来瞪眼张嘴；砸中 > <；疼了睁眼掉泪；够圆了笑得更开、加腮红 */
 function octoFace(c, b, t) {
-  const play = G.state === 'play', happy = (play && G.round >= G.target) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
+  const play = G.state === 'play', happy = (play && G.tier > 0) || G.state === 'result', hurt = play && G.hp < b.mat.hp && !happy,
     squish = play && G.lastHit && G.lastHit.kind !== 'light' && G.time - G.lastHit.t < .35, held = b.held && !squish, ink = '#151517';
   c.rotate(.1); c.scale(1.2, 1.2);
   if (happy) { c.fillStyle = 'rgba(255,130,165,.5)'; c.beginPath(); c.ellipse(-34, 10, 10, 6, 0, 0, TAU); c.ellipse(34, 10, 10, 6, 0, 0, TAU); c.fill(); }
@@ -2270,6 +2715,7 @@ function drawFx() {
     else if (p.kind === 'bubble') { ctx.globalAlpha = Math.min(.9, k * 2); ctx.strokeStyle = p.c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x + Math.sin(p.t * 8 + p.rot) * 3, p.y, p.s, 0, TAU); ctx.stroke(); }
     else if (p.kind === 'ring') { ctx.globalAlpha = k * .8; ctx.strokeStyle = p.c; ctx.lineWidth = 3; const w = p.s * (1.05 - k); ctx.beginPath(); ctx.ellipse(p.x, p.y, w, w * .16, 0, 0, TAU); ctx.stroke(); }
     else if (p.kind === 'slice') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, TAU); ctx.fill(); ctx.strokeStyle = '#ffd9a0'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .5, 0, TAU); ctx.stroke(); }
+    else if (p.kind === 'confetti') { ctx.globalAlpha = Math.min(1, k * 3); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * .3); ctx.scale(1, Math.cos(p.rot)); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .3, p.s, p.s * .6); ctx.restore(); }
     else if (p.kind === 'drop') { ctx.globalAlpha = Math.min(1, k * 2); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s * .6, 0, TAU); ctx.fill(); }
     else { ctx.globalAlpha = Math.min(1, k * 2); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s * .35, p.s, p.s * .7); ctx.restore(); }
   }
@@ -2297,7 +2743,7 @@ function wrapText(text, maxW) { const out = []; let cur = ''; for (const ch of (
 function drawAlien(t) {
   const cx = 92, cy = 112, R = 56, playing = G.state === 'play';
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1), ringCol = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm;
-  let md = G.time < G.moodT ? G.mood : (playing && frac < .2 ? 'angry' : (playing && G.round >= G.target ? 'happy' : 'calm'));
+  let md = G.time < G.moodT ? G.mood : (playing && frac < .2 ? 'angry' : (playing && G.tier ? 'happy' : 'calm'));
   ctx.lineWidth = 7; ctx.strokeStyle = C.hullHi; ctx.beginPath(); ctx.arc(cx, cy, R + 10, 0, TAU); ctx.stroke();
   ctx.strokeStyle = ringCol; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(cx, cy, R + 10, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(.001, frac)); ctx.stroke(); ctx.lineCap = 'butt';
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
@@ -2338,19 +2784,37 @@ function drawAlien(t) {
   }
 }
 function drawRoundBar() {
-  const x0 = 262, w = 420, y = 30, h = 24, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target;
+  const x0 = 262, w = 420, y = 30, h = 24, p = G.shown, ready = G.tier > 0;
   ctx.textBaseline = 'alphabetic'; ctx.font = `${EN ? 18 : 20}px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.fillText(L('圆形程度', 'Roundness'), x0 - 10, y + 19);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
   rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(tx, y - 5); ctx.lineTo(tx, y + h + 5); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = `500 12px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.fillText(L('达标 ', 'Goal ') + pct(G.target), tx, y - 10);
+  drawStarLines(x0, w, y, h, `500 12px ${NUM}`, C.ink);
   ctx.font = `36px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 14, y + 27);
+  drawTier(x0 + w + 16, y + 53, 19);
   // 材料名、耐久、敲击统计
   const m = G.mat; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 52);
   let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 51); px += EN ? 28 : 34;
   for (let k = 0; k < m.hp; k++) { ctx.beginPath(); ctx.arc(px + k * 17, y + 46, 5.5, 0, TAU); if (k < G.hp) { ctx.fillStyle = C.alarm; ctx.fill(); } else { ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke(); } }
   ctx.textAlign = 'right'; ctx.font = `12px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 砸过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), x0 + w, y + 51);
+}
+/* 圆度条上的三条星线：一星、二星是短实线，三星是原来那条虚线；上面只标下一颗星要到多少，三颗都拿到了就标三星线 */
+function drawStarLines(x0, w, y, h, font, col) {
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 2;
+  for (let k = 0; k < 3; k++) {
+    const x = x0 + w * G.lines[k]; ctx.globalAlpha = k < 2 ? .75 : 1;
+    if (k === 2) ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, y - (k < 2 ? 3 : 5)); ctx.lineTo(x, y + h + (k < 2 ? 3 : 5)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.globalAlpha = 1;
+  const k = Math.min(G.tier, 2), label = '★'.repeat(k + 1) + ' ' + pct(G.lines[k]);
+  ctx.font = font; ctx.textAlign = 'center'; ctx.fillStyle = col;
+  const tw = ctx.measureText(label).width; ctx.fillText(label, Math.min(x0 + w * G.lines[k], x0 + w + 8 - tw / 2), y - 10);
+}
+/* 现在够几颗星：亮的是金色，没亮的是边框色 */
+function drawTier(x, y, size) {
+  ctx.font = `${size}px ${BODY}`; ctx.textAlign = 'left';
+  for (let k = 0; k < 3; k++) { ctx.fillStyle = k < G.tier ? C.coin : C.rim; ctx.fillText('★', x + k * size * 1.05, y); }
 }
 const GX = 906, GW = 26, GY0 = 98, GY1 = 492, gy = F => GY1 - (GY1 - GY0) * F / 100;
 function layerTag(b) {
@@ -2407,7 +2871,7 @@ function drawRotHint() {
   ctx.fillStyle = on ? C.space : C.ink; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
 }
 function drawHints() {
-  if (G.state !== 'play') return;
+  if (G.state !== 'play' || (!PORT && toastInPlay())) return;
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`; ctx.fillStyle = C.dim;
   ctx.fillText(G.started ? TIPS[Math.floor(G.time / 6) % TIPS.length] : TIPS[0], PORT ? midX() : 400, FLOOR + (PORT ? 30 : 50));
@@ -2440,13 +2904,13 @@ function drawGaugePort() {
 /* 竖屏的顶栏：小号舷窗 + 圆度条 + 一行状态。坐标是画面坐标（宽 VW），不跟世界镜头走 */
 function drawHudPort(t) {
   ctx.save(); ctx.translate(50 - 92 * .62, 52 - 112 * .62); ctx.scale(.62, .62); drawAlien(t); ctx.restore();
-  const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, tx = x0 + w * G.target, ready = G.round >= G.target, m = G.mat;
+  const x0 = 106, w = 296, y = 32, h = 26, p = G.shown, ready = G.tier > 0, m = G.mat;
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.font = `18px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(L('圆形程度', 'Roundness'), x0, y - 9);
+  drawTier(x0 + ctx.measureText(L('圆形程度', 'Roundness')).width + 10, y - 9, 17);
   rr(ctx, x0, y, w, h, h / 2); ctx.fillStyle = 'rgba(17,13,43,.8)'; ctx.fill();
   ctx.save(); rr(ctx, x0, y, w, h, h / 2); ctx.clip(); ctx.fillStyle = ready ? C.alien : C.coin; rr(ctx, x0 - h, y, w * p + h, h, h / 2); ctx.fill(); ctx.restore();
   rr(ctx, x0, y, w, h, h / 2); ctx.strokeStyle = C.rim; ctx.lineWidth = 2; ctx.stroke();
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(tx, y - 5); ctx.lineTo(tx, y + h + 5); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = `500 14px ${NUM}`; ctx.textAlign = 'center'; ctx.fillStyle = C.dim; ctx.fillText(L('达标 ', 'Goal ') + pct(G.target), tx, y - 10);
+  drawStarLines(x0, w, y, h, `500 14px ${NUM}`, C.dim);
   ctx.font = `40px ${DISPLAY}`; ctx.textAlign = 'left'; ctx.fillStyle = ready ? C.alien : C.ink; ctx.fillText(pct(G.round), x0 + w + 12, y + 29);
   ctx.font = `22px ${DISPLAY}`; ctx.fillStyle = C.ink; ctx.fillText(m.name, x0, y + 58);
   let px = x0 + ctx.measureText(m.name).width + 14; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L('耐久', 'HP'), px, y + 56); px += EN ? 34 : 42;
@@ -2454,7 +2918,7 @@ function drawHudPort(t) {
   ctx.textAlign = 'right'; ctx.font = `14px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`有效 ${G.stats.good} · 过头 ${G.stats.over}`, `Good ${G.stats.good} · Over ${G.stats.over}`), VW - 12, y + 56);
   const frac = clamp(G.timeLeft / G.timeMax, 0, 1);
   ctx.textAlign = 'left'; ctx.font = `500 17px ${NUM}`; ctx.fillStyle = frac > .5 ? C.alien : frac > .2 ? C.coin : C.alarm; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 12, 124);
-  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
+  ctx.textAlign = 'center'; ctx.font = `15px ${BODY}`; ctx.fillStyle = C.dim; if (!toastInPlay()) ctx.fillText(L(`第 ${G.idx + 1} / ${ORDER.length} 单`, `Order ${G.idx + 1} / ${ORDER.length}`) + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2, 124);
   ctx.textAlign = 'right'; ctx.font = `700 22px ${NUM}`; ctx.fillStyle = C.coin; ctx.fillText('◎ ' + G.score, VW - 12, 126);
   const bb = G.bubble;
   if (bb && G.time - bb.t0 < bb.dur) {
@@ -2503,7 +2967,7 @@ function draw() {
   if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); drawTalk(G.body); }
   if (G.doom) drawDoom(G.doom);
-  drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); ctx.restore();
+  drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); if (G.cele) drawCelebrate(t); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
 }
@@ -2529,7 +2993,7 @@ if (EN) {
   document.getElementById('help').textContent = TOUCH
     ? 'Hold to lift, slam on the floor · Second finger slides to turn'
     : 'Hold to lift, slam on the floor · A / D to turn · Space delivers';
-  deliverBtn.innerHTML = 'Deliver<kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
+  deliverBtn.innerHTML = 'Deliver<span class="st"></span><kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
 }
@@ -2548,19 +3012,21 @@ function sim(id, t, hits, aimErr) {
   }
   return { curve: out, keep: Math.round(b.area / b.area0 * 100) };
 }
-window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
+window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 
 function boot(data) {
+  const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);
+  if (!A.bf) { A.bf = 1; A.bfN = back; achSave(); }
   if (data && typeof data.score === 'number' && data.idx >= 0 && data.idx < ORDER.length) { G.idx = data.idx; G.loop = data.loop || 0; G.score = data.score; G.done = data.done || 0; showOrder(); }
   else if (new URLSearchParams(location.search).get('lang')) showMenu();   // 刚切完语言就别再看一遍封面
   else showCover();
   requestAnimationFrame(now => { last = now; frame(now); });
   let ref = ''; try { const r = document.referrer && new URL(document.referrer).hostname; if (r && r !== location.hostname) ref = r; } catch (e) {}
   if (NAME) cloudSync(NAME).then(refreshCard).catch(() => {});
-  TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, delivered: Object.keys(SAVE.best).length });
+  TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, delivered: Object.keys(SAVE.best).length, stars: starTotal(), achN: Object.keys(A.got).length });
 }
 /* 关页面时还在做的那一单，记成中途放弃 */
-addEventListener('pagehide', () => { if (G.state === 'play') TRACK('quit', roundInfo()); });
+addEventListener('pagehide', () => { if (G.state === 'play') { TRACK('quit', roundInfo()); achFlush(); } });
 const hot = window.claude && window.claude.hot;
 try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state === 'cover' ? {} : { idx: G.idx, loop: G.loop, score: G.startScore, done: G.done })); } catch (e) {}
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
