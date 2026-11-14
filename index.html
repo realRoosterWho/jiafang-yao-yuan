@@ -108,6 +108,8 @@ body {
 #card h1 { margin: 0; font: 400 3.1em/1 var(--display); letter-spacing: .05em; color: var(--alien); }
 #card h2 { margin: 0; font: 400 1.9em/1.15 var(--display); text-wrap: balance; }
 #card p { margin: 0; line-height: 1.6; }
+#card p.why { padding: .6em .8em; border-radius: .6em; background: rgba(255,86,131,.12); box-shadow: inset 3px 0 0 var(--alarm); }
+#card .red { color: var(--alarm); font-weight: 700; }
 #card strong { color: var(--coin); font-weight: 600; }
 .eyebrow { font-size: .8em; letter-spacing: .14em; color: var(--coin); }
 .how { margin: 0; padding: 0; list-style: none; display: grid; gap: .5em; }
@@ -212,7 +214,7 @@ body {
       <div id="overlay" hidden><section id="card"></section></div>
     </div>
   </div>
-  <p id="help">按住材料拎起来往地板上砸，或者举高了松手。抓住一头，对面那头朝下；A / D 或滚轮微调角度，空格交货。</p>
+  <p id="help">按住拎起来砸地板 · A / D 转 · 空格交货</p>
 </main>
 
 <script>
@@ -258,128 +260,128 @@ const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
    可选：snd 借用别的敲击声，wet 溅汁水，rough 轮廓毛糙，rnd 随机形状可接受的起始圆度范围 */
 const MATS = {
   wood: { name: '木头', unit: '块', hard: 22, brittle: 80, loose: 1.0, plastic: 0, smooth: 0, passes: 0, value: 1.0, hp: 3, rest: .28, fric: .7, accel: 30000, jig: .04, target: .80, time: 90,
-    base: '#b9824a', outline: '#4f2e12', chips: ['#c99355', '#8a5a2b', '#e3ba82'], over: '劈裂了！', dead: '木头被砸成了一堆柴火。', blurb: '脾气最好的材料，力度窗口很宽，拿来热身。' },
+    base: '#b9824a', outline: '#4f2e12', chips: ['#c99355', '#8a5a2b', '#e3ba82'], over: '劈裂了！', dead: '木头被砸成了一堆柴火。', blurb: '脾气最好，窗口很宽，拿来热身。' },
   stone: { name: '石头', unit: '块', hard: 42, brittle: 86, loose: .8, plastic: 0, smooth: 0, passes: 0, value: 1.5, hp: 3, rest: .2, fric: .8, accel: 17000, jig: 0, target: .82, time: 90, rnd: [.5, .66], rough: 1.3,
-    base: '#8c9099', outline: '#3a3d44', chips: ['#9aa0a8', '#6d7178', '#c4c8ce'], over: '崩掉一块！', dead: '石头碎成了渣。', blurb: '够硬也够沉。不抡起来砸它没反应，抡太狠又会崩。' },
+    base: '#8c9099', outline: '#3a3d44', chips: ['#9aa0a8', '#6d7178', '#c4c8ce'], over: '崩掉一块！', dead: '石头碎成了渣。', blurb: '不抡起来没反应，抡太狠会崩。' },
   meat: { name: '肉', unit: '块', hard: 6, brittle: 55, loose: 1.6, plastic: 1, smooth: .5, passes: 8, value: 1.3, hp: 3, rest: .04, fric: .95, accel: 26000, jig: .5, target: .85, time: 70, wet: true,
-    base: '#c8423a', outline: '#6e1a16', rim: '#f6dcc6', chips: ['#d9534a', '#f6dcc6', '#a62f29'], over: '砸成肉泥了！', dead: '这块肉已经是一摊肉酱了。', blurb: '一碰就变形，挤到哪鼓到哪。举太高松手会直接变肉泥。' },
+    base: '#c8423a', outline: '#6e1a16', rim: '#f6dcc6', chips: ['#d9534a', '#f6dcc6', '#a62f29'], over: '砸成肉泥了！', dead: '这块肉已经是一摊肉酱了。', blurb: '一碰就变形。别举太高松手。' },
   can: { name: '易拉罐', unit: '个', hard: 14, brittle: 56, loose: 1.3, plastic: .85, smooth: .5, passes: 2, value: 1.8, hp: 3, rest: .22, fric: .5, accel: 34000, jig: .12, target: .84, time: 85,
-    base: '#d9372c', outline: '#5e0f0b', chips: ['#e8e8ee', '#d9372c', '#b9bcc6'], over: '压扁了！', dead: '易拉罐被拍成了一张铁皮。', blurb: '软金属，不会少料，砸扁的地方会往两边鼓。' },
+    base: '#d9372c', outline: '#5e0f0b', chips: ['#e8e8ee', '#d9372c', '#b9bcc6'], over: '压扁了！', dead: '易拉罐被拍成了一张铁皮。', blurb: '软金属：砸扁处往两边鼓，不少料。' },
   pc: { name: '电脑', unit: '台', hard: 30, brittle: 58, loose: .9, plastic: 0, smooth: 0, passes: 0, value: 2.2, hp: 2, rest: .12, fric: .7, accel: 22000, jig: .03, target: .82, time: 95,
-    base: '#d8d1bb', outline: '#5f5a49', chips: ['#d8d1bb', '#2b3a33', '#8f8a78', '#7dff9a'], over: '零件飞出来了！', dead: '电脑散成了一地零件。', blurb: '又硬又脆，力度窗口很窄。显示器底座也得磨掉。' },
+    base: '#d8d1bb', outline: '#5f5a49', chips: ['#d8d1bb', '#2b3a33', '#8f8a78', '#7dff9a'], over: '零件飞出来了！', dead: '电脑散成了一地零件。', blurb: '又硬又脆。显示器底座也得磨掉。' },
   gem: { name: '宝石', unit: '颗', hard: 54, brittle: 70, loose: .7, plastic: 0, smooth: 0, passes: 0, value: 5, hp: 2, rest: .3, fric: .4, accel: 30000, jig: 0, target: .85, time: 110,
-    base: '#35c3e0', outline: '#e9fdff', chips: ['#9ff3ff', '#35c3e0', '#ffffff'], over: '崩口了！', dead: '宝石碎成了一把亮晶晶的粉。', blurb: '极硬极脆，力度差一点都不行。一颗顶其他材料好几单。' },
+    base: '#35c3e0', outline: '#e9fdff', chips: ['#9ff3ff', '#35c3e0', '#ffffff'], over: '崩口了！', dead: '宝石碎成了一把亮晶晶的粉。', blurb: '力度差一点都不行，但一颗顶好几单。' },
 
   /* 第二班：厨房 */
   dough: { name: '面团', unit: '团', hard: 4, brittle: 72, loose: 1.8, plastic: 1, smooth: .5, passes: 6, value: 1.4, hp: 3, rest: .02, fric: .95, accel: 26000, jig: .45, target: .88, time: 75, snd: 'meat',
-    base: '#f0dcb4', outline: '#8a6b3c', chips: ['#fff6e0', '#f0dcb4', '#e2c896'], over: '拍成饼了！', dead: '面团被拍成了一张饼。甲方不吃饼。', blurb: '软得不像话，轻轻一放就摊开，怎么砸都不少料。难的是别砸过头。' },
+    base: '#f0dcb4', outline: '#8a6b3c', chips: ['#fff6e0', '#f0dcb4', '#e2c896'], over: '拍成饼了！', dead: '面团被拍成了一张饼。甲方不吃饼。', blurb: '怎么砸都不少料，只要别砸过头。' },
   cheese: { name: '奶酪', unit: '块', hard: 10, brittle: 46, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 1.6, hp: 3, rest: .1, fric: .8, accel: 28000, jig: .08, target: .8, time: 95, snd: 'crumb',
-    base: '#f6c544', outline: '#8a5a0c', chips: ['#f6c544', '#ffe28a', '#d99a1c'], over: '酥掉一大块！', dead: '奶酪碎成了一盘芝士粉。', blurb: '切好的一角，三个尖。又酥又松，一下掉一大块，下手轻一点，别贪。' },
+    base: '#f6c544', outline: '#8a5a0c', chips: ['#f6c544', '#ffe28a', '#d99a1c'], over: '酥掉一大块！', dead: '奶酪碎成了一盘芝士粉。', blurb: '三个尖，又酥又松，下手轻。' },
   melon: { name: '西瓜', unit: '半个', hard: 18, brittle: 50, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 1.8, hp: 3, rest: .12, fric: .7, accel: 20000, jig: .06, target: .8, time: 100, wet: true,
-    base: '#f0484e', outline: '#5c1018', chips: ['#ff5a5f', '#ffd0d0', '#1f7a34', '#2a1414'], over: '瓜裂了！', dead: '西瓜炸成了一地瓜瓤。', blurb: '切开的半个瓜，底下那一刀是平的。先收拾两个尖角。汁水溅到甲方身上不加钱。' },
+    base: '#f0484e', outline: '#5c1018', chips: ['#ff5a5f', '#ffd0d0', '#1f7a34', '#2a1414'], over: '瓜裂了！', dead: '西瓜炸成了一地瓜瓤。', blurb: '先收拾两个尖角。' },
   carrot: { name: '胡萝卜', unit: '根', hard: 16, brittle: 58, loose: 1.6, plastic: 0, smooth: 0, passes: 0, value: 2, hp: 3, rest: .25, fric: .6, accel: 32000, jig: .03, target: .78, time: 110, snd: 'snap',
-    base: '#f08a24', outline: '#7a3a06', chips: ['#f08a24', '#ffb563', '#c96a10'], over: '断了一截！', dead: '胡萝卜断成了一盘萝卜丁。', blurb: '又细又长。抓住粗的那头，把尖的那头一截一截砸短，再回头修另一边。' },
+    base: '#f08a24', outline: '#7a3a06', chips: ['#f08a24', '#ffb563', '#c96a10'], over: '断了一截！', dead: '胡萝卜断成了一盘萝卜丁。', blurb: '抓粗头，把尖头一截截砸短。' },
   ice: { name: '冰块', unit: '块', hard: 28, brittle: 58, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 2.4, hp: 2, rest: .3, fric: .1, accel: 28000, jig: 0, target: .86, time: 45, snd: 'glass',
-    base: '#bfe9fb', outline: '#3f86b3', chips: ['#eaffff', '#bfe9fb', '#8fd0f0'], over: '冰裂了！', dead: '冰块碎成了一杯刨冰。', blurb: '加急单：冰在化，甲方等不了多久。地板上还特别滑，松手它会溜走。' },
+    base: '#bfe9fb', outline: '#3f86b3', chips: ['#eaffff', '#bfe9fb', '#8fd0f0'], over: '冰裂了！', dead: '冰块碎成了一杯刨冰。', blurb: '冰在化，时间短；松手会在地上溜。' },
   egg: { name: '鸡蛋', unit: '颗', hard: 6, brittle: 30, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 3.5, hp: 1, rest: .1, fric: .6, accel: 30000, jig: .02, target: .86, time: 90, snd: 'egg',
-    base: '#f6ead2', outline: '#9a7d55', chips: ['#fffaf0', '#f6ead2', '#ffcf40'], over: '蛋碎了！', dead: '蛋黄流了一地。甲方说这个形状最不圆。', blurb: '轻拿轻放。力度稍微一大就碎，而且<strong>一次都碎不起</strong>。离地一拃高松手就够了。' },
+    base: '#f6ead2', outline: '#9a7d55', chips: ['#fffaf0', '#f6ead2', '#ffcf40'], over: '蛋碎了！', dead: '蛋黄流了一地。甲方说这个形状最不圆。', blurb: '<strong>一次都碎不起</strong>。离地一拃高松手就够。' },
 
   /* 第三班：仓库 */
   brick: { name: '砖头', unit: '块', hard: 44, brittle: 80, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 1.7, hp: 3, rest: .15, fric: .85, accel: 16000, jig: 0, target: .76, time: 110, snd: 'stone', rough: 1,
-    base: '#b5482f', outline: '#4e1a0e', chips: ['#c85a3c', '#8f351f', '#e08a6a'], over: '崩掉一角！', dead: '砖头碎成了一堆渣土。', blurb: '又长又硬的一块红砖。两头先砸短。力气小了它只会掉灰。' },
+    base: '#b5482f', outline: '#4e1a0e', chips: ['#c85a3c', '#8f351f', '#e08a6a'], over: '崩掉一角！', dead: '砖头碎成了一堆渣土。', blurb: '两头先砸短。' },
   cone: { name: '路锥', unit: '个', hard: 14, brittle: 64, loose: 1.2, plastic: .8, smooth: .5, passes: 3, value: 2.4, hp: 3, rest: .62, bounce: .8, fric: .8, accel: 30000, jig: .3, target: .84, time: 90, snd: 'rubber',
-    base: '#ff7a1a', outline: '#7a2d00', chips: ['#ff7a1a', '#ffffff', '#2a2a36'], over: '压瘪了！', dead: '路锥被拍成了一张橡胶垫。', blurb: '橡胶做的，砸不掉料，还特别弹：松手之后它会自己再蹦两下，每一下都算数。' },
+    base: '#ff7a1a', outline: '#7a2d00', chips: ['#ff7a1a', '#ffffff', '#2a2a36'], over: '压瘪了！', dead: '路锥被拍成了一张橡胶垫。', blurb: '橡胶的：松手后还会自己蹦两下，每下都算。' },
   gear: { name: '齿轮', unit: '个', hard: 52, brittle: 84, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 3.2, hp: 3, rest: .25, fric: .5, accel: 17000, jig: 0, target: .9, time: 100, snd: 'steel',
-    base: '#a9afb8', outline: '#30343b', chips: ['#c9ced6', '#7d838d', '#f2f4f7', '#ffd35c'], over: '崩齿了！', dead: '齿轮裂成了几瓣。甲方的机器停了。', blurb: '钢的。八个齿，一个一个敲掉就圆了。让齿尖朝下，用足力气。' },
+    base: '#a9afb8', outline: '#30343b', chips: ['#c9ced6', '#7d838d', '#f2f4f7', '#ffd35c'], over: '崩齿了！', dead: '齿轮裂成了几瓣。甲方的机器停了。', blurb: '八个齿，齿尖朝下，用足力气。' },
   bottle: { name: '玻璃瓶', unit: '个', hard: 24, brittle: 42, loose: 1.4, plastic: 0, smooth: 0, passes: 0, value: 3.4, hp: 2, rest: .2, fric: .5, accel: 30000, jig: 0, target: .8, time: 100, snd: 'glass',
-    base: '#2f8a4d', outline: '#0f3d20', chips: ['#58b56f', '#bff0c8', '#1f6b3a'], over: '裂了！', dead: '玻璃碴子撒了一地，甲方没穿鞋。', blurb: '力度窗口又低又窄。瓶颈得整个磨掉，但别心急，它只扛得住一次失手。' },
+    base: '#2f8a4d', outline: '#0f3d20', chips: ['#58b56f', '#bff0c8', '#1f6b3a'], over: '裂了！', dead: '玻璃碴子撒了一地，甲方没穿鞋。', blurb: '瓶颈整个磨掉。只能失手一次。' },
   gold: { name: '金条', unit: '根', hard: 34, brittle: 76, loose: 1, plastic: .95, smooth: .4, passes: 2, value: 5, hp: 3, rest: .08, fric: .7, accel: 12000, jig: .02, target: .86, time: 100,
-    base: '#f2c230', outline: '#7a5200', chips: ['#ffe37a', '#f2c230', '#fff6cf'], over: '拍扁了！', dead: '金条被拍成了一张金箔。', blurb: '死沉，手会被它拖慢。好在金子软，砸扁的地方往两边鼓，一克都不会少。' },
+    base: '#f2c230', outline: '#7a5200', chips: ['#ffe37a', '#f2c230', '#fff6cf'], over: '拍扁了！', dead: '金条被拍成了一张金箔。', blurb: '死沉，拎着慢。金子软，不少料。' },
   ingot: { name: '钢锭', unit: '块', hard: 72, brittle: 100, loose: 1.6, plastic: 0, smooth: 0, passes: 0, value: 4.5, hp: 3, rest: .1, fric: .8, accel: 15000, jig: 0, target: .8, time: 120, snd: 'steel',
-    base: '#727984', outline: '#22262c', chips: ['#aeb4bd', '#5d636c', '#ffb347'], over: '砸裂了！', dead: '你居然把钢锭砸碎了。甲方有点害怕。', blurb: '全场最硬，也是唯一砸不坏的。举到顶松手也只能蹭掉点皮，<strong>得抓着往下抡</strong>，有多大劲使多大劲。' },
+    base: '#727984', outline: '#22262c', chips: ['#aeb4bd', '#5d636c', '#ffb347'], over: '砸裂了！', dead: '你居然把钢锭砸碎了。甲方有点害怕。', blurb: '砸不坏。松手没用，<strong>得抓着往下抡</strong>。' },
 
   /* 第四班：收藏室 */
   cube: { name: '魔方', unit: '个', hard: 26, brittle: 46, loose: 1, plastic: 0, smooth: 0, passes: 0, value: 3.5, hp: 3, rest: .2, fric: .6, accel: 30000, jig: .02, target: .86, time: 80, snd: 'plastic',
-    base: '#15151c', outline: '#4a4a5c', chips: ['#ff4d4d', '#ffd35c', '#3fa7ff', '#3ddc84', '#ffffff', '#15151c'], over: '崩飞一块！', dead: '魔方散成了一地小方块。', blurb: '甲方拧了三年没拧回去，决定换个思路。塑料的，脆，力度窗口不宽。' },
+    base: '#15151c', outline: '#4a4a5c', chips: ['#ff4d4d', '#ffd35c', '#3fa7ff', '#3ddc84', '#ffffff', '#15151c'], over: '崩飞一块！', dead: '魔方散成了一地小方块。', blurb: '塑料的，脆。' },
   phone: { name: '手机', unit: '部', hard: 22, brittle: 38, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 4, hp: 2, rest: .15, fric: .6, accel: 32000, jig: .02, target: .82, time: 110, snd: 'pc',
-    base: '#1c1c26', outline: '#6b6b80', chips: ['#1c1c26', '#7fd4ff', '#c0c0d0', '#ff5683'], over: '屏碎了！', dead: '手机碎了。里面还有甲方没备份的照片。', blurb: '又高又薄，窗口很低，用小臂的力气就够了。只能失手一次。' },
+    base: '#1c1c26', outline: '#6b6b80', chips: ['#1c1c26', '#7fd4ff', '#c0c0d0', '#ff5683'], over: '屏碎了！', dead: '手机碎了。里面还有甲方没备份的照片。', blurb: '又高又薄，小臂发力就够。只能失手一次。' },
   record: { name: '唱片', unit: '张', hard: 5, brittle: 16, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 1, hp: 1, rest: .1, fric: .5, accel: 30000, jig: 0, target: .95, time: 30, snd: 'plastic',
-    base: '#14141b', outline: '#4a4a5c', chips: ['#14141b', '#3a3a48', '#e23d4f'], over: '摔裂了！', dead: '一张本来就圆的唱片，被你摔成了不圆的。', blurb: '……这张本来就是圆的。甲方只想看看你会不会手痒。<strong>直接交货</strong>就行，摔了算你的。' },
+    base: '#14141b', outline: '#4a4a5c', chips: ['#14141b', '#3a3a48', '#e23d4f'], over: '摔裂了！', dead: '一张本来就圆的唱片，被你摔成了不圆的。', blurb: '本来就是圆的。<strong>直接交货</strong>。' },
   crown: { name: '皇冠', unit: '顶', hard: 30, brittle: 62, loose: 1.1, plastic: .9, smooth: .45, passes: 3, value: 5.5, hp: 3, rest: .12, fric: .6, accel: 20000, jig: .04, target: .88, time: 100, snd: 'gold',
-    base: '#f2c230', outline: '#7a5200', chips: ['#ffe37a', '#f2c230', '#e23d4f', '#3fa7ff'], over: '砸瘪了！', dead: '皇冠被拍成了一个金盘子。', blurb: '纯金，带三个尖。把尖往下砸，金子会往两边的凹口里鼓。' },
+    base: '#f2c230', outline: '#7a5200', chips: ['#ffe37a', '#f2c230', '#e23d4f', '#3fa7ff'], over: '砸瘪了！', dead: '皇冠被拍成了一个金盘子。', blurb: '把三个尖往下砸，金子会鼓进凹口。' },
   star: { name: '星星', unit: '颗', hard: 46, brittle: 70, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 6, hp: 2, rest: .3, fric: .4, accel: 26000, jig: 0, target: .86, time: 110, snd: 'gem',
-    base: '#ffd83c', outline: '#fff3b0', chips: ['#fffde0', '#ffd83c', '#ff9d2e'], over: '崩掉一角！', dead: '星星碎了。今晚的天上少了一颗。', blurb: '甲方从天上摘的。他们说恒星本来就是圆的，是你们地球人画错了。五个角，敲掉。' },
+    base: '#ffd83c', outline: '#fff3b0', chips: ['#fffde0', '#ffd83c', '#ff9d2e'], over: '崩掉一角！', dead: '星星碎了。今晚的天上少了一颗。', blurb: '甲方从天上摘的。五个角，敲掉。' },
   ufo: { name: '飞碟', unit: '架', hard: 44, brittle: 64, loose: .8, plastic: .5, smooth: .4, passes: 2, value: 8, hp: 2, rest: .15, fric: .6, accel: 14000, jig: .03, target: .9, time: 130,
-    base: '#b9bfcc', outline: '#2e3340', chips: ['#e3e7ee', '#8a90a0', '#7de8ff', '#ffd35c'], over: '警报响了！', dead: '飞碟炸了。这下你和甲方都回不去了。', blurb: '最后一单：甲方的座驾。又大又扁又沉，司机还在里面。别管他。' },
+    base: '#b9bfcc', outline: '#2e3340', chips: ['#e3e7ee', '#8a90a0', '#7de8ff', '#ffd35c'], over: '警报响了！', dead: '飞碟炸了。这下你和甲方都回不去了。', blurb: '甲方的座驾，又大又沉。司机还在里面。' },
   /* 第五班：表里不一。外面一层壳、里面一层芯，各有各的力度窗口；哪一层朝下，力度表就按哪一层算 */
   coconut: { name: '椰子', unit: '个', hard: 12, brittle: 72, loose: 1.3, plastic: 0, smooth: 0, passes: 0, value: 6, hp: 3, rest: .25, fric: .5, accel: 24000, jig: 0, target: .9, time: 120, snd: 'wood', rough: 3,
     core: { label: ['硬壳', 'Hard shell'], hard: 62, brittle: 100, loose: .3, base: '#5c3a1e', outline: '#2e1a0a', chips: ['#5c3a1e', '#fffaf0'], snd: 'stone', over: ['裂了！', 'Cracked!'], pts: () => arcPts(0, 0, 64, 0, TAU, 40) },
-    base: '#a8763f', outline: '#5a3a18', chips: ['#c79a5e', '#a8763f', '#7d5326'], over: '砸过头了！', dead: '椰子裂成两半，椰汁流了一地。甲方说他不渴。', blurb: '外面是软软的椰棕，轻轻一砸就掉；里面的硬壳本来就是圆的，轻了根本砸不动。把棕剥干净就行，别用蛮力。' },
+    base: '#a8763f', outline: '#5a3a18', chips: ['#c79a5e', '#a8763f', '#7d5326'], over: '砸过头了！', dead: '椰子裂成两半，椰汁流了一地。甲方说他不渴。', blurb: '剥掉椰棕就行，里面的壳本来就圆。' },
   parcel: { name: '快递', unit: '件', hard: 10, brittle: 84, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 7, hp: 3, rest: .2, fric: .6, accel: 24000, jig: 0, target: .86, time: 120, snd: 'wood',
     core: { label: ['花瓶', 'Vase'], hard: 16, brittle: 48, loose: .8, base: '#3f8fd6', outline: '#173e6b', chips: ['#3f8fd6', '#ffffff', '#bfe0ff'], snd: 'glass', over: ['花瓶裂了！', 'The vase cracked!'],
       pts: () => [[-14, -76], [14, -76], [12, -54], [36, -22], [40, 12], [30, 52], [22, 74], [-22, 74], [-30, 52], [-40, 12], [-36, -22], [-12, -54]] },
-    base: '#c99a5b', outline: '#6e4a1c', chips: ['#e0b97f', '#c99a5b', '#9a6f36'], over: '箱子砸烂了！', dead: '花瓶碎在箱子里。箱子上“易碎”两个字，现在是陈述句。', blurb: '纸箱随便砸，可里面立着一只花瓶，顶上和底下只隔一层纸板。四个角离花瓶远，放心砸；见到蓝色就得收着力。' },
+    base: '#c99a5b', outline: '#6e4a1c', chips: ['#e0b97f', '#c99a5b', '#9a6f36'], over: '箱子砸烂了！', dead: '花瓶碎在箱子里。箱子上“易碎”两个字，现在是陈述句。', blurb: '四个角放心砸，见到蓝色花瓶就收力。' },
   walnut: { name: '核桃', unit: '颗', hard: 36, brittle: 88, loose: .7, plastic: 0, smooth: 0, passes: 0, value: 8, hp: 4, rest: .3, fric: .5, accel: 26000, jig: 0, target: .88, time: 130, snd: 'wood', rough: 3,
     core: { label: ['核桃仁', 'Kernel'], hard: 6, brittle: 44, loose: 1.1, base: '#e6c088', outline: '#8a5a24', chips: ['#e6c088', '#f6e2bd', '#b98646'], snd: 'snap', over: ['仁碎了！', 'Kernel crushed!'], pts: () => polarPts(48, a => 1 / Math.hypot(Math.cos(a) / 86, Math.sin(a) / 68)) },
-    base: '#b07a3f', outline: '#5e3a14', chips: ['#c9955a', '#b07a3f', '#7d5326'], over: '壳崩了！', dead: '核桃碎成了核桃碎。甲方说他要的是圆，不是馅。', blurb: '壳很硬，得用力。可壳一砸穿，露出来的仁又软又脆，同样的力气会把它拍烂。砸穿的那一面，换成轻手。' },
+    base: '#b07a3f', outline: '#5e3a14', chips: ['#c9955a', '#b07a3f', '#7d5326'], over: '壳崩了！', dead: '核桃碎成了核桃碎。甲方说他要的是圆，不是馅。', blurb: '壳要用力；露出仁的那面换轻手。' },
   geode: { name: '晶洞', unit: '块', hard: 42, brittle: 92, loose: .8, plastic: 0, smooth: 0, passes: 0, value: 9, hp: 3, rest: .2, fric: .6, accel: 22000, jig: 0, target: .9, time: 140, snd: 'stone',
     core: { label: ['水晶', 'Crystal'], hard: 24, brittle: 60, loose: .9, base: '#8a4fd8', outline: '#e9d5ff', chips: ['#c9a3ff', '#8a4fd8', '#ffffff'], snd: 'gem', over: ['水晶崩了！', 'Crystal chipped!'], pts: () => arcPts(20, 2, 68, 0, TAU, 14) },
-    base: '#80828e', outline: '#2f303a', chips: ['#a5a7b3', '#80828e', '#55576a'], over: '石头崩了！', dead: '晶洞碎了一地，亮晶晶的。甲方很心疼，但不是心疼你。', blurb: '外面是一坨石头，里面偏着长了一窝水晶。石头要重砸，水晶只能中等力度。水晶那一侧的石皮很薄，留神。' },
+    base: '#80828e', outline: '#2f303a', chips: ['#a5a7b3', '#80828e', '#55576a'], over: '石头崩了！', dead: '晶洞碎了一地，亮晶晶的。甲方很心疼，但不是心疼你。', blurb: '石头重砸，水晶中等。水晶那侧石皮薄。' },
   bonbon: { name: '酒心巧克力', unit: '块', hard: 20, brittle: 60, loose: .6, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 4, rest: .15, fric: .7, accel: 26000, jig: 0, target: .86, time: 140, snd: 'snap',
     core: { label: ['酒心', 'Filling'], hard: 4, brittle: 34, loose: 1.1, wet: 1, base: '#ff9db5', outline: '#b8395c', chips: ['#ff9db5', '#ffd0dc', '#b8395c'], snd: 'meat', over: ['酒心溅出来了！', 'Filling everywhere!'], pts: () => rectPts(76, 76) },
-    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '巧克力崩了！', dead: '酒心流干了，只剩一摊巧克力。甲方舔了一口，说不圆也行，但不给钱。', blurb: '方的，壳薄，窗口窄。四个角砸下去一定会砸到酒心，酒心几乎一碰就溅。壳上用巧劲，露了心就只能轻轻点。' },
+    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '巧克力崩了！', dead: '酒心流干了，只剩一摊巧克力。甲方舔了一口，说不圆也行，但不给钱。', blurb: '壳上用巧劲，露了酒心就只能轻点。' },
   earth: { name: '地球', unit: '颗', hard: 38, brittle: 80, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .2, fric: .6, accel: 16000, jig: 0, target: .9, time: 160, snd: 'stone',
     core: { label: ['岩浆', 'Magma'], hard: 10, brittle: 46, loose: 1, wet: 1, base: '#ff8a1e', outline: '#ffe08a', chips: ['#ffd23c', '#ff8a1e', '#e23d1e'], snd: 'meat', over: ['岩浆喷了！', 'Eruption!'], pts: () => arcPts(0, 0, 82, 0, TAU, 48) },
-    base: '#2f7fd6', outline: '#0e2c5a', chips: ['#2f7fd6', '#4fb86a', '#ffffff', '#8a6a3a'], over: '地震了！', dead: '地球碎了。你老家没了，不过甲方说新的更圆。', blurb: '甲方量过了：你老家不够圆，山太高，沟太深。把山砸平。地壳很薄，下面全是岩浆，砸穿了就只能轻拿轻放。' },
+    base: '#2f7fd6', outline: '#0e2c5a', chips: ['#2f7fd6', '#4fb86a', '#ffffff', '#8a6a3a'], over: '地震了！', dead: '地球碎了。你老家没了，不过甲方说新的更圆。', blurb: '把山砸平。地壳砸穿了就只能轻放。' },
   /* 第六班：软硬不吃。harden = 每次有效敲击把力度下限抬高多少（minWin 是窗口最窄剩多少）；sag = 放在地上时往下塌的速度 */
   butter: { name: '黄油', unit: '块', hard: 6, brittle: 60, loose: 1.1, plastic: .9, smooth: .3, passes: 1, value: 6, hp: 3, rest: .05, fric: .9, accel: 20000, jig: .15, target: .86, time: 120, snd: 'meat', sag: .09, stab: .9,
-    base: '#ffe27a', outline: '#b8901e', chips: ['#fff2b8', '#ffe27a', '#f2c94c'], over: '拍成泥了！', dead: '黄油被拍成了一张纸，糊在地板上。甲方说正好拿来擦鞋。', blurb: '一长条黄油，软。竖着放会往下塌、往两边摊，躺平了就不动。尖角朝下放着，那个角会被自己压平。砸和塌配合着用。' },
+    base: '#ffe27a', outline: '#b8901e', chips: ['#fff2b8', '#ffe27a', '#f2c94c'], over: '拍成泥了！', dead: '黄油被拍成了一张纸，糊在地板上。甲方说正好拿来擦鞋。', blurb: '尖角朝下放着，让它自己塌平。' },
   copper: { name: '铜块', unit: '块', hard: 22, brittle: 86, harden: 3, minWin: 12, loose: 1, plastic: .4, smooth: .2, passes: 1, value: 7, hp: 3, rest: .2, fric: .5, accel: 20000, jig: 0, target: .9, time: 120, snd: 'steel',
-    base: '#c8743a', outline: '#5e2c0c', chips: ['#f0a466', '#c8743a', '#8a4a1e'], over: '砸裂了！', dead: '铜块裂成几瓣。铜本来很韧的，你是怎么做到的。', blurb: '铜越砸越硬。每砸好一下，力度窗口的下限就往上抬一点，绿色那段越来越窄。所以别浪费在平的那面上，专挑最凸的角。' },
+    base: '#c8743a', outline: '#5e2c0c', chips: ['#f0a466', '#c8743a', '#8a4a1e'], over: '砸裂了！', dead: '铜块裂成几瓣。铜本来很韧的，你是怎么做到的。', blurb: '越砸越硬，专挑最凸的角，别浪费。' },
   jelly: { name: '果冻', unit: '个', hard: 3, brittle: 34, loose: 1.3, plastic: .9, smooth: .4, passes: 2, value: 7, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .5, target: .87, time: 130, snd: 'rubber', sag: .12, stab: .85, wet: 1,
-    base: '#e83a5a', outline: '#8a1430', chips: ['#ff7a92', '#e83a5a', '#ffd0da'], over: '果冻碎了！', dead: '果冻摔成了一滩果汁。甲方用吸管吸干净了，但不给钱。', blurb: '城堡模子倒出来的果冻，软得一碰就晃。竖着放一会儿就塌矮，塌到够扁就停。轻手。' },
+    base: '#e83a5a', outline: '#8a1430', chips: ['#ff7a92', '#e83a5a', '#ffd0da'], over: '果冻碎了！', dead: '果冻摔成了一滩果汁。甲方用吸管吸干净了，但不给钱。', blurb: '一碰就晃，放着会塌矮。轻手。' },
   rebar: { name: '钢筋', unit: '根', hard: 30, brittle: 94, harden: 1.3, minWin: 14, loose: 1.5, plastic: .7, smooth: .2, passes: 1, value: 8, hp: 3, rest: .15, fric: .5, accel: 16000, jig: 0, target: .86, time: 150, snd: 'steel',
-    base: '#6f747e', outline: '#24272e', chips: ['#a5aab4', '#6f747e', '#9a5a2e'], over: '砸弯了！', dead: '钢筋断了。工地上的人正在到处找它。', blurb: '一根长钢筋。拎着一头，另一头正好朝下，竖着砸两头会让它变短变粗，铁匠管这叫镦粗。钢也越砸越硬，后面要一下比一下重。' },
+    base: '#6f747e', outline: '#24272e', chips: ['#a5aab4', '#6f747e', '#9a5a2e'], over: '砸弯了！', dead: '钢筋断了。工地上的人正在到处找它。', blurb: '竖着砸两头让它变短，一下比一下重。' },
   slime: { name: '史莱姆', unit: '坨', hard: 4, brittle: 34, loose: 1.1, plastic: 1, smooth: .5, passes: 2, value: 8, hp: 3, rest: .1, fric: .9, accel: 20000, jig: .45, target: .86, time: 130, snd: 'rubber', sag: .1, stab: .8, wet: 1,
-    base: '#6fdc4a', outline: '#1f6e18', chips: ['#b8ff8a', '#6fdc4a', '#3a9e2a'], over: '史莱姆炸开了！', dead: '史莱姆碎成了一地小史莱姆，正四散逃跑。', blurb: '一坨史莱姆，伸着好几只触手，放着就往下淌。它会看着你，别在意。触手朝下放着能让它自己缩回去。' },
+    base: '#6fdc4a', outline: '#1f6e18', chips: ['#b8ff8a', '#6fdc4a', '#3a9e2a'], over: '史莱姆炸开了！', dead: '史莱姆碎成了一地小史莱姆，正四散逃跑。', blurb: '触手朝下放着，它会自己缩回去。' },
   weight: { name: '秤砣', unit: '个', hard: 40, brittle: 92, harden: 2, minWin: 10, loose: .8, plastic: .3, smooth: .2, passes: 1, value: 10, hp: 2, rest: .15, fric: .6, accel: 16000, jig: 0, target: .88, time: 150, snd: 'steel',
-    base: '#3e4048', outline: '#121318', chips: ['#7a7d88', '#3e4048', '#9a5a2e'], over: '砸崩了！', dead: '秤砣崩了，甲方说以后称东西全凭感觉。', blurb: '生铁秤砣，头上一个提钮，底下又宽又平。铁越砸越硬，一开始就要想好先砸哪儿：钮最凸，但底下两个角也得处理。' },
+    base: '#3e4048', outline: '#121318', chips: ['#7a7d88', '#3e4048', '#9a5a2e'], over: '砸崩了！', dead: '秤砣崩了，甲方说以后称东西全凭感觉。', blurb: '越砸越硬。先砸提钮，再修底下两个角。' },
   /* 第七班：拿捏。warm = 拎在手里会被焐软（rate 升温速度/秒，cool 降温速度/秒，其余是焐透了以后的数值，sag 是焐软后放下会塌多快）；
      fill = 里面装着会往下流的东西（占多少面积，flow 流动快慢，弧度/秒），core 是“有东西垫着”的那面的数值 */
   clay: { name: '橡皮泥', unit: '团', hard: 50, brittle: 100, loose: .35, plastic: .9, smooth: .4, passes: 2, value: 8, hp: 2, rest: .05, fric: .9, accel: 22000, jig: .1, target: .88, time: 120, snd: 'plastic',
     warm: { rate: .35, cool: .12, hard: 8, brittle: 100, loose: 1.3, plastic: .9, glow: '#ff9a6a' },
-    base: '#e8533c', outline: '#7a1e10', chips: ['#ff8a6a', '#3fa7ff', '#ffd35c'], over: '捏烂了！', dead: '橡皮泥被拍成了一张薄片，粘在地板上撕不下来。', blurb: '刚从冰箱拿出来的橡皮泥，硬得砸不动。拎在手里焐一会儿，越拎越软，一下能砸掉一大块。砸不坏，放心试。' },
+    base: '#e8533c', outline: '#7a1e10', chips: ['#ff8a6a', '#3fa7ff', '#ffd35c'], over: '捏烂了！', dead: '橡皮泥被拍成了一张薄片，粘在地板上撕不下来。', blurb: '冻得砸不动，拎在手里焐软再砸。' },
   sandbag: { name: '沙袋', unit: '个', hard: 40, brittle: 100, loose: .25, plastic: .3, smooth: .2, passes: 1, value: 8, hp: 2, rest: .02, fric: .95, accel: 18000, jig: .05, target: .86, time: 130, snd: 'meat',
     fill: .6, flow: 1.2, core: { label: ['沙子', 'Sand'], hard: 12, brittle: 100, loose: 1.1, plastic: .5, base: '#d9b56a', outline: '#8a6a2a', chips: ['#e8cc8a', '#d9b56a', '#a8864a'], snd: 'crumb', over: ['', ''] },
-    base: '#b8925a', outline: '#5e4420', chips: ['#c9a66b', '#b8925a'], over: '袋子破了！', dead: '沙袋破了，沙子撒了一地。甲方说正好铺个沙滩。', blurb: '半袋沙子，沙会往下流。砸空着的布那面，软塌塌的没反应；砸有沙子垫着的那面才会变形。翻过来要等沙子流到底，力度表上会显示朝下的是沙子还是空的。' },
+    base: '#b8925a', outline: '#5e4420', chips: ['#c9a66b', '#b8925a'], over: '袋子破了！', dead: '沙袋破了，沙子撒了一地。甲方说正好铺个沙滩。', blurb: '有沙子垫着的那面才会变形。' },
   choco: { name: '巧克力', unit: '块', hard: 44, brittle: 62, loose: .5, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 3, rest: .1, fric: .7, accel: 22000, jig: 0, target: .88, time: 140, snd: 'snap', stab: .9,
     warm: { rate: .3, cool: .12, hard: 14, brittle: 50, loose: 1.1, plastic: .6, sag: .08, glow: '#9a5428', peak: .65, hot: { hard: 6, brittle: 22, loose: 1.4, plastic: .9 } },
-    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '崩了一块！', dead: '巧克力碎成了渣。甲方说正好撒在冰淇淋上。', blurb: '凉的巧克力脆：窗口窄，一下只崩一小块，适合精修。拎在手里焐软了，窗口变宽，一下砸得多，但放下就会化着往下塌。可别焐过头：太热就化了，一碰就坏，得放下等它凉。' },
+    base: '#5a3220', outline: '#2a140a', chips: ['#7a4a30', '#5a3220', '#3a1e10'], over: '崩了一块！', dead: '巧克力碎成了渣。甲方说正好撒在冰淇淋上。', blurb: '焐软了砸得多，焐过头一碰就坏。' },
   piggy: { name: '存钱罐', unit: '只', hard: 18, brittle: 42, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 10, hp: 3, rest: .15, fric: .6, accel: 22000, jig: 0, target: .86, time: 140, snd: 'glass',
     fill: .45, flow: 1.4, core: { label: ['硬币', 'Coins'], hard: 32, brittle: 92, loose: .85, base: '#f2c230', outline: '#8a6a00', chips: ['#ffe37a', '#f2c230', '#c99a10'], snd: 'can', over: ['硬币撞裂了！', 'The coins cracked it!'] },
-    base: '#ff9db5', outline: '#9a3c58', chips: ['#ffc4d2', '#ff9db5', '#ffffff'], over: '陶瓷裂了！', dead: '存钱罐碎了，硬币滚了一地。甲方一枚一枚捡起来，说这算你赔的。', blurb: '陶瓷小猪，肚子里半罐硬币。空着的那面薄，一碰就裂，但一下能砸掉不少；有硬币垫着的那面扛得住重砸，只是变得慢。翻过来，硬币要一会儿才滑到底。' },
+    base: '#ff9db5', outline: '#9a3c58', chips: ['#ffc4d2', '#ff9db5', '#ffffff'], over: '陶瓷裂了！', dead: '存钱罐碎了，硬币滚了一地。甲方一枚一枚捡起来，说这算你赔的。', blurb: '空的那面一碰就裂，有硬币的那面扛重砸。' },
   candle: { name: '蜡烛', unit: '根', hard: 34, brittle: 74, loose: .6, plastic: .2, smooth: .2, passes: 1, value: 11, hp: 3, rest: .1, fric: .7, accel: 20000, jig: 0, target: .86, time: 150, snd: 'crumb', stab: .85,
     warm: { rate: .22, cool: .12, hard: 10, brittle: 54, loose: 1.2, plastic: .8, sag: .1, glow: '#ffe2a0', peak: .6, hot: { hard: 4, brittle: 20, loose: 1.5, plastic: 1 } },
-    base: '#f4e6c8', outline: '#9a7a4a', chips: ['#fff6e0', '#f4e6c8', '#e8d2a8'], over: '断了一截！', dead: '蜡烛断成了好几截。甲方说正好停电的时候用。', blurb: '一根又细又高的蜡烛。凉的时候硬，焐到一半最好砸，竖着放下还会自己往下塌。可别一直攥着：焐过头蜡就软成一摊，一碰就断，还往下滴。' },
+    base: '#f4e6c8', outline: '#9a7a4a', chips: ['#fff6e0', '#f4e6c8', '#e8d2a8'], over: '断了一截！', dead: '蜡烛断成了好几截。甲方说正好停电的时候用。', blurb: '焐到一半最好砸，别一直攥着。' },
   honey: { name: '蜂蜜罐', unit: '罐', hard: 16, brittle: 36, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .1, fric: .6, accel: 20000, jig: 0, target: .86, time: 160, snd: 'glass',
     fill: .5, flow: .4, core: { label: ['蜂蜜', 'Honey'], hard: 24, brittle: 82, loose: .95, plastic: .3, wet: 1, base: '#f2a81d', outline: '#a8650a', chips: ['#ffd36a', '#f2a81d', '#c87a0a'], snd: 'rubber', over: ['罐子裂了，蜂蜜往外渗！', 'Cracked! Honey seeping out!'] },
-    base: '#cfe6f2', outline: '#4a6a7e', chips: ['#ffffff', '#cfe6f2'], over: '玻璃裂了！', dead: '蜂蜜罐碎了，地板粘了一下午。甲方的脚到现在还粘着。', blurb: '半罐蜂蜜，流得非常非常慢。空着的玻璃那面一碰就碎；有蜂蜜垫着的那面扛得住。翻过来得等好几秒蜂蜜才流下去，要提前想好下一下砸哪儿。' },
+    base: '#cfe6f2', outline: '#4a6a7e', chips: ['#ffffff', '#cfe6f2'], over: '玻璃裂了！', dead: '蜂蜜罐碎了，地板粘了一下午。甲方的脚到现在还粘着。', blurb: '蜂蜜流得很慢，翻过来要等几秒。' },
   /* 芬兰特供。前面学过的花样混着来，外加三样新的：
      flee  活的：砸过头不会碎，只会“急”（hp 算它的耐心），急够了就跑；brk 是力度表红区上的字
      hot   烫手：每次拎起来最多拿几秒，到点自动撒手
      floor 东西本身砸不坏，砸过头裂的是地板（hp 算地板的） */
   santa: { name: '圣诞老人', unit: '位', hard: 10, brittle: 60, loose: 1.2, plastic: .9, smooth: .45, passes: 3, value: 7, hp: 3, rest: .45, bounce: .7, fric: .8, accel: 22000, jig: .45, target: .9, time: 110, flee: 1, brk: ['急', 'MAD'],
-    base: '#d8262a', outline: '#5a0f12', chips: ['#ff5a4a', '#ffffff', '#2e8b4f'], over: '圣诞老人急了！', dead: '圣诞老人受够了，坐上雪橇飞走了。今年甲方收不到礼物。', blurb: '从罗瓦涅米的圣诞老人村请来的，按小时收费。他本来就挺圆，甲方说还不够：帽子尖、两只手套、两只靴子都得收进去。肚子软，拍哪鼓哪，还会弹。别拍太狠，他会急。' },
+    base: '#d8262a', outline: '#5a0f12', chips: ['#ff5a4a', '#ffffff', '#2e8b4f'], over: '圣诞老人急了！', dead: '圣诞老人受够了，坐上雪橇飞走了。今年甲方收不到礼物。', blurb: '帽尖、手套、靴子都收进去。拍太狠他会急。' },
   reindeer: { name: '驯鹿', unit: '头', hard: 30, brittle: 74, loose: 1.4, plastic: .4, smooth: .2, passes: 1, value: 10, hp: 3, rest: .2, fric: .7, accel: 24000, jig: .05, target: .84, time: 140, snd: 'reindeer', flee: 1, brk: ['急', 'MAD'],
-    base: '#b8955e', outline: '#4a2c14', chips: ['#f2e2c0', '#c9a874', '#8a5530'], over: '驯鹿急了！', dead: '驯鹿受够了，一溜烟跑回了拉普兰。圣诞老人明天只能自己拉雪橇了。', blurb: '圣诞老人借给甲方的，说好明天要还。脑袋本来就挺圆，麻烦的是头上那对角，一叉一叉的，得一叉一叉敲掉。角很硬，轻了敲不动；可下手太重，驯鹿会急。' },
+    base: '#b8955e', outline: '#4a2c14', chips: ['#f2e2c0', '#c9a874', '#8a5530'], over: '驯鹿急了！', dead: '驯鹿受够了，一溜烟跑回了拉普兰。圣诞老人明天只能自己拉雪橇了。', blurb: '鹿角一叉一叉敲掉。太重驯鹿会急。' },
   salmiak: { name: '咸甘草糖', unit: '颗', hard: 28, brittle: 60, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 8, hp: 3, rest: .2, fric: .6, accel: 28000, jig: .02, target: .84, time: 110, snd: 'snap',
-    base: '#1d1d22', outline: '#7a7a88', chips: ['#2a2a32', '#4a4a56', '#e6e6ee'], over: '裂开了！', dead: '咸甘草糖碎成了一把黑渣。甲方舔了一口地板，现在正在漱口。', blurb: '芬兰国民零食，黑的，咸的，菱形的。甲方舔了一下，脸绿了（本来就是绿的，现在更绿）。两个长尖最凸；糖又硬又脆，窗口不宽。' },
+    base: '#1d1d22', outline: '#7a7a88', chips: ['#2a2a32', '#4a4a56', '#e6e6ee'], over: '裂开了！', dead: '咸甘草糖碎成了一把黑渣。甲方舔了一口地板，现在正在漱口。', blurb: '两个长尖最凸。又硬又脆。' },
   aalto: { name: 'A! 立牌', unit: '块', hard: 24, brittle: 54, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 9, hp: 2, rest: .25, fric: .5, accel: 28000, jig: 0, target: .82, time: 130, snd: 'plastic',
-    base: '#e3f2f8', outline: '#7fb3c8', chips: ['#e3f2f8', '#ffffff', '#141414'], over: '崩了一角！', dead: '立牌碎了一地。阿尔托大学说没关系，他们还有问号和引号。', blurb: '阿尔托大学的标志：一个 A 加一个感叹号，有时也换成问号或引号。甲方问能不能换成句号，中文那种，圆的。亚克力立牌，又脆窗口又窄，只能失手一次：先把感叹号那一竖敲掉，再收拾 A 的尖顶和两只脚。' },
+    base: '#e3f2f8', outline: '#7fb3c8', chips: ['#e3f2f8', '#ffffff', '#141414'], over: '崩了一角！', dead: '立牌碎了一地。阿尔托大学说没关系，他们还有问号和引号。', blurb: '先敲掉感叹号，再修 A 的尖和脚。只能失手一次。' },
   sauna: { name: '桑拿石', unit: '块', hard: 38, brittle: 84, loose: .9, plastic: 0, smooth: 0, passes: 0, value: 8.5, hp: 3, rest: .2, fric: .8, accel: 20000, jig: 0, target: .84, time: 120, hot: 1.5, rnd: [.52, .66],
-    base: '#3a3940', outline: '#e0702c', chips: ['#4a4950', '#2a292e', '#ff8a3c'], over: '崩掉一块！', dead: '桑拿石碎了一地。甲方的桑拿房今晚只能干蒸了。', blurb: '刚从桑拿炉上拿下来的石头，芬兰人往上泼水蒸桑拿。<strong>烫手</strong>：每次拎起来最多拿一秒半，到点就得撒手。抓起来要快，举高了直接松手最省事。' },
+    base: '#3a3940', outline: '#e0702c', chips: ['#4a4950', '#2a292e', '#ff8a3c'], over: '崩掉一块！', dead: '桑拿石碎了一地。甲方的桑拿房今晚只能干蒸了。', blurb: '<strong>烫手</strong>：抓起来，举高，松手。' },
   oldphone: { name: '老手机', unit: '部', hard: 48, brittle: 88, loose: 1.5, plastic: 0, smooth: 0, passes: 0, value: 12, hp: 3, rest: .15, fric: .7, accel: 15000, jig: 0, target: .82, time: 160, floor: 1,
-    base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '最后一单：芬兰产的老款手机，据说能拿来砸核桃。芬兰人每年还办扔手机世锦赛。它自己确实砸不坏，坏的是地板：力度太大，甲方的地板会裂，裂三次就穿了。又沉又硬，得抡。' },
+    base: '#2b3850', outline: '#0c111a', chips: ['#2b3850', '#9fb85a', '#d5dbe4'], over: '地板裂了！', dead: '地板被砸穿了，你和手机一起掉进了甲方的地下室。手机还是好的。', blurb: '它砸不坏，地板会。得抡。' },
 };
 const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone'];
 const PER = 6;   // 每班六单
@@ -396,54 +398,54 @@ const CHAPS = [
 
 /* ---------- 英文文案：盖在 MATS / CHAPS 上 ---------- */
 const MATS_EN = {
-  wood: ['Wood', 'Split!', 'The wood is now a pile of kindling.', 'The most easygoing material. Wide force window, good for warming up.'],
-  stone: ['Stone', 'Chipped!', 'The stone crumbled to gravel.', 'Hard and heavy. Nothing happens unless you really swing it. Swing too hard and it chips.'],
-  meat: ['Meat', 'Mashed!', 'This cut of meat is now a puddle of paste.', 'Deforms at a touch and bulges wherever you squeeze it. Drop it from too high and it turns to mush.'],
-  can: ['Can', 'Crushed!', 'The can has been flattened into sheet metal.', 'Soft metal. It never loses material: flattened spots bulge out to the sides.'],
-  pc: ['Computer', 'Parts flew out!', 'The computer is now a floor full of parts.', 'Hard and brittle, with a narrow force window. The monitor stand has to go too.'],
-  gem: ['Gem', 'Chipped!', 'The gem shattered into a handful of sparkly dust.', 'Extremely hard, extremely brittle. The force has to be just right. One gem pays like several other orders.'],
-  dough: ['Dough', 'Pancaked!', 'The dough is now a flatbread. The Client does not eat flatbread.', 'Absurdly soft. It spreads when you so much as set it down, and it never loses material. The hard part is not overdoing it.'],
-  cheese: ['Cheese', 'Crumbled!', 'The cheese crumbled into a plate of parmesan.', "A cut wedge with three points. Crumbly: every hit takes off a big chunk, so go easy and don't get greedy."],
-  melon: ['Melon', 'Cracked!', 'The watermelon exploded all over the floor.', 'Half a melon; the cut side is flat. Deal with the two sharp corners first. No bonus for splashing juice on the Client.'],
-  carrot: ['Carrot', 'Snapped!', 'The carrot is now diced carrot.', 'Long and thin. Hold the thick end and knock the tip shorter bit by bit, then come back for the other side.'],
-  ice: ['Ice', 'Cracked!', 'The ice is now a cup of shaved ice.', "Rush order: the ice is melting and the Client won't wait long. The floor is slippery too. Let go and it slides away."],
-  egg: ['Egg', 'Cracked!', 'Yolk everywhere. The Client says this is the least round shape of all.', "Handle with care. A little too much force breaks it, and <strong>you can't afford a single break</strong>. Letting go a hand's width above the floor is plenty."],
-  brick: ['Brick', 'Chipped!', 'The brick crumbled into rubble.', 'A long, hard red brick. Shorten both ends first. Hit it too softly and it only sheds dust.'],
-  cone: ['Cone', 'Squashed!', 'The traffic cone is now a rubber mat.', "Rubber. It never loses material, and it's bouncy: after you let go it hops a couple more times, and every hop counts."],
-  gear: ['Gear', 'Tooth broke!', "The gear split into pieces. The Client's machine has stopped.", "Steel. Eight teeth: knock them off one by one and it's round. Point a tooth down and give it everything."],
-  bottle: ['Bottle', 'Cracked!', 'Broken glass all over the floor. The Client is barefoot.', "The force window is low and narrow. The whole neck has to go, but don't rush: it only survives one slip."],
-  gold: ['Gold', 'Flattened!', 'The gold bar is now gold leaf.', 'Dead heavy; it drags your hand. Luckily gold is soft: flattened spots bulge sideways and not a gram is lost.'],
-  ingot: ['Ingot', 'Cracked!', 'You actually broke a steel ingot. The Client is a little scared.', "The hardest thing here, and the only one you can't break. Dropping it from the top barely scratches it. <strong>Grab it and swing it down</strong> as hard as you can."],
-  cube: ['Cube', 'Piece flew off!', 'The puzzle cube is now a floor full of little cubes.', 'The Client twisted it for three years without solving it, and decided on a new approach. Plastic, brittle, not a wide force window.'],
-  phone: ['Phone', 'Screen cracked!', "The phone is broken. It had the Client's un-backed-up photos on it.", 'Tall and thin, with a very low window. Forearm strength is enough. Only one slip allowed.'],
-  record: ['Record', 'Cracked!', 'A record that was already round, and you made it not round.', "…This one is already round. The Client just wants to see if your hands get itchy. <strong>Deliver it as it is</strong>. If you drop it, that's on you."],
-  crown: ['Crown', 'Dented!', 'The crown is now a gold plate.', 'Solid gold with three points. Slam the points down and the gold bulges into the gaps on either side.'],
-  star: ['Star', 'Point broke!', "The star shattered. There's one fewer in the sky tonight.", 'The Client picked it from the sky. They say stars were always round and you Earthlings drew them wrong. Five points. Knock them off.'],
-  ufo: ['UFO', 'Alarm!', 'The saucer blew up. Now neither you nor the Client can go home.', "Final order: the Client's own ride. Big, flat and heavy, and the driver is still inside. Ignore him."],
-  coconut: ['Coconut', 'Too hard!', 'The coconut split in two and the water ran everywhere. The Client says they are not thirsty.', 'Soft husk outside, falls off at a tap. The hard shell inside is already round, and soft hits do nothing to it. Just peel the husk clean. No brute force.'],
-  parcel: ['Parcel', 'Box wrecked!', 'The vase broke inside the box. The word FRAGILE on it is now a statement of fact.', 'Smash the cardboard all you like, but a vase stands inside, with one sheet of card above and below it. The corners are far from the vase. Once you see blue, go easy.'],
-  walnut: ['Walnut', 'Shell chipped!', 'The walnut is now chopped walnut. The Client wanted round, not filling.', 'The shell is hard and needs force. But once you break through, the kernel is soft and fragile, and the same force will squash it. Wherever it shows, switch to a light hand.'],
-  geode: ['Geode', 'Rock chipped!', 'The geode is all over the floor, sparkling. The Client is heartbroken, though not about you.', 'A lump of rock with a nest of crystal grown off-centre inside. Rock wants heavy hits, crystal only medium ones. The rock is thin on the crystal side. Careful.'],
-  bonbon: ['Liqueur Chocolate', 'Chocolate chipped!', 'The filling drained out, leaving a puddle of chocolate. The Client licked it and said round is optional, but so is paying.', 'Square, thin shell, narrow window. Rounding the corners will reach the filling, and the filling splashes at almost any touch. Finesse on the shell, feather taps once it shows.'],
-  earth: ['Earth', 'Earthquake!', 'Earth broke. Your home is gone, but the Client says the new one will be rounder.', 'The Client measured it: your home is not round enough. Mountains too tall, trenches too deep. Flatten them. The crust is thin with magma right under it, so once you are through, be gentle.'],
-  butter: ['Butter', 'Squashed flat!', 'The butter is now a sheet glued to the floor. The Client says it is perfect for polishing shoes.', 'A long, soft block of butter. Stand it up and it sinks and spreads; lay it flat and it stays put. Set a corner down and that corner flattens itself. Use hitting and slumping together.'],
-  copper: ['Copper', 'Cracked!', 'The copper split into pieces. Copper is supposed to be tough. How did you manage that?', 'Copper hardens as you hit it. Every good hit raises the bottom of the force window, and the green band keeps shrinking. Do not waste hits on flat sides. Go for the biggest corner.'],
-  jelly: ['Jelly', 'Jelly burst!', 'The jelly is now a puddle of juice. The Client drank it with a straw, but is not paying.', 'Jelly from a castle mould. Wobbles at a touch. Stand it up and it soon sinks until it is squat enough. Hit gently.'],
-  rebar: ['Rebar', 'Bent!', 'The rebar snapped. Someone at a building site is looking everywhere for it.', 'A long steel bar. Hold one end and the other points down: hitting the ends upright makes it shorter and thicker, which smiths call upsetting. Steel hardens too, so each hit must be heavier than the last.'],
-  slime: ['Slime', 'Slime burst!', 'The slime split into lots of little slimes, all running away.', 'A blob of slime with several tentacles that oozes downward if you leave it. It will watch you. Ignore it. Set a tentacle down and it will pull itself back in.'],
-  weight: ['Steelyard Weight', 'Chipped!', 'The weight chipped. The Client says they will weigh things by feel from now on.', 'A cast-iron weight with a knob on top and a wide flat base. Iron hardens as you hit it, so plan ahead: the knob sticks out most, but the two bottom corners need work too.'],
-  clay: ['Modelling Clay', 'Squashed!', 'The clay is now a thin sheet stuck to the floor.', 'Straight out of the fridge and too stiff to dent. Hold it in your hand for a while: the longer you hold it, the softer it gets, and each hit takes off a big chunk. It cannot break, so experiment.'],
-  sandbag: ['Sandbag', 'Bag torn!', 'The sandbag split and sand went everywhere. The Client says it makes a nice beach.', 'A half-full bag of sand, and the sand flows downward. Hit the empty cloth side and it just flops; only the side with sand behind it changes shape. After flipping it, wait for the sand to settle. The gauge shows whether sand or nothing is facing down.'],
-  choco: ['Chocolate', 'Chipped!', 'The chocolate is now crumbs. The Client says they are perfect on ice cream.', 'Cold chocolate is brittle: narrow window, small chips, good for fine work. Warm it in your hand and the window widens and each hit does more, but once you put it down it melts and slumps. Just do not overheat it: too hot and it melts, breaking at a touch, and you must put it down to cool.'],
-  piggy: ['Piggy Bank', 'Cracked!', 'The piggy bank broke and coins rolled everywhere. The Client picked them up one by one and called it compensation.', 'A ceramic pig, half full of coins. The hollow side is thin and cracks at a touch, but each hit takes off a lot. The side with coins behind it takes heavy hits, just changes slowly. After a flip, the coins take a moment to slide down.'],
-  candle: ['Candle', 'Snapped!', 'The candle broke into several pieces. The Client says they will come in handy in a power cut.', 'A tall, thin candle. Hard when cold, best worked half warm, and if you stand it up warm it slumps on its own. Do not hold it too long: overheated wax turns to mush, snaps at a touch and drips.'],
-  honey: ['Honey Jar', 'Glass cracked!', 'The honey jar broke and the floor was sticky all afternoon. The Client is still stuck to it.', 'Half a jar of honey that flows very, very slowly. The hollow glass side breaks at a touch; the side with honey behind it holds. After a flip it takes several seconds for the honey to come down, so plan your next hit early.'],
-  santa: ['Santa', 'Santa is upset!', 'Santa had enough, jumped in his sleigh and flew off. No presents for the Client this year.', "Hired by the hour from Santa's village in Rovaniemi. He's already quite round, but not round enough for the Client: the hat tip, both mittens and both boots have to go. His belly is soft, bulges wherever you hit it, and bounces. Don't hit too hard, or he gets upset."],
-  reindeer: ['Reindeer', 'Reindeer is upset!', 'The reindeer had enough and bolted back to Lapland. Santa will have to pull the sleigh himself tomorrow.', 'Santa lent it to the Client and wants it back tomorrow. The head is round enough already; the trouble is the antlers, branching every which way, and every tine has to go. Antler is hard, so soft taps do nothing. Hit too hard and the reindeer gets upset.'],
-  salmiak: ['Salty Liquorice', 'Cracked!', 'The salty liquorice crumbled into black grit. The Client licked the floor and is now rinsing their mouth.', "Finland's favourite sweet: black, salty and diamond-shaped. The Client licked one and turned green (they were already green, but now more so). The two long points stick out most. The candy is hard and brittle, and the window is not wide."],
-  aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', "Aalto University's logo: an A plus an exclamation mark, sometimes swapped for a question mark or quotes. The Client asked whether it could be a full stop instead. A round one. It's an acrylic standee: brittle, with a narrow window, and it only survives one slip. Knock the exclamation mark down first, then deal with the A's peak and feet."],
-  sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", 'Straight off the sauna stove, where Finns throw water on it for steam. <strong>Hot</strong>: you can hold it for a second and a half at most, then you have to let go. Grab fast. Lifting it high and letting go is easiest.'],
-  oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "Final order: an old Finnish phone, said to be tough enough to crack walnuts with. Finland even holds a mobile phone throwing world championship every year. This one really can't break. The floor can: hit too hard and the Client's floor cracks, and the third crack goes right through. Heavy and hard, so swing it."],
+  wood: ['Wood', 'Split!', 'The wood is now a pile of kindling.', 'Easygoing, wide window. A warm-up.'],
+  stone: ['Stone', 'Chipped!', 'The stone crumbled to gravel.', 'Needs a real swing. Too hard and it chips.'],
+  meat: ['Meat', 'Mashed!', 'This cut of meat is now a puddle of paste.', "Squishy. Don't drop it from too high."],
+  can: ['Can', 'Crushed!', 'The can has been flattened into sheet metal.', 'Soft metal: it bulges, never loses material.'],
+  pc: ['Computer', 'Parts flew out!', 'The computer is now a floor full of parts.', 'Hard and brittle. The stand goes too.'],
+  gem: ['Gem', 'Chipped!', 'The gem shattered into a handful of sparkly dust.', 'Force must be exact. Pays like several orders.'],
+  dough: ['Dough', 'Pancaked!', 'The dough is now a flatbread. The Client does not eat flatbread.', "Never loses material. Just don't overdo it."],
+  cheese: ['Cheese', 'Crumbled!', 'The cheese crumbled into a plate of parmesan.', 'Three points, crumbly. Go easy.'],
+  melon: ['Melon', 'Cracked!', 'The watermelon exploded all over the floor.', 'Deal with the two corners first.'],
+  carrot: ['Carrot', 'Snapped!', 'The carrot is now diced carrot.', 'Hold the thick end; shorten the tip bit by bit.'],
+  ice: ['Ice', 'Cracked!', 'The ice is now a cup of shaved ice.', 'Melting fast, and it slides when you let go.'],
+  egg: ['Egg', 'Cracked!', 'Yolk everywhere. The Client says this is the least round shape of all.', "<strong>No breaks allowed.</strong> Drop it from a hand's width."],
+  brick: ['Brick', 'Chipped!', 'The brick crumbled into rubble.', 'Shorten both ends first.'],
+  cone: ['Cone', 'Squashed!', 'The traffic cone is now a rubber mat.', 'Rubber: it bounces again, and every bounce counts.'],
+  gear: ['Gear', 'Tooth broke!', "The gear split into pieces. The Client's machine has stopped.", 'Eight teeth. Point them down, hit hard.'],
+  bottle: ['Bottle', 'Cracked!', 'Broken glass all over the floor. The Client is barefoot.', 'Grind off the whole neck. One slip only.'],
+  gold: ['Gold', 'Flattened!', 'The gold bar is now gold leaf.', 'Heavy and slow to move. Soft, so no loss.'],
+  ingot: ['Ingot', 'Cracked!', 'You actually broke a steel ingot. The Client is a little scared.', "Unbreakable. Dropping won't do: <strong>swing it down</strong>."],
+  cube: ['Cube', 'Piece flew off!', 'The puzzle cube is now a floor full of little cubes.', 'Plastic and brittle.'],
+  phone: ['Phone', 'Screen cracked!', "The phone is broken. It had the Client's un-backed-up photos on it.", 'Tall and thin. Use your forearm only. One slip only.'],
+  record: ['Record', 'Cracked!', 'A record that was already round, and you made it not round.', 'Already round. <strong>Just deliver it.</strong>'],
+  crown: ['Crown', 'Dented!', 'The crown is now a gold plate.', 'Hit the points down; the gold fills the gaps.'],
+  star: ['Star', 'Point broke!', "The star shattered. There's one fewer in the sky tonight.", 'Picked from the sky. Five points. Knock them off.'],
+  ufo: ['UFO', 'Alarm!', 'The saucer blew up. Now neither you nor the Client can go home.', "The Client's ride. Big and heavy. Driver inside."],
+  coconut: ['Coconut', 'Too hard!', 'The coconut split in two and the water ran everywhere. The Client says they are not thirsty.', 'Just peel off the husk. The shell is already round.'],
+  parcel: ['Parcel', 'Box wrecked!', 'The vase broke inside the box. The word FRAGILE on it is now a statement of fact.', 'Corners are safe. Ease off when the blue vase shows.'],
+  walnut: ['Walnut', 'Shell chipped!', 'The walnut is now chopped walnut. The Client wanted round, not filling.', 'Hit the shell hard; go light where the kernel shows.'],
+  geode: ['Geode', 'Rock chipped!', 'The geode is all over the floor, sparkling. The Client is heartbroken, though not about you.', 'Stone hard, crystal medium. Thin rock on the crystal side.'],
+  bonbon: ['Liqueur Chocolate', 'Chocolate chipped!', 'The filling drained out, leaving a puddle of chocolate. The Client licked it and said round is optional, but so is paying.', 'Finesse the shell; once the liqueur shows, just tap.'],
+  earth: ['Earth', 'Earthquake!', 'Earth broke. Your home is gone, but the Client says the new one will be rounder.', 'Flatten the mountains. Through the crust, go gentle.'],
+  butter: ['Butter', 'Squashed flat!', 'The butter is now a sheet glued to the floor. The Client says it is perfect for polishing shoes.', 'Set a corner down and let it slump flat.'],
+  copper: ['Copper', 'Cracked!', 'The copper split into pieces. Copper is supposed to be tough. How did you manage that?', 'Hardens every hit. Only hit the biggest corners.'],
+  jelly: ['Jelly', 'Jelly burst!', 'The jelly is now a puddle of juice. The Client drank it with a straw, but is not paying.', 'Wobbly, and it slumps. Light hands.'],
+  rebar: ['Rebar', 'Bent!', 'The rebar snapped. Someone at a building site is looking everywhere for it.', 'Hit the ends to shorten it, harder each time.'],
+  slime: ['Slime', 'Slime burst!', 'The slime split into lots of little slimes, all running away.', 'Set tentacles down and they pull back in.'],
+  weight: ['Steelyard Weight', 'Chipped!', 'The weight chipped. The Client says they will weigh things by feel from now on.', 'Hardens fast. Handle first, then the bottom corners.'],
+  clay: ['Modelling Clay', 'Squashed!', 'The clay is now a thin sheet stuck to the floor.', 'Too cold to dent. Warm it in your hand first.'],
+  sandbag: ['Sandbag', 'Bag torn!', 'The sandbag split and sand went everywhere. The Client says it makes a nice beach.', 'Only the side with sand behind it changes shape.'],
+  choco: ['Chocolate', 'Chipped!', 'The chocolate is now crumbs. The Client says they are perfect on ice cream.', 'Warm it to hit harder; overheated, it breaks.'],
+  piggy: ['Piggy Bank', 'Cracked!', 'The piggy bank broke and coins rolled everywhere. The Client picked them up one by one and called it compensation.', 'Hollow side cracks easily; coin side takes hard hits.'],
+  candle: ['Candle', 'Snapped!', 'The candle broke into several pieces. The Client says they will come in handy in a power cut.', "Best half-warm. Don't hold it too long."],
+  honey: ['Honey Jar', 'Glass cracked!', 'The honey jar broke and the floor was sticky all afternoon. The Client is still stuck to it.', 'Honey flows slowly. Wait a few seconds after a flip.'],
+  santa: ['Santa', 'Santa is upset!', 'Santa had enough, jumped in his sleigh and flew off. No presents for the Client this year.', 'Tuck in the hat, mittens and boots. Too hard upsets him.'],
+  reindeer: ['Reindeer', 'Reindeer is upset!', 'The reindeer had enough and bolted back to Lapland. Santa will have to pull the sleigh himself tomorrow.', 'Knock the antlers off tine by tine. Too hard upsets it.'],
+  salmiak: ['Salty Liquorice', 'Cracked!', 'The salty liquorice crumbled into black grit. The Client licked the floor and is now rinsing their mouth.', 'The two long points stick out. Hard and brittle.'],
+  aalto: ['A! Standee', 'Chipped!', 'The standee shattered. Aalto University says no worries, they still have the question mark and the quotes.', 'Knock off the "!" first, then the A. One slip only.'],
+  sauna: ['Sauna Stone', 'Chipped!', "The sauna stone shattered. The Client's sauna will be a dry one tonight.", '<strong>Hot</strong>: grab, lift, let go.'],
+  oldphone: ['Brick Phone', 'Floor cracked!', "You smashed through the floor and fell into the Client's basement, phone and all. The phone is fine.", "It can't break; the floor can. Swing it."],
 };
 const CHAPS_EN = [
   ['Probation', ''],
@@ -937,7 +939,7 @@ function impact(b, F, cx) {
   snapToFloor(b);
   const keepV = m.bounce || .45; b.vx *= keepV; b.vy *= keepV; b.w *= keepV; b.jigV += power * m.jig * 16; b.flash = res.over ? .8 : .25;
   G.shake = Math.max(G.shake, res.over ? 15 : 3 + 9 * power);
-  G.lastHit = { F, t: G.time, kind: res.over ? 'over' : 'good' };
+  G.lastHit = { F, t: G.time, kind: res.over ? 'over' : 'good', lim: lm.brittle };
   const n = res.over ? 26 : Math.round(6 + 12 * res.t);
   burst(cx, lm.plastic ? Math.round(n * .5) : n, lm.chips, power, lm.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
   if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b, res.core);
@@ -947,6 +949,7 @@ function impact(b, F, cx) {
   if (res.over) {
     G.hp--; G.stats.over++; (m.flee ? sfx.huff : sfx.crack)(); mood('angry', 2.2);
     floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
+    floatText(cx, FLOOR - 22, L(`太重 ${Math.round(F)} > ${lm.brittle}`, `Too hard ${Math.round(F)} > ${lm.brittle}`), C.alarm, 17);
     if (G.hp <= 0) { shatter(b); return; }
     say('over', true);
   } else {
@@ -1162,10 +1165,10 @@ function showBoard(refetch = true) {
   const row = p => `<li class="${NAME && p.name.toLowerCase() === NAME.toLowerCase() ? 'me' : ''}"><b>${p.rank}</b><span class="nm">${escH(p.name)}</span><span class="dl">${L(`${p.delivered} 单`, `${p.delivered} orders`)}</span><span class="pt">◎ ${p.total}</span></li>`;
   let body;
   if (!d) body = `<p class="note">${BOARD.err ? L('排行榜连不上，过一会儿再试。', 'Could not load the leaderboard. Try again in a bit.') : L('加载中…', 'Loading…')}</p>`;
-  else if (!d.top.length) body = `<p class="note">${L('还没有人上榜。起个名字，交付一单，你就是第一名。', 'Nobody here yet. Pick a name and deliver an order to take first place.')}</p>`;
+  else if (!d.top.length) body = `<p class="note">${L('还没人上榜。交付一单你就是第一。', 'Nobody yet. Deliver an order to be first.')}</p>`;
   else body = `<ol class="board">${d.top.map(row).join('')}</ol>` +
     (d.me && !d.top.some(p => p.rank === d.me.rank) ? `<ol class="board mine" start="${d.me.rank}">${row(d.me)}</ol>` : '') +
-    `<p class="note">${L(`共 ${d.players} 位起了名字的玩家，按每一单拿过的最高酬劳加起来排。`, `${d.players} named players, ranked by the sum of best pay on each order.`)}${NAME ? '' : L('你还没起名字，回首页起个名字才会上榜。', ' Pick a name on the home screen to get on the board.')}</p>`;
+    `<p class="note">${L(`共 ${d.players} 人，按各单最高酬劳总和排。`, `${d.players} players, ranked by total best pay.`)}${NAME ? '' : L('起了名字才会上榜。', ' Pick a name to get listed.')}</p>`;
   setCard(`
     <p class="eyebrow" data-board>${L('排行榜', 'Leaderboard')}</p>
     <h2>${L('谁最会弄圆', 'Who makes it roundest')}</h2>
@@ -1180,9 +1183,9 @@ function showBoard(refetch = true) {
 }
 function whoRow() {
   if (!CLOUD) return '';
-  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。进度自动存到云端，换设备输同一个名字就能接着玩。', '. Progress syncs to the cloud; enter the same name on another device to continue.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
+  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
   return `<form class="who" data-who autocomplete="off">
-      <label class="note" for="who-name">${L('起个名字，进度就能存到云端，换设备也能接着玩（不填也能玩）：', 'Pick a name to save progress to the cloud and continue on any device (optional):')}</label>
+      <label class="note" for="who-name">${L('起个名字存档（可不填）：', 'Name to save progress (optional):')}</label>
       <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('你的名字', 'Your name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('存档', 'Save')}</button></span>
       ${WHO.err ? `<span class="note err" role="alert">${WHO.err}</span>` : ''}
     </form>`;
@@ -1211,7 +1214,7 @@ function showBook() {
     <p class="eyebrow">${L('订单簿', 'Order book')}</p>
     <h2>${L('从哪一单开工', 'Where do you start?')}</h2>
     ${html}
-    <p class="note">${L('绿色是交付过的。哪一单都能直接开工，酬劳从那一单算起。', 'Green ones are delivered. Start from any order; pay counts from there.')}</p>
+    <p class="note">${L('绿色是交付过的，哪单都能开工。', 'Green = delivered. Start anywhere.')}</p>
     <div class="row"><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
 function showChapter() {
@@ -1263,15 +1266,15 @@ function showMenu() {
   setCard(`
     <p class="eyebrow">${L('地球工匠 · 外星订单', 'Earth artisan · Alien orders')}</p>
     <h1>${L('甲方要圆', 'The Client Wants It Round')}</h1>
-    <p>${EN ? `You are the finest artisan on Earth, which is why aliens abducted you to their home planet. The Client has one requirement: <strong>everything must be round.</strong> Hit the roundness target and you get the next order. Miss it, and the thing made round is you. There are <strong>${ORDER.length} orders</strong> in ${CHAPS.length} shifts.` : `你是地球上手艺最好的工匠，所以被外星人绑回了母星。甲方只有一个需求：<strong>所有东西都得是圆的。</strong>圆度达标，接下一单；不达标，被做成圆形的就是你。这次一共 <strong>${ORDER.length} 单</strong>，分 ${CHAPS.length} 班。`}</p>
+    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}</p>
     <ul class="how">
-      <li><b>${L('拎', '1')}</b><span>${L('按住材料把它拎起来。抓住哪一头，对面那头就朝下。', '<strong>Lift.</strong> Press and hold the material to pick it up. Whichever end you grab, the opposite end points down.')}</span></li>
-      <li><b>${L('砸', '2')}</b><span>${L('往地板上砸，或者举高了松手。看右侧力度表：绿区有效，太轻没反应，进红区会碎。', '<strong>Slam.</strong> Smash it on the floor, or lift it high and let go. Watch the force gauge on the right: green works, too soft does nothing, red breaks it.')}</span></li>
-      <li><b>${L('磨', '3')}</b><span>${L('专挑凸出虚线圆的角砸。', '<strong>Trim.</strong> Aim for the corners that stick out of the dashed circle. ')}${TOUCH ? L('拎着的时候另一根手指左右滑可以微调角度。', 'While holding, slide a second finger left or right to fine-tune the angle.') : L('A / D 或滚轮可以微调角度。', 'A / D or the scroll wheel fine-tunes the angle.')}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${L('按住材料拎起来，抓哪头，对面那头朝下。', '<strong>Lift.</strong> Hold to pick it up; the far end points down.')}</span></li>
+      <li><b>${L('砸', '2')}</b><span>${L('砸地板或举高松手。手边的圈绿了有效，红了会碎。', '<strong>Slam.</strong> Hit the floor or drop it. Green ring works, red breaks.')}</span></li>
+      <li><b>${L('磨', '3')}</b><span>${L('专砸凸出虚线圆的角。', '<strong>Trim.</strong> Hit the corners outside the dashed circle.')}${TOUCH ? L('另一根手指左右滑转角度。', ' Second finger slides to turn.') : L('A / D 转角度。', ' A / D to turn.')}</span></li>
     </ul>
     <div class="row"><button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L('接着做第 ' + (at + 1) + ' 单', 'Continue: order ' + (at + 1)) : L('开工', 'Start')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button></div>
     ${whoRow()}
-    <p class="note">${L('会匿名记录每一单的圆度、用时和成败，用来调难度。起了名字的话，名字和每单最高酬劳会存在服务器上。', 'Anonymous gameplay stats (roundness, time, pass/fail per order) are recorded to tune difficulty. If you pick a name, it is stored with your best pay per order.')}</p>`);
+    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字和最高酬劳。', 'Anonymous stats tune difficulty. A name is stored with your best pay.')}</p>`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0;
@@ -1280,19 +1283,16 @@ function showOrder() {
     <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
     <p>${m.blurb}</p>
     <dl class="spec">
-      <dt>${L('力度窗口', 'Force window')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
-      ${m.core ? `<dt>${L(m.core.label[0], m.core.label[1])}</dt><dd><div class="window" role="img" aria-label="${L(`${m.fill ? '有' + m.core.label[0] + '垫着' : '里面那层'}：力度 ${m.core.hard} 到 ${m.core.brittle} 之间有效`, `${m.fill ? 'Backed by ' + lc(m.core.label[1]) : 'Inner layer'}: works between force ${m.core.hard} and ${m.core.brittle}`)}"><i class="w-light" style="width:${m.core.hard}%"></i><i class="w-ok" style="width:${m.core.brittle - m.core.hard}%"></i><i class="w-break" style="width:${100 - m.core.brittle}%"></i></div>${L(`${m.fill ? '有' + m.core.label[0] + '垫着' : '里面那层'}：${m.core.hard} 到 ${m.core.brittle >= 100 ? '100，砸不坏' : m.core.brittle}`, `${m.fill ? 'Backed by ' + lc(m.core.label[1]) : 'Inner layer'}: ${m.core.hard} to ${m.core.brittle >= 100 ? '100, unbreakable' : m.core.brittle}`)}</dd>` : ''}
-      <dt>${L('硬度', 'Hardness')}</dt><dd>${L(`力度到 ${m.hard} 才会变形`, `Needs force ${m.hard} to dent`)}</dd>
-      ${m.harden ? `<dt>${L('越砸越硬', 'Hardens')}</dt><dd>${L(`每砸好一下，下限 +${m.harden}，最高到 ${m.brittle - (m.minWin || 10)}`, `Each good hit raises the floor by ${m.harden}, up to ${m.brittle - (m.minWin || 10)}`)}</dd>` : ''}
-      ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('放在地上不拎，太高的会往下塌、往两边摊，塌到够扁就停；尖角朝下，那个角会被压平', 'Left on the floor, anything too tall sinks and spreads until it is squat enough, then stops. A corner pressed down gets flattened')}</dd>` : ''}
-      ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${m.warm.hot ? L(`拎在手里会被焐软。手温 ${Math.round(m.warm.peak * 100)}% 左右最好砸：窗口从 ${m.hard}–${m.brittle} 变成 ${m.warm.hard}–${m.warm.brittle}；焐过头就太软，掉到 ${m.warm.hot.hard}–${m.warm.hot.brittle}，一碰就坏。放下慢慢凉回来${m.warm.sag ? '，焐软了放下还会塌' : ''}`, `Your hand warms it. Around ${Math.round(m.warm.peak * 100)}% it is best to work: the window goes from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle}. Overheat it and it turns to mush at ${m.warm.hot.hard}–${m.warm.hot.brittle}, breaking at a touch. It cools once put down${m.warm.sag ? ', and slumps while warm' : ''}`) : L(`拎在手里越久越软：窗口从 ${m.hard}–${m.brittle} 降到 ${m.warm.hard}–${m.warm.brittle}，一下砸得更多；放下慢慢凉回来${m.warm.sag ? '。焐软了放下还会塌' : ''}`, `The longer you hold it, the softer it gets: the window drops from ${m.hard}–${m.brittle} to ${m.warm.hard}–${m.warm.brittle} and each hit does more. It cools once put down${m.warm.sag ? '. Warm and left on the floor, it slumps' : ''}`)}</dd>` : ''}
-      ${m.fill ? `<dt>${L('里面会流', 'Contents flow')}</dt><dd>${L(`里面的${m.core.label[0]}会往下流，翻过来要等一会儿才流到底。没垫着的那面：${m.hard}–${m.brittle}`, `The contents (${lc(m.core.label[1])}) flow downward and take a moment to settle after a flip. Hollow side: ${m.hard}–${m.brittle}`)}</dd>` : ''}
-      ${m.hot ? `<dt>${L('烫手', 'Hot')}</dt><dd>${L(`每次拎起来最多拿 ${m.hot} 秒，到点自动撒手`, `You can hold it ${m.hot} s at a time, then you drop it`)}</dd>` : ''}
-      <dt>${L('易碎', 'Fragility')}</dt><dd>${m.flee ? L(`力度超过 ${m.brittle} 会急，能忍 ${m.hp - 1} 次，再急就跑了`, `Above ${m.brittle} they get upset. They put up with that ${m.hp - 1} times, then run off`) : m.floor ? L(`它自己砸不坏；力度超过 ${m.brittle} 地板会裂，地板能扛 ${m.hp - 1} 次`, `It can't break. Above ${m.brittle} the floor cracks; the floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏，放心抡', 'Unbreakable. Swing away') : L(`力度超过 ${m.brittle} 就碎，${m.hp > 1 ? '能扛 ' + (m.hp - 1) + ' 次' : '一次都碎不起'}`, `Breaks above ${m.brittle}; ${m.hp > 1 ? 'survives ' + (m.hp - 1) + (m.hp > 2 ? ' breaks' : ' break') : 'no breaks allowed'}`)}</dd>
-      <dt>${L('松散', 'Looseness')}</dt><dd><span class="pips">${pips(m.loose / 1.6 * 5)}</span>${L('每一下的形变量', 'change per hit')}</dd>
-      <dt>${L('价值', 'Value')}</dt><dd>× ${m.value.toFixed(1)}</dd>
+      <dt>${m.core ? (m.fill ? L('空的那面', 'Hollow') : L('外层', 'Shell')) : L('力度', 'Force')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
+      ${m.core ? `<dt>${L(m.core.label[0], m.core.label[1])}</dt><dd><div class="window" role="img" aria-label="${L(`${m.fill ? '有' + m.core.label[0] + '垫着' : '里面那层'}：力度 ${m.core.hard} 到 ${m.core.brittle} 之间有效`, `${m.fill ? 'Backed by ' + lc(m.core.label[1]) : 'Inner layer'}: works between force ${m.core.hard} and ${m.core.brittle}`)}"><i class="w-light" style="width:${m.core.hard}%"></i><i class="w-ok" style="width:${m.core.brittle - m.core.hard}%"></i><i class="w-break" style="width:${100 - m.core.brittle}%"></i></div></dd>` : ''}
+      ${m.harden ? `<dt>${L('越砸越硬', 'Hardens')}</dt><dd>${L(`每砸好一下，下限 +${m.harden}`, `Each good hit: floor +${m.harden}`)}</dd>` : ''}
+      ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('朝下的那面会被压平', 'The side facing down flattens')}</dd>` : ''}
+      ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${m.warm.hot ? L('焐软好砸，焐过头一碰就坏', 'Warm is easier; too hot breaks') : L('越拎越软，一下砸得越多', 'Softer the longer you hold it')}</dd>` : ''}
+      ${m.fill ? `<dt>${L('里面会流', 'Contents flow')}</dt><dd>${L('翻过来要等它流到底', 'Wait for it to settle after a flip')}</dd>` : ''}
+      ${m.hot ? `<dt>${L('烫手', 'Hot')}</dt><dd>${L(`最多拎 ${m.hot} 秒`, `Hold ${m.hot} s max`)}</dd>` : ''}
+      <dt>${L('能失手', 'Slips')}</dt><dd>${m.flee ? L(`急 ${m.hp - 1} 次，再急就跑`, `${m.hp - 1}, then they run`) : m.floor ? L(`地板能裂 ${m.hp - 1} 次`, `Floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏', 'Unbreakable') : m.hp > 1 ? L(`${m.hp - 1} 次`, `${m.hp - 1}`) : L('<strong>0 次</strong>', '<strong>None</strong>')}</dd>
     </dl>
-    <p>${EN ? `Target <strong>${pct(G.target)}</strong>. The Client's patience: <strong>${m.time} s</strong>, counted from your first lift.${best ? ` Your best on this order: <strong>◎ ${best}</strong>.` : ''}` : `达标线 <strong>${pct(G.target)}</strong>，甲方耐心 <strong>${m.time} 秒</strong>，从你第一次拎起材料开始算。${best ? `这一单你拿过最高 <strong>◎ ${best}</strong>。` : ''}`}</p>
+    <p>${L('达标', 'Target')} <strong>${pct(G.target)}</strong> · <strong>${m.time} ${L('秒', 's')}</strong>${best ? ` · ${L('最高', 'Best')} <strong>◎ ${best}</strong>` : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 function computePay() {
@@ -1328,13 +1328,19 @@ function fail(reason) {
   say(reason === 'shatter' ? 'shatter' : 'fail', true); mood('angry', 9); sfx.fail();
   G.doom = { x: midX() - 10, y: -80, vx: 46, vy: 0, a: 0 };
 }
+/* 砸碎的原因：最后那一下的力度，和这件东西扛得住的上限 */
+function overWhy() {
+  const lh = G.lastHit, m = G.mat; if (!lh || lh.kind !== 'over') return '';
+  const F = Math.round(lh.F), lim = lh.lim, what = m.flee ? L('它', 'they') : m.floor ? L('地板', 'the floor') : L('它', 'it');
+  return `<p class="why">${L(`最后一下力度 <strong>${F}</strong>，超过了${what}的上限 <strong>${lim}</strong>。手边的圈<span class="red">变红</span>就是太重。`, `Last hit: <strong>${F}</strong>, above ${what} limit of <strong>${lim}</strong>. A <span class="red">red</span> ring means too hard.`)}</p>`;
+}
 function showOver() {
   G.state = 'over'; const m = G.mat;
   const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，达标线是 ${pct(G.target)}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; the target was ${pct(G.target)}.`);
   setCard(`
     <p class="eyebrow">${L('交货失败', 'Delivery failed')}</p>
     <h2>${L('你被做成了圆形', 'You have been made round')}</h2>
-    <p>${why}</p>
+    <p>${why}</p>${G.failReason === 'shatter' ? overWhy() : ''}
     <p>${L(`完成 ${G.done} 单，累计酬劳`, `Orders delivered: ${G.done}. Total pay:`)} <strong>◎ ${G.startScore}</strong>${L('。', '.')}</p>
     <div class="row"><button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
 }
@@ -2235,6 +2241,9 @@ function drawGauge() {
   ctx.font = EN ? `700 ${9.5 * fz}px ${BODY}` : `${13 * fz}px ${BODY}`; ctx.textBaseline = 'middle';
   if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), 893 - (fz - 1) * 8, (GY0 + gy(m.brittle)) / 2); } ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), 893 - (fz - 1) * 8, (gy(m.brittle) + gy(m.hard)) / 2); ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), 893 - (fz - 1) * 8, (gy(m.hard) + GY1) / 2);
   const lh = G.lastHit;
+  if (lh && lh.kind === 'over' && G.time - lh.t < 2) { const k = clamp(2 - (G.time - lh.t), 0, 1) * (.6 + .4 * Math.sin((G.time - lh.t) * 20));
+    ctx.globalAlpha = k; ctx.strokeStyle = C.alarm; ctx.lineWidth = 4; rr(ctx, GX - 6, GY0 - 6, GW + 12, gy(m.brittle) - GY0 + 12, 10); ctx.stroke();
+    ctx.font = `700 ${EN ? 11 : 14}px ${BODY}`; ctx.fillStyle = C.alarm; ctx.textAlign = 'center'; ctx.fillText(L('太重！', 'Too hard!'), GX + GW / 2, GY0 - 24); ctx.globalAlpha = 1; }
   if (lh && G.time - lh.t < 3) {
     ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const yy = gy(lh.F);
     ctx.fillStyle = '#fff'; ctx.fillRect(GX - 3, yy - 2, GW + 6, 4); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(GX - 3, yy - 2, GW + 6, 4); ctx.globalAlpha = 1;
@@ -2248,8 +2257,8 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Press and hold to lift, then slam it on the floor', TOUCH ? 'While holding: slide a second finger to turn (right = counter-clockwise)' : 'Grab one end, the other points down · A / D or wheel to turn', 'Hollow arrow on the gauge = force if you let go now', 'Hit corners outside the dashed circle · flat sides only get flatter']
-  : ['按住材料拎起来，往地板上砸', TOUCH ? '拎着时另一根手指左右滑来转（往右 = 逆时针）' : '抓住一头，对面那头朝下 · A / D 或滚轮微调角度', '力度表上的空心箭头 = 此刻松手的落地力度', '专砸凸出虚线圆的角 · 砸平的一面只会越砸越扁'];
+  ? ['Hold to lift, slam it on the floor', TOUCH ? 'Second finger slides to turn' : 'A / D or wheel to turn', 'Ring by your hand: green works, red breaks', 'Hit the corners outside the dashed circle']
+  : ['按住拎起来，往地板上砸', TOUCH ? '另一根手指左右滑来转' : 'A / D 或滚轮转角度', '手边的圈：绿了有效，红了会碎', '专砸凸出虚线圆的角'];
 /* 触屏拎着材料时的提示：第二根手指左右滑转动；正在滑时高亮方向 */
 function drawRotHint() {
   const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held) return;
@@ -2284,6 +2293,8 @@ function drawGaugePort() {
   ctx.fillStyle = C.dim; ctx.fillText(L('轻', 'LOW'), (X0 + gx(m.hard)) / 2, ly); ctx.fillStyle = C.alien; ctx.fillText(L('好', 'OK'), (gx(m.hard) + gx(m.brittle)) / 2, ly);
   if (m.brittle < 97) { ctx.fillStyle = C.alarm; ctx.fillText(m.brk ? L(m.brk[0], m.brk[1]) : L('碎', 'BRK'), (gx(m.brittle) + X1) / 2, ly); }
   const lh = G.lastHit;
+  if (lh && lh.kind === 'over' && G.time - lh.t < 2) { const k = clamp(2 - (G.time - lh.t), 0, 1) * (.6 + .4 * Math.sin((G.time - lh.t) * 20));
+    ctx.globalAlpha = k; ctx.strokeStyle = C.alarm; ctx.lineWidth = 4; rr(ctx, gx(m.brittle) - 6, y - 6, X1 - gx(m.brittle) + 12, h + 12, 12); ctx.stroke(); ctx.globalAlpha = 1; }
   if (lh && G.time - lh.t < 3) { ctx.globalAlpha = clamp(3 - (G.time - lh.t), 0, 1); const xx = gx(lh.F); ctx.fillStyle = '#fff'; ctx.fillRect(xx - 2, y - 3, 4, h + 6); ctx.strokeStyle = C.space; ctx.lineWidth = 1; ctx.strokeRect(xx - 2, y - 3, 4, h + 6); ctx.globalAlpha = 1; }
   if (b && !b.dead && G.state === 'play') {
     if (b.held && b.clear > 2) { const xx = gx(clamp(Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100, 0, 100));
@@ -2320,6 +2331,25 @@ function drawHudPort(t) {
     ctx.globalAlpha = 1;
   }
 }
+/* 拎着时手边的力度圈：顺时针填到当前力度，颜色跟力度表的区一致（轻 / 好 / 碎），两道刻度是窗口上下限 */
+function forceNow(b) { return Math.max(G.needle, b.clear > 2 ? clamp(Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100, 0, 100) : 0); }
+function drawForceRing(b) {
+  if (!b.held || G.state !== 'play') return;
+  const m = faceMat(b), F = forceNow(b), R = TOUCH ? 42 : 30, x = P.x, y = P.y, a0 = -Math.PI / 2, A = f => a0 + TAU * f / 100;
+  const zone = F > m.brittle && m.brittle < 97 ? 2 : F >= m.hard ? 1 : 0, col = [C.dim, C.alien, C.alarm][zone];
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.globalAlpha = .45; ctx.strokeStyle = C.space; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
+  ctx.globalAlpha = .35; ctx.lineWidth = 5; ctx.strokeStyle = C.alien; ctx.beginPath(); ctx.arc(x, y, R, A(m.hard), A(Math.min(m.brittle, 100))); ctx.stroke();
+  if (m.brittle < 97) { ctx.strokeStyle = C.alarm; ctx.beginPath(); ctx.arc(x, y, R, A(m.brittle), A(100)); ctx.stroke(); }
+  ctx.globalAlpha = zone === 2 ? .75 + .25 * Math.sin(G.time * 22) : .95; ctx.strokeStyle = col; ctx.lineWidth = 6;
+  if (F > .5) { ctx.beginPath(); ctx.arc(x, y, R, a0, A(F)); ctx.stroke(); }
+  if (zone || F > 3) {
+    ctx.globalAlpha = 1; ctx.font = `700 ${TOUCH ? 17 : 13}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const t = zone === 2 ? (m.brk ? L(m.brk[0], m.brk[1]) : L('太重', 'TOO HARD')) : zone ? L('好', 'OK') : L('轻', 'LOW'), ty = y + R + (TOUCH ? 18 : 14);
+    ctx.lineWidth = 4; ctx.strokeStyle = C.space; ctx.strokeText(t, x, ty); ctx.fillStyle = col; ctx.fillText(t, x, ty);
+  }
+  ctx.restore();
+}
 /* 触屏把料挂到手指下方时，从手指到抓点画一根虚线，看得出是谁拎着它 */
 function drawLiftLine(b) {
   if (!b.held || !(Math.abs(b.lift) > 8)) return;
@@ -2337,7 +2367,7 @@ function draw() {
   if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); }
   if (G.doom) drawDoom(G.doom);
-  drawFx(); drawRotHint(); ctx.restore();
+  drawFx(); if (G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
 }
@@ -2356,13 +2386,13 @@ function fit() {
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
-if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住材料拎起来往地板上砸，或者举高了松手。抓住哪一头，对面那头就朝下；拎着时另一根手指左右滑微调角度。'; }
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '按住拎起来砸地板 · 另一根手指滑动来转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
   document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 48-order whacking game.';
   document.getElementById('help').textContent = TOUCH
-    ? 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Whichever end you grab, the opposite end points down. While holding, slide a second finger to fine-tune the angle.'
-    : 'Press and hold the material to lift it, then slam it on the floor or let go from up high. Grab one end and the opposite end points down. A / D or the scroll wheel fine-tunes the angle; Space delivers.';
+    ? 'Hold to lift, slam on the floor · Second finger slides to turn'
+    : 'Hold to lift, slam on the floor · A / D to turn · Space delivers';
   deliverBtn.innerHTML = 'Deliver<kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
