@@ -2684,9 +2684,9 @@ const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 
 const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
 function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; sfx.joy(); }
-/* 按距离转：手指横着挪多少，材料就转多少（JOY_GAIN 弧度 / CSS 像素，挪满半个槽 ≈ 90°），手指停材料就停；
+/* 按距离转：手指横着挪多少，材料就转多少（JOY_GAIN 弧度 / CSS 像素，挪满半个槽 ≈ 45°），手指停材料就停；
    推出槽外时槽跟着手指走，所以一直往一边拖能一直转 */
-const JOY_GAIN = (Math.PI / 2) / JOY_R;
+const JOY_GAIN = (Math.PI / 4) / JOY_R;
 function joyMove(e) {
   const x = joyAt(e).x, dx = x - JOY.x; JOY.x = x;
   const b = G.body; if (b && b.held && rotId !== null) b.userRot += JOY_DIR * JOY_GAIN * dx / JOY.s;
