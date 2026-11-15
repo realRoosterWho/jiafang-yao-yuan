@@ -390,7 +390,7 @@ body {
 .start-main:has(.start-endless) .start-more { gap: calc(var(--u) * 9); }
 #stage.port #startui .start-endless { width: 70%; font-size: max(15px, calc(var(--u) * 30)); }
 #stage.port .start-main:has(.start-endless) { top: 50%; gap: calc(var(--u) * 14); }
-#startui .start-lang, #stage #flow-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 20); font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
+#startui .start-lang, #stage #flow-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 16 + var(--ib) / 2); translate: 0 50%; font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
 /* flow.js 给新玩家放在封面上的换语言按钮：换成一样的皮；这时候我们自己的那个和四颗小按钮都收起来（新玩家先看开场、签合同） */
 #stage #flow-lang { font-family: var(--display); font-weight: 400; line-height: 1; }
 #stage:not(.seen):has(#flow-lang) .start-more, #stage:not(.seen):has(#flow-lang) .start-lang { display: none; }
@@ -403,7 +403,7 @@ body {
 #stage.port #startui .start-go { width: 80%; font-size: max(18px, calc(var(--u) * 40)); }
 #stage.port .start-more { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 12) calc(var(--u) * 10); width: 74%; }
 #stage.port #startui .start-more .btn { width: calc(50% - var(--u) * 6); padding-left: .4em; padding-right: .4em; font-size: max(13px, calc(var(--u) * 25)); }
-#stage.port #startui .start-lang, #stage.port #flow-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 14); font-size: max(10px, calc(var(--u) * 15)); }
+#stage.port #startui .start-lang, #stage.cover.port #flow-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 10 + var(--ib) / 2); font-size: max(10px, calc(var(--u) * 15)); }
 #stage.cover.port #mute { left: calc(var(--u) * 8); bottom: calc(var(--u) * 10); }
 /* 竖着拿的平板（.short，比手机矮一截）：大按钮和下面四颗都小一号、挨紧一点，不然最后一排会压到右下角的换语言 */
 #stage.port.short .start-main { top: 53%; gap: calc(var(--u) * 11); }
@@ -1492,7 +1492,7 @@ const LINES = {
 };
 function say(kind, force) {
   if (!force && G.bubble && G.time - G.bubble.t0 < 1.6) return;
-  G.bubble = { text: pick(LINES[kind](G.mat)), t0: G.time, dur: 3.8, lines: null };
+  G.bubble = { text: pick(LINES[kind](G.mat)), t0: G.time, dur: 6, lines: null };
 }
 /* 会说话的料：头顶冒一个自己的小气泡（和甲方的气泡分开）。delay 秒以后才冒出来 */
 function talk(kind, force, delay) {
@@ -2114,7 +2114,7 @@ const TOAST = { q: [], cur: null, t: 0, out: false };
 function toastTick() {
   const c = TOAST.cur;
   if (c) {
-    const dur = c.play ? (TOAST.q.length ? 1.6 : 2.4) : (TOAST.q.length ? 2.2 : 3.6) + (c.n > 1 ? 1 : 0);
+    const dur = c.play ? (TOAST.q.length ? 3 : 4.5) : (TOAST.q.length ? 3.5 : 5.5) + (c.n > 1 ? 1 : 0);
     if (!TOAST.out && (G.time - TOAST.t > dur || (c.play && G.state !== 'play'))) { TOAST.out = true; TOAST.t = G.time; toastEl.className = (c.play ? '' : 'menu ') + 'out'; }
     else if (TOAST.out && G.time - TOAST.t > .3) { TOAST.cur = null; toastEl.hidden = true; toastEl.className = ''; }
     return;
@@ -2735,7 +2735,7 @@ function tryGrab() {
   b.lift = 0; b.liftTo = tg ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; sfx.grab(); if (Math.random() < .35) talk('grab');
-  if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 4.5, lines: null }; mood('angry', 2); sfx.alien('no', .1); }
+  if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 6, lines: null }; mood('angry', 2); sfx.alien('no', .1); }
   return true;
 }
 function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); if (G.state === 'play') sfx.letgo(); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
@@ -3157,7 +3157,8 @@ const BG = new Image(); BG.src = 'assets/bg-game.3e8186aa69.webp';
 /* 背景图贴满 (x, y, w, h)：等比放大到盖住，贴底；左右默认居中，ax 给 0–1 可以往左或往右靠（1 = 露出图的最右边）。图还没解码好就先垫一个差不多的渐变 */
 function coverBg(x, y, w, h, ax, img) {
   const B = img && img.complete && img.naturalWidth ? img : BG;
-  if (B.complete && B.naturalWidth) { const s = Math.max(w / B.naturalWidth, h / B.naturalHeight), dw = B.naturalWidth * s, dh = B.naturalHeight * s; ctx.drawImage(B, x + (w - dw) * (ax == null ? .5 : ax), y + h - dh, dw, dh); return; }
+  // The pictures have a light frame line baked in along their edges: skip a 3% margin of the source so it never shows inside the stage's own frame
+  if (B.complete && B.naturalWidth) { const m = Math.round(B.naturalWidth * .03), nw = B.naturalWidth - 2 * m, nh = B.naturalHeight - 2 * m, s = Math.max(w / nw, h / nh), dw = nw * s, dh = nh * s; ctx.drawImage(B, m, m, nw, nh, x + (w - dw) * (ax == null ? .5 : ax), y + h - dh, dw, dh); return; }
   const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#1e2270'); g.addColorStop(.7, '#3d40b4'); g.addColorStop(1, '#6a69dc'); ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
 }
 /* 手机竖屏：背景图是横的，竖着只露得出中间一条，两边的星球和云都裁掉了，拿素材包里的星球、云补在两侧（贴边、半藏着，不挡中间）。
@@ -4257,7 +4258,8 @@ function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住
 function drawHints() {
   if (G.state !== 'play' || G.tutUI || (!PORT && toastInPlay())) return;   // 新手关里不放底下这行轮换的提示
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
-  const i = G.started ? Math.floor(G.time / 6) % TIPS.length : 0, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];
+  const old = G.idx >= 4 || G.mode === 'endless'; if (old && !G.started) return;   // TIPS[0] only for the first four orders
+  const i = !G.started ? 0 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 ${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`;
   const iw = icons.length * 26, X0 = WALL_L + 170, X1 = WALL_L + VW - 8; let lines = [txt];   // 竖屏：两个按钮右边到屏幕右边
   if (PORT && ctx.measureText(txt).width + iw + 44 > X1 - X0) {   // 放不下就在最靠中间的空格或逗号处折成两行
