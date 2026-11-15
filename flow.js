@@ -5,7 +5,7 @@
    这个文件没加载、或者 index.html 里没有那一行，游戏就按原来的流程走（封面 → 首页）。
    不改游戏本身的函数：靠捕获阶段的事件监听抢在游戏前面接管封面和新手关的按键，提示画在游戏那一帧之后。
 
-   谁会看到：本机没有任何进度、也没签过合同的新玩家。老玩家照旧直接进首页，首页卡片底部有「重看开场和新手关」。
+   谁会看到：这台设备上没过新手关的人（有没有存档都一样）。过了新手关的照旧直接进首页，首页卡片底部有「重看开场和新手关」。
    调试：网址后面加 ?intro=1 强制走一遍，?intro=0 关掉。 */
 (() => {
 'use strict';
@@ -60,7 +60,8 @@ let phase = 'idle';      // idle | cutscene | tutorial | handoff | contract
 let replaying = 0, tutSeen = {}, tutT0 = 0, leaving = false;
 const track = (s, d) => { try { if (X.TRACK) X.TRACK('intro', Object.assign({ s, replay: replaying }, d || {})); } catch (e) {} };
 const tutOnce = (s, d) => { if (tutSeen[s]) return; tutSeen[s] = 1; track(s, Object.assign({ sec: Math.round((performance.now() - tutT0) / 100) / 10 }, d || {})); };
-const wantIntro = () => !OFF && !ran && (FORCED || (!FL.signed && !hasProgress()));
+/* 要不要放开场：这台设备没过新手关就放（有没有存档都一样）；过了新手关但没签合同、也没存档的，接着去签合同 */
+const wantIntro = () => !OFF && !ran && (FORCED || !FL.tut || (!FL.signed && !hasProgress()));
 
 /* ---------- 样式 ---------- */
 const HAND = `"Long Cang", "Kaiti SC", "STKaiti", "KaiTi", "BiauKai", cursive`;
