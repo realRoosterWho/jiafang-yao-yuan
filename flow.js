@@ -165,14 +165,31 @@ html[lang="en"] .fd-stamp { font-size: 1.25em; letter-spacing: .08em; width: 11e
 .fd-shake { animation: fdShake .32s linear; }
 @keyframes fdShake { 20% { transform: translateX(-7px); } 45% { transform: translateX(6px); } 70% { transform: translateX(-4px); } 90% { transform: translateX(2px); } }
 .fd-more { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 9; transform: translateX(-50%); padding: .5em 1.1em; border: 0; border-radius: 3px; background: #ffd35c; color: #5b2b00; font: 700 14px/1 ${BODY}; white-space: nowrap; box-shadow: 0 3px 10px rgb(0 0 0 / .45); cursor: pointer; }
+/* 签名下面两颗小按钮：随便起一个名字 / 不起名，先当访客 */
+.fd-alt { display: flex; flex-wrap: wrap; gap: .5em 1.1em; align-items: center; margin-top: 1.5em; }
+.fd-alt button { min-height: 40px; padding: .35em .2em; border: 0; background: none; color: #1d2c6e; font: 600 .9em/1.2 ${BODY}; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: .28em; -webkit-tap-highlight-color: transparent; }
+.fd-alt button:hover { color: #b3261e; }
+.fd-alt button:focus-visible { outline: 2px solid #1d2c6e; outline-offset: 2px; }
+.fd-alt button:disabled { opacity: .4; cursor: default; }
+.fd-alt .fd-dice::before { content: '🎲'; margin-right: .3em; text-decoration: none; display: inline-block; }
+.fd-alt .fd-dice.roll::before { animation: fdRoll .35s ease-out; }
+@keyframes fdRoll { from { transform: rotate(-200deg) scale(.6); } }
+.fd-alt .fd-guest { margin-left: auto; color: #6f655a; }
+.fd-msg:empty { margin-top: 0 !important; min-height: 0; }
 @media (max-width: 560px) {
-  .fd-paper { padding: 24px 24px 22px; font-size: 14px; line-height: 1.66; }
+  .fd-paper { padding: 22px 20px 20px; font-size: 14px; line-height: 1.62; transform: none; }   /* 手机上纸不歪：字更清楚 */
   .fd-title { font-size: 1.8em; }
-  .fd-sign { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 0 .8em; }
-  .fd-seal { left: 0; top: 1.3em; width: 5.8em; height: 5.8em; }
-  .fd-scrawl { left: 2.2em; top: 2em; width: 5.4em; }
+  /* 签字那一栏占满整行，甲方的章挪到下面跟日期一排 */
+  .fd-sign { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 1.1em; }
+  .fd-b { order: 1; min-height: 0; }
+  .fd-a { order: 2; min-height: 6.4em; margin-top: .9em; }
+  .fd-date { order: 3; margin-top: -1.7em !important; }
+  .fd-seal { left: .2em; top: 1.2em; width: 5.4em; height: 5.4em; }
+  .fd-scrawl { left: 2.6em; top: 1.9em; width: 5.4em; }
+  .fd-line input { font-size: max(28px, 2em); padding-right: 4em; }
+  .fd-thumb { width: 5em; height: 5em; bottom: -1.3em; }   /* 拇指好按 */
+  .fd-alt { margin-top: 1.9em; }
   .fd-note { margin-left: .2em; }
-  html[lang="en"] .fd-b label { display: block; max-width: calc(100% - 5.6em); line-height: 1.3; }
 }
 @media (prefers-reduced-motion: reduce) { .fd-flag, .fd-stamp, .fd-hand, .fc-shot.on .fc-move, .fc-shot.on .fc-rise { animation: none; } .fd-hand { display: none; } }
 
@@ -478,6 +495,20 @@ function playCutscene(done) {
 /* ---------- 合同 ---------- */
 const NAME_OK = (() => { try { return new RegExp("^[\\p{L}\\p{N} \\-_·.']+$", 'u'); } catch (e) { return null; } })();
 function cleanName(raw) { let s = String(raw || ''); try { s = s.normalize('NFKC'); } catch (e) {} return s.trim().replace(/\s+/g, ' '); }
+/* 随便起一个名字：圆东西 + 三位数。名字就是存档名，撞上别人的名字会接着别人的进度，所以带上数字，撞的概率很小 */
+const RND_ZH = [['圆滚滚的', '软乎乎的', '迷糊的', '认真的', '困困的', '胖嘟嘟的', '亮晶晶的', '慢吞吞的', '不太圆的', '倔强的', '咕噜噜的', '没睡醒的'],
+  ['汤圆', '土豆', '西瓜', '丸子', '鹅卵石', '月饼', '包子', '豌豆', '弹珠', '毛线球', '橘子', '饭团']];
+const RND_EN = [['Wobbly', 'Lumpy', 'Bouncy', 'Squishy', 'Sleepy', 'Shiny', 'Fuzzy', 'Plump', 'Dizzy', 'Stubby', 'Comfy', 'Grumpy'],
+  ['Potato', 'Pebble', 'Bagel', 'Melon', 'Muffin', 'Donut', 'Pea', 'Moon', 'Marble', 'Bun', 'Plum', 'Mochi']];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function randomName(prev) {
+  for (let i = 0; i < 20; i++) {
+    const [adj, noun] = EN ? RND_EN : RND_ZH, n = 100 + Math.floor(Math.random() * 900);
+    const s = EN ? `${pick(adj)} ${pick(noun)} ${n}` : `${pick(adj)}${pick(noun)}${n}`;
+    if ([...s].length <= 16 && s !== prev) return s;
+  }
+  return EN ? 'Round Bun ' + (100 + Math.floor(Math.random() * 900)) : '汤圆' + (100 + Math.floor(Math.random() * 900));
+}
 function contractNo() {   // 看着像流水号：从本机的随机玩家 ID 算出来，同一个人每次都一样
   let pid = ''; try { pid = localStorage.getItem('yuan.pid') || ''; } catch (e) {}
   let h = 7; for (const ch of pid || 'yuan') h = (h * 31 + ch.charCodeAt(0)) % 9000000;
@@ -503,7 +534,7 @@ function openContract(round) {
   const no = contractNo(), now = new Date(), orders = Y.ORDER.length, name0 = X.NAME || FL.name || '';
   const { advN, restN } = parts();
   const date = EN ? now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-  const trial = round ? L(`乙方试工一单，圆度 ${pct(round)}，甲方点了点头，决定雇用。`, `The Artisan completed one trial order at ${pct(round)} roundness. The Client nodded and decided to hire.`) : L('乙方试工合格，甲方决定雇用。', 'The Artisan passed the trial and the Client decided to hire.');
+  const trial = round ? L(`乙方试工圆度 ${pct(round)}，甲方决定雇用。`, `Trial order: ${pct(round)} round. The Client decided to hire.`) : L('乙方试工合格，甲方决定雇用。', 'The Artisan passed the trial. The Client decided to hire.');
   const layer = document.createElement('div'); layer.id = 'flow-deal'; layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-labelledby', 'fd-title');
   layer.innerHTML = `
   <article class="fd-paper">
@@ -515,17 +546,16 @@ function openContract(round) {
       <p><b>${L('甲方（雇主）：', 'Party A (the Client): ')}</b>${L('母星甲方', 'The Client, Homeworld')}</p>
       <p><b>${L('乙方（工匠）：', 'Party B (the Artisan): ')}</b><span class="fd-who" data-who-mirror>${escH(name0) || '&nbsp;'}</span>${L('，地球', ', Earth')}</p>
     </div>
-    <p class="fd-lead">${trial}${L('双方订立条款如下：', ' The parties agree as follows:')}</p>
+    <p class="fd-lead">${trial}</p>
     <ol class="fd-terms">
-      <li><b>${L('第一条　工作内容', '1. Work.')}</b>${L(`甲方送来什么，乙方就把什么做成圆的。先做冒险模式 ${advN} 单；做完以后加班，加到乙方撑不住为止。`, `Whatever the Client sends, the Artisan makes round. First the ${advN} adventure orders; after that, overtime, until the Artisan gives out.`)}</li>
-      <li><b>${L('第二条　验收标准', '2. Acceptance.')}</b>${L('每单圆度不低于达标线，并在甲方耐心耗尽之前交货。', "Each order must reach its roundness target before the Client's patience runs out.")}</li>
-      <li><b>${L('第三条　酬劳', '3. Pay.')}</b>${L('达标即付，以 ◎ 结算。越圆、越快，给得越多。', 'Paid on delivery, in ◎. Rounder and faster pays more.')}</li>
-      <li><b>${L('第四条　违约责任', '4. Breach.')}</b>${L('乙方完不成任务的，由<em>乙方本人被做成圆形</em>，抵作该单货物。', 'If the Artisan fails an order, <em>the Artisan will be made round</em> in place of the goods.')}<span class="fd-note">${L('← 这条是认真的', '← we mean it')}</span></li>
-      <li><b>${L('第五条　档案', '5. Records.')}</b>${X.CLOUD
-        ? L('乙方的签名就是存档名，连同每单最高酬劳存入甲方档案室（服务器）。换设备签同一个名字，可以接着干。', "The signature is the Artisan's save name, kept on the Client's server with the best pay per order. Sign the same name on another device to continue.")
-        : L('乙方的签名就是存档名。现在是离线打开，签名只记在这台设备上。', "The signature is the Artisan's save name. This copy is running offline, so it is kept on this device only.")}</li>
+      <li><b>${L('第一条　工作', '1. Work.')}</b>${L(`甲方送来什么，乙方就做圆什么。先做冒险模式 ${advN} 单，之后加班到撑不住为止。`, `Make round whatever the Client sends: ${advN} adventure orders, then overtime until you give out.`)}</li>
+      <li><b>${L('第二条　酬劳', '2. Pay.')}</b>${L('耐心耗尽前达标就付 ◎，越圆越快给得越多。', 'Hit the target before patience runs out to get paid in ◎. Rounder and faster pays more.')}</li>
+      <li><b>${L('第三条　违约', '3. Breach.')}</b>${L('完不成的，<em>乙方本人被做成圆形</em>。', 'Fail, and <em>you will be made round</em>.')}<span class="fd-note">${L('← 认真的', '← we mean it')}</span></li>
+      <li><b>${L('第四条　档案', '4. Records.')}</b>${X.CLOUD
+        ? L('签名就是存档名，换设备签同一个名字接着干。', 'Your signature is your save name. Sign the same name on any device to continue.')
+        : L('签名就是存档名。现在是离线打开，只记在这台设备上。', 'Your signature is your save name. Offline: kept on this device only.')}</li>
     </ol>
-    <p class="fd-fine">${L('本合同自乙方签字之时生效。乙方人已在母星，无权拒签。', 'This contract takes effect upon signature. The Artisan is already on the homeworld and may not decline.')}</p>
+    <p class="fd-fine">${L('签字即生效。乙方已在母星，无权拒签。', 'Effective on signature. You are already on the homeworld and may not decline.')}</p>
     <form class="fd-sign" autocomplete="off" novalidate>
       <div class="fd-a"><span>${L('甲方（盖章）：', 'Party A (seal):')}</span>${SEAL()}${SCRAWL}</div>
       <div class="fd-b">
@@ -534,6 +564,10 @@ function openContract(round) {
           <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('在这里写下名字', 'Write your name here')}" value="${escH(name0)}">
           <button class="fd-thumb" type="submit" aria-label="${L('按手印，签下合同', 'Press your thumbprint to sign')}"><span>${L('按<br>手印', 'thumb<br>print')}</span>${PRINT}</button>
           <i class="fd-flag" aria-hidden="true">${L('签这里', 'Sign here')}</i>
+        </div>
+        <div class="fd-alt">
+          <button class="fd-dice" type="button">${L('随便起一个', 'Random name')}</button>
+          ${X.NAME ? '' : `<button class="fd-guest" type="button">${L('先不签名，当访客 →', 'Continue as guest →')}</button>`}
         </div>
         <p class="fd-msg" role="alert"></p>
       </div>
@@ -571,9 +605,27 @@ function openContract(round) {
     msg.textContent = text; line.classList.remove('fd-shake'); void line.offsetWidth; line.classList.add('fd-shake');
     try { input.focus(); } catch (e) {}
   };
+  const dice = layer.querySelector('.fd-dice'), guest = layer.querySelector('.fd-guest');
+  const lock = on => { input.disabled = on; thumb.disabled = on; dice.disabled = on; if (guest) guest.disabled = on; };
+  dice.addEventListener('click', () => {
+    if (busy || signedOff) return;
+    X.audioInit(); S('ui');
+    input.value = randomName(input.value); mirror.textContent = input.value; msg.textContent = ''; fit();
+    dice.classList.remove('roll'); void dice.offsetWidth; dice.classList.add('roll');
+    track('rndname');
+  });
+  // 当访客：不起名字，进度只记在这台设备上（首页随时可以再起名字存到云端）
+  if (guest) guest.addEventListener('click', () => {
+    if (busy || signedOff) return;
+    X.audioInit();
+    finish('', 'guest');
+  });
+  // 手机上点输入框弹出键盘：把签字那块挪到看得见的地方
+  if (TOUCH) input.addEventListener('focus', () => setTimeout(() => { try { line.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); } catch (e) {} }, 320));
   const finish = (name, how) => {
     signedOff = true; FL.signed = 1; FL.name = name; saveFL(); track('signed', { how });
-    input.value = name; mirror.textContent = name; fit(); input.disabled = true; thumb.disabled = true; thumb.classList.add('done'); flag.remove(); if (more) { more.remove(); more = null; }
+    const shown = name || L('访客', 'Guest');
+    input.value = shown; mirror.textContent = shown; fit(); lock(true); thumb.classList.add('done'); flag.remove(); if (more) { more.remove(); more = null; }
     msg.textContent = '';
     S('press'); setTimeout(() => { S('stamp'); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); }, 380);
     setTimeout(() => {
@@ -586,16 +638,16 @@ function openContract(round) {
     e.preventDefault(); if (busy || signedOff) return;
     X.audioInit();
     const name = cleanName(input.value);
-    if (!name) { S('nope'); return refuse(L('乙方无权拒签。请签上名字。', 'The Artisan may not decline. Please sign.')); }
+    if (!name) { S('nope'); return refuse(guest ? L('乙方无权拒签。签个名字，或者先当访客。', 'You may not decline. Sign a name, or continue as guest.') : L('乙方无权拒签。请签上名字。', 'The Artisan may not decline. Please sign.')); }
     if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) { S('nope'); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
     if (!X.CLOUD) return finish(name, 'offline');   // file:// 打开：没有云存档，签名只记在本机
-    busy = true; input.disabled = true; thumb.disabled = true; msg.textContent = L('归档中…', 'Filing…');
+    busy = true; lock(true); msg.textContent = L('归档中…', 'Filing…');
     X.WHO.err = '';
     await Promise.race([X.setName(name), new Promise(r => setTimeout(r, 7000))]).catch(() => {});
     busy = false;
     const err = X.WHO.err; X.WHO.err = '';
     if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return finish(X.NAME, 'cloud');
-    if (err && /16/.test(err)) { input.disabled = false; thumb.disabled = false; S('nope'); return refuse(err); }   // 服务器说名字不合规
+    if (err && /16/.test(err)) { lock(false); S('nope'); return refuse(err); }   // 服务器说名字不合规
     // 存档服务连不上：先在本机签了，名字留在 yuan.name 里，下次打开时游戏会自己补存
     try { localStorage.setItem('yuan.name', name); } catch (e2) {}
     finish(name, 'later');
@@ -608,11 +660,12 @@ function showChoice(name, how, no) {
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; X.setupRound(); G.state = 'menu'; G.mood = 'happy'; G.moodT = G.time + 4;
   const at = X.firstOpen(), mat = Y.MATS[Y.ORDER[at]];
   const note = how === 'later' ? L('存档服务这会儿连不上，签名先记在这台设备上，下次打开会自动补存。', 'The save server is unreachable right now. Your signature is kept on this device and will sync next time you open the game.')
-    : how === 'offline' ? L('现在是离线打开，签名只记在这台设备上。', 'Running offline: your signature is kept on this device only.') : '';
+    : how === 'offline' ? L('现在是离线打开，签名只记在这台设备上。', 'Running offline: your signature is kept on this device only.')
+    : how === 'guest' ? L('访客的进度只存在这台设备上。想换设备接着玩，回首页随时起个名字。', 'Guest progress stays on this device. Pick a name on the home screen any time to save it.') : '';
   X.setCard(`
     <p class="eyebrow">${L('合同生效 · 圆字第 ' + no + ' 号', 'Contract R-' + no + ' in effect')}</p>
-    <h2>${L(`签好了，${escH(name)}。开工吧`, `Signed, ${escH(name)}. Get to work`)}</h2>
-    <p>${(({ advN, restN }) => L(`冒险模式一共 <strong>${advN} 单</strong>，做完前 ${Y.ENDLESS.unlock} 单就解锁无尽模式。完不成会怎样，合同第四条写着。`, `Adventure mode is <strong>${advN} orders</strong>; finish the first ${Y.ENDLESS.unlock} to unlock endless mode. What happens if you fail is in clause 4.`))(parts())}</p>
+    <h2>${name ? L(`签好了，${escH(name)}。开工吧`, `Signed, ${escH(name)}. Get to work`) : L('访客，开工吧', 'Get to work, guest')}</h2>
+    <p>${(({ advN, restN }) => L(`冒险模式一共 <strong>${advN} 单</strong>，做完前 ${Y.ENDLESS.unlock} 单就解锁无尽模式。完不成会怎样，合同第三条写着。`, `Adventure mode is <strong>${advN} orders</strong>; finish the first ${Y.ENDLESS.unlock} to unlock endless mode. What happens if you fail is in clause 3.`))(parts())}</p>
     <div class="flow-go">
       <button class="btn flow-big" type="button" data-act="resume">${L('下一关', 'Next level')}<small>${L(`第 ${at + 1} 单 · ${mat ? mat.name : ''}`, `Order ${at + 1} · ${mat ? mat.name : ''}`)}</small></button>
       <button class="btn ghost" type="button" data-act="${escH(CONFIG.collectionAct)}">${L('去收藏室看看', 'Collection room')}</button>
@@ -737,5 +790,5 @@ if (wantIntro()) {
   if (G.state === 'menu') { G.state = 'cover'; card.innerHTML = ''; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }
 }
 
-window.__yuanFlowDebug = { CONFIG, TUT, get phase() { return phase; }, begin, geom };
+window.__yuanFlowDebug = { CONFIG, TUT, get phase() { return phase; }, begin, geom, openContract };
 })();
