@@ -223,9 +223,11 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             return self._send(500, b"missing file")
         # 页面每次都问一下服务器有没有新版（no-cache），没变就回 304，回头客不用把整页再下一遍
-        etag = '"%s"' % hashlib.sha256(body).hexdigest()[:16]
+        # 用弱 ETag：Cloudflare 边压缩边转发时会把强 ETag 去掉，弱的才会留下
+        tag = '"%s"' % hashlib.sha256(body).hexdigest()[:16]
+        etag = "W/" + tag
         extra = {"Cache-Control": "no-cache", "ETag": etag}
-        if etag in (self.headers.get("If-None-Match") or ""):
+        if tag in (self.headers.get("If-None-Match") or ""):
             self.send_response(304)
             for k, v in extra.items():
                 self.send_header(k, v)
