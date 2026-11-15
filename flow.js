@@ -11,6 +11,9 @@
 'use strict';
 const Y = window.__yuan, X = window.__yuanFlow;
 if (!Y || !X) return;
+/* 声音都走 index.html 里的 sfx（音量、静音、防连发都在那边管）。万一 index.html 是老版本、没有新的那几个，就退回到原来有的 */
+const SFX_OLD = { paper: s => s.ui(), press: s => s.thud(1), stamp: s => { s.thud(1); s.win(); }, nope: s => s.thud(.6) };
+const S = (name, ...a) => { try { const s = X.sfx || {}; if (s[name]) s[name](...a); else if (SFX_OLD[name]) SFX_OLD[name](s); } catch (e) {} };
 
 /* ---------- 要改的东西都在这里 ---------- */
 const CONFIG = {
@@ -231,7 +234,7 @@ function startTutorial() {
   stage.classList.add('flow-tut'); stage.classList.toggle('flow-lock', !(FL.signed || hasProgress()));
   G.tutUI = true; document.documentElement.classList.add('flow-tut-on');   // 新手关的界面极简：index.html 不画力度表、底部提示和顶栏的小字   // 第一次来不给回首页，重看的时候可以走
   G.mood = 'calm'; G.moodT = 0;
-  G.bubble = { text: L('先试工：把它弄圆。', 'Trial run: make it round.'), t0: G.time, dur: 4, lines: null };
+  G.bubble = { text: L('先试工：把它弄圆。', 'Trial run: make it round.'), t0: G.time, dur: 4, lines: null }; S('alien', 'hi', .2);
   cancelAnimationFrame(raf); raf = requestAnimationFrame(tutFrame);
   try { document.fonts.load(`20px 'ZCOOL KuaiLe'`, HINT_TEXT); } catch (e) {}
 }
@@ -241,10 +244,10 @@ function quitTutorial() {   // 只有重看的时候能走到这里
 }
 function tryFinish() {
   const b = G.body; if (phase !== 'tutorial' || G.state !== 'play' || !b) return;
-  if (G.round < G.target) { note(L('还不够圆', 'Not round yet')); return; }
+  if (G.round < G.target) { note(L('还不够圆', 'Not round yet')); S('nope'); return; }
   Y.release(); const round = G.round;
   stopTutorial(); phase = 'handoff'; G.state = 'flow'; deliverBtn.hidden = true;
-  X.sfx.win(); G.mood = 'happy'; G.moodT = G.time + 8;
+  S('win'); S('alien', 'hi', .7); G.mood = 'happy'; G.moodT = G.time + 8;
   G.bubble = { text: L('做得不错，地球人。我们决定雇你。', 'Not bad, Earthling. We are hiring you.'), t0: G.time, dur: 3.6, lines: null };
   FL.tut = 1; saveFL(); track('tut_done', { sec: Math.round((performance.now() - tutT0) / 100) / 10 });
   setTimeout(() => openContract(round), 1900);
@@ -422,7 +425,9 @@ function tutFrame() {
     if (b.held) {
       if (!T.held) { T.held = true; T.high = false; T.holdT0 = G.time; }
       T.grabbed = true;
+      const wasHigh = T.high;
       if (b.clear >= TUT.lift) T.high = true; else if (b.clear < TUT.lift - 40) T.high = false;
+      T.rose = T.high && !wasHigh;
       // 拎着往下砸到地板：不算数（armed 拦住了），提示一句
       if (T.prevClear > 20 && b.clear < 1 && T.prevVy > 420 && G.time - T.slamT > 1) { T.slamT = G.time; X.sfx.thud(.25); if (!ready) note(TXT.slam); }
     } else if (T.held) {   // 刚松手
@@ -442,6 +447,8 @@ function tutFrame() {
     T.before = G.round;
     // 现在卡在哪一步（press 没拎 / lift 拎着没过线 / turn 过线没转好 / drop 转好了该松手 / '' 够圆了），第一次走到就上报
     const st = ready ? '' : !b.held ? 'press' : !T.high ? 'lift' : !aligned ? 'turn' : 'drop';
+    if (st === 'drop' && T.stage !== 'drop') S('aim'); else if (T.rose && st) S('line');   // 转好了可以松手：一声；只是拎过了虚线：另一声
+    T.rose = false;
     if (st !== T.stage) { T.stage = st; if (st && st !== 'press') tutOnce('tut_' + st); else if (!st) tutOnce('tut_ready'); }
     tuneStone(b, g); drawHints(b, g, ready);
   } catch (e) { console.error('[flow] tutorial frame', e); }
@@ -465,7 +472,7 @@ function playCutscene(done) {
   const timers = [], t0 = performance.now(); let over = false, video = null;
   let skipped = false;
   const end = () => {
-    if (over) return; over = true; cutSkip = null; timers.forEach(clearTimeout);
+    if (over) return; over = true; cutSkip = null; timers.forEach(clearTimeout); try { if (X.sndHush) X.sndHush('cut'); } catch (e) {}
     track('cut_end', { skip: skipped ? 1 : 0, sec: Math.round((performance.now() - t0) / 100) / 10 });
     if (video) { try { video.pause(); } catch (e) {} }
     el.classList.add('out'); setTimeout(() => el.remove(), 320); done();
@@ -478,7 +485,7 @@ function playCutscene(done) {
     el.classList.add('fc-bars');
     el.insertAdjacentHTML('afterbegin', SHOTS.map(s => `<div class="fc-shot"><svg viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="960" height="600" fill="#0a0722"/><g transform="translate(0 -44)">${s.svg}</g></svg><p class="fc-cap">${s.cap}</p></div>`).join('') + `<span class="fc-tag">${L('播片占位', 'Cutscene placeholder')}</span><i class="fc-prog"></i>`);
     const shots = el.querySelectorAll('.fc-shot');
-    shots.forEach((s, i) => timers.push(setTimeout(() => { shots.forEach(o => o.classList.toggle('on', o === s)); }, i * d + 20)));
+    shots.forEach((s, i) => timers.push(setTimeout(() => { shots.forEach(o => o.classList.toggle('on', o === s)); S('cut', i); }, i * d + 20)));   // 每个镜头一小段声音（换成真视频就用视频自己的声音）
     try { el.querySelector('.fc-prog').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: d * SHOTS.length, fill: 'forwards' }); } catch (e) {}
     timers.push(setTimeout(end, d * SHOTS.length));
   };
@@ -563,7 +570,7 @@ function openContract(round) {
   document.body.appendChild(layer);
   const paper = layer.querySelector('.fd-paper'), form = layer.querySelector('form'), input = layer.querySelector('#fd-name'), thumb = layer.querySelector('.fd-thumb');
   const msg = layer.querySelector('.fd-msg'), mirror = layer.querySelector('[data-who-mirror]'), flag = layer.querySelector('.fd-flag'), line = layer.querySelector('.fd-line');
-  X.sfx.ui();
+  S('paper');
   // 从甲方的舷窗里递出来
   const fly = (out) => {
     const a = alienPoint(), rc = paper.getBoundingClientRect(), dx = a.x - (rc.left + rc.width / 2), dy = a.y - (rc.top + rc.height * .4);
@@ -595,9 +602,9 @@ function openContract(round) {
     signedOff = true; FL.signed = 1; FL.name = name; saveFL(); track('signed', { how });
     input.value = name; mirror.textContent = name; fit(); input.disabled = true; thumb.disabled = true; thumb.classList.add('done'); flag.remove(); if (more) { more.remove(); more = null; }
     msg.textContent = '';
-    X.sfx.thud(1); setTimeout(() => { X.sfx.thud(1); X.sfx.win(); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); }, 380);
+    S('press'); setTimeout(() => { S('stamp'); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); }, 380);
     setTimeout(() => {
-      const an = fly(true); layer.classList.add('out');
+      const an = fly(true); layer.classList.add('out'); S('paper', true);
       const gone = () => { layer.remove(); showChoice(name, how, no); };
       if (an && an.finished) an.finished.then(gone, gone); else setTimeout(gone, 480);
     }, 1750);
@@ -606,8 +613,8 @@ function openContract(round) {
     e.preventDefault(); if (busy || signedOff) return;
     X.audioInit();
     const name = cleanName(input.value);
-    if (!name) { X.sfx.thud(.6); return refuse(L('乙方无权拒签。请签上名字。', 'The Artisan may not decline. Please sign.')); }
-    if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) { X.sfx.thud(.6); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
+    if (!name) { S('nope'); return refuse(L('乙方无权拒签。请签上名字。', 'The Artisan may not decline. Please sign.')); }
+    if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) { S('nope'); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
     if (!X.CLOUD) return finish(name, 'offline');   // file:// 打开：没有云存档，签名只记在本机
     busy = true; input.disabled = true; thumb.disabled = true; msg.textContent = L('归档中…', 'Filing…');
     X.WHO.err = '';
@@ -615,7 +622,7 @@ function openContract(round) {
     busy = false;
     const err = X.WHO.err; X.WHO.err = '';
     if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return finish(X.NAME, 'cloud');
-    if (err && /16/.test(err)) { input.disabled = false; thumb.disabled = false; X.sfx.thud(.6); return refuse(err); }   // 服务器说名字不合规
+    if (err && /16/.test(err)) { input.disabled = false; thumb.disabled = false; S('nope'); return refuse(err); }   // 服务器说名字不合规
     // 存档服务连不上：先在本机签了，名字留在 yuan.name 里，下次打开时游戏会自己补存
     try { localStorage.setItem('yuan.name', name); } catch (e2) {}
     finish(name, 'later');
@@ -653,6 +660,7 @@ function pickLang(then) {
     <div class="flow-go">${opts.map(([v, t], i) => `<button class="btn${i ? ' ghost' : ''}" type="button" data-lang="${v}" lang="${v}">${t}</button>`).join('')}</div>`);
   const first = card.querySelector('[data-lang]'); if (first) first.focus();
   card.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', () => {
+    X.audioInit(); S('ui', 'go');
     const to = btn.dataset.lang;
     try { localStorage.setItem('yuan.lang', to); } catch (e) {}
     if ((to === 'en') === EN) { phase = 'idle'; then(); return; }
@@ -660,15 +668,15 @@ function pickLang(then) {
   }));
 }
 function begin(replay) {
-  if (!replay && !langChosen()) { X.audioInit(); X.sfx.ui(); pickLang(() => begin(replay)); return; }
+  if (!replay && !langChosen()) { X.audioInit(); S('ui', 'go'); pickLang(() => begin(replay)); return; }
   ran = true; replaying = replay ? 1 : 0;
-  X.audioInit(); X.sfx.ui();
+  X.audioInit(); S('ui', 'go');
   card.innerHTML = ''; overlay.hidden = true; stage.classList.remove('cover'); deliverBtn.hidden = true;
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; X.setupRound(); G.state = 'flow';   // 游戏不认识的状态：照常画场景，但不能拎、不计时
   track('begin', { resume: !replay && !FORCED && FL.tut && !FL.signed ? 1 : 0 });
   if (!replay && !FORCED && FL.tut && !FL.signed) {   // 上次过了新手关没签字就走了：直接接着签
     phase = 'handoff';
-    G.bubble = { text: L('合同还没签呢，地球人。', 'You have not signed yet, Earthling.'), t0: G.time, dur: 3, lines: null };
+    G.bubble = { text: L('合同还没签呢，地球人。', 'You have not signed yet, Earthling.'), t0: G.time, dur: 3, lines: null }; S('alien', 'grr', .2);
     setTimeout(() => openContract(0), 1100);
     return;
   }

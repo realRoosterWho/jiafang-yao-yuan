@@ -445,7 +445,7 @@ body {
 .stars, .lv i { color: #ffab1e; }
 .lv i.dim { color: #e6c79a; }
 /* 结算卡的三颗星：先都是灰的，拿到的那几颗一颗接一颗砸下来变成金的（从大到小转着落定），落下的那一下闪一团光。
-   灰星是 i 自己的背景，金星是 ::before，闪光是 ::after；--k 是第几颗（1、2、3），用它错开时间。每亮一颗响一声，见脚本里卡片上的那个观察器 */
+   灰星是 i 自己的背景，金星是 ::before，闪光是 ::after；--k 是第几颗（1、2、3），用它错开时间。每亮一颗响一声，见脚本里的 showResult（声音按这里的时间对齐，改了时间那边也要改） */
 .stars.big i { position: relative; color: transparent; -webkit-text-stroke: 0; background: var(--k-sStar0) 50% 34% / 130% 130% no-repeat; width: 1em; height: 1em; overflow: visible; }
 .stars.big i.on, .stars.big i.on:nth-child(2) { color: transparent; text-shadow: none; filter: none; animation: none; }
 .stars.big i.on::before { content: ""; position: absolute; inset: 0; background: var(--k-sStar) 50% 34% / 130% 130% no-repeat; filter: drop-shadow(0 0 .12em rgb(255 200 60 / .75));
@@ -1162,28 +1162,90 @@ const P = { x: W / 2, y: 200, k: 1 };   // k：一个屏幕像素等于多少世
 const keys = { left: false, right: false };
 let parts = [], frags = [], floats = [], stains = [];
 
-/* ---------- 声音（全部现场合成） ---------- */
-let AC = null, master = null, noiseBuf = null, muted = false;
+/* ---------- 声音（全部现场合成，不下载任何音频文件） ----------
+   一条线：每个声音 → 它那一类的音量（MIX）→ 一个软膝压缩器当限幅（叠在一起也不爆音，见 sndGraph）→ 总音量（静音时拉到 0）→ 扬声器。
+   · 音高：界面、星星、结算、甲方说话全用 C 大调五声音阶（nt(i)：0 = C5，5 = C6，-1 = A4），一家人的调子；材料的敲击声（HIT）是噪声加低音，不受这条限制。
+   · 每个声音都在下面的 SFX 表里登记：[类别, 最短间隔（毫秒，防连发）, 怎么合成, 分组]。游戏里只调 sfx.名字(...)，不直接调 tone / noise。
+     防连发的时钟：手上的动作、砸、环境这三类按 G.time（每帧更新里发的，跟着游戏时间走）；界面、反馈、甲方说话按真实时间（很多是定时器、卡片动画里发的）。
+   · 同时最多 SND.max 个声音在响，满了让最不要紧的那个淡出让位（见 sndRoom）。静音、切到后台时，正在响的和已经排好还没响的一起掐掉；换卡片时掐掉上一张卡片排好的（分组 card）。
+   · “持续”的声音（转角度的咔哒、最后几秒的倒数、烫手的噼啪、冰化的滴水、三星的叮当）不是开着一个循环的声源，而是 sndWatch 每帧看状态、一下一下发短音：
+     松手、换状态、暂停时它们自然就停了，没有要关的东西。
+   · 手机：第一次点按 / 按键就建 AudioContext；之后每次点按、按键、切回前台都看一眼，被挂起了（还没解锁、iOS 锁屏来电是 interrupted）就叫醒。
+     没有 Web Audio 的浏览器什么都不响，也不报错。
+   · 没做背景音乐：听不到效果之前不敢放一段一直响的东西。
+   调音：控制台 __yuan.snd.MIX.ui = .4; __yuan.snd.apply()。__yuan.snd.log = [] 以后每次触发都记一条（被静音、防连发挡掉的也记，x 是原因）。
+   __yuan.snd.render(秒, () => __yuan.snd.sfx.名字(...)) 离线渲染一遍，返回峰值和 50 毫秒窗口里最响的响度（dBFS），不用耳朵也能比大小、查爆音 */
+const MIX = { master: .6, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5 };   // 各类音量（0…1），调音先改这里。master .6 = 以前的总音量
+let AC = null, OUT = null, BUS = {}, noiseBuf = null, muted = false;
+const SND = { cat: 'feedback', grp: '', voices: [], max: 32, last: {}, log: null, nogate: false };
+const PENT = [0, 2, 4, 7, 9], nt = i => 523.25 * Math.pow(2, (PENT[((i % 5) + 5) % 5] + 12 * Math.floor(i / 5)) / 12);
+/* 总线：各类音量 → 压缩器（软膝的限幅：-10 dB 以下原样过，往上 8:1 压住，几个声音叠在一起也不会顶破 0 dB）→ 总音量 → 扬声器。
+   Web Audio 的压缩器会自动补一截增益（这组参数约 +3.6 dB，用 render 量的），COMP_TRIM 把它扣回去，所以平时不响的声音跟以前一样大、只有顶上去的那几下被压 */
+const COMP_TRIM = .66;
+function sndGraph(ctx, raw) {   // raw：照以前那样直连、不压缩、总音量 .6（只给 render 对比新旧响度用）
+  const out = ctx.createGain(); out.connect(ctx.destination);
+  let head = out, trim = 1;
+  if (!raw) try {
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -10; comp.knee.value = 8; comp.ratio.value = 8; comp.attack.value = .002; comp.release.value = .15;
+    comp.connect(out); head = comp; trim = COMP_TRIM;
+  } catch (e) { head = out; }
+  out.trim = trim; out.gain.value = raw ? .6 : muted ? 0 : MIX.master * trim;
+  const bus = {}; for (const k in MIX) if (k !== 'master') { const g = ctx.createGain(); g.gain.value = raw ? 1 : MIX[k]; g.connect(head); bus[k] = g; }
+  const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return { out, bus, nb };
+}
 function audioInit() {
-  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
-  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; return; }
-  master = AC.createGain(); master.gain.value = .6; master.connect(AC.destination);
-  noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
-  const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  if (!AC) {
+    const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+    try { AC = new Ctx(); const g = sndGraph(AC); OUT = g.out; BUS = g.bus; noiseBuf = g.nb; } catch (e) { AC = null; return; }
+  }
+  audioWake();
 }
-function tone(f, dur, vol, type, f2, delay) {
-  if (!AC || muted || vol <= 0) return; const t0 = AC.currentTime + (delay || 0);
-  const o = AC.createOscillator(), g = AC.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0);
-  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
-  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
-  o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .03);
+/* 挂起了就叫醒（切后台时是我们自己挂的，回到前台再醒）。顺手放一个空声音：老 iOS 要在点按里放过一个声音才算解锁 */
+function audioWake() {
+  if (!AC || AC.state === 'running' || AC.state === 'closed' || document.hidden) return;
+  try { const p = AC.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  try { const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch (e) {}
 }
-function noise(dur, vol, type, freq, q, delay) {
-  if (!AC || muted || vol <= 0) return; const t0 = AC.currentTime + (delay || 0);
-  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf;
-  f.type = type; f.frequency.value = freq; f.Q.value = q || 1;
-  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
-  s.connect(f); f.connect(g); g.connect(master); s.start(t0, Math.random() * .5, dur + .05);
+function sndKill(v, now) {   // 很快地淡出再停，不“啪”一下
+  try { const p = v.g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(now); else { p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); } p.setTargetAtTime(0, now, .015); v.s.stop(now + .09); } catch (e) {}
+}
+/* 限制同时发声：只数新声音响起那一刻也在响的（结算卡这种提前排好的一串不算在“现在”里）。
+   满了就让一个最不要紧的让位（环境 < 手上动作 < 界面 < 甲方说话 < 反馈 < 砸），同级里让最早的；要是在响的都比新来的要紧，新来的就不响了 */
+const PRI = { ambience: 0, move: 1, ui: 2, voice: 3, feedback: 4, impact: 5 };
+function sndRoom(t0) {
+  const V = SND.voices, now = AC.currentTime, pri = PRI[SND.cat] || 0; let n = 0, w = -1;
+  for (let i = V.length - 1; i >= 0; i--) if (V[i].end < now) V.splice(i, 1);
+  for (let i = 0; i < V.length; i++) { const v = V[i]; if (v.t0 <= t0 + .02 && v.end > t0) { n++; if (w < 0 || v.pri < V[w].pri || (v.pri === V[w].pri && v.t0 < V[w].t0)) w = i; } }
+  if (n < SND.max) return true;
+  if (V[w].pri > pri) return false;
+  sndKill(V[w], now); V.splice(w, 1); return true;
+}
+function sndVoice(s, g, t0, end) {
+  const V = SND.voices, v = { s, g, t0, end, grp: SND.grp, pri: PRI[SND.cat] || 0 }; V.push(v);
+  s.onended = () => { const i = V.indexOf(v); if (i >= 0) V.splice(i, 1); };
+}
+/* 一个音：f → f2 滑音（glide 秒内滑到），att 秒起音，之后指数衰减到 dur；vib = [颤音频率, 深度（相对 f）] */
+function tone(f, dur, vol, type, f2, delay, o) {
+  if (!AC || muted || !(vol > 0) || !(f > 0) || !(dur > 0)) return;
+  o = o || {}; const t0 = AC.currentTime + (delay || 0), att = Math.min(o.att || (SND.cat === 'impact' ? .0015 : .004), dur * .5), end = t0 + dur + .05;
+  if (!sndRoom(t0)) return;
+  const s = AC.createOscillator(), g = AC.createGain(); s.type = type || 'sine'; s.frequency.setValueAtTime(f, t0);
+  if (f2 > 0) s.frequency.exponentialRampToValueAtTime(f2, t0 + Math.min(o.glide || dur, dur));
+  g.gain.value = 0; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + att); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
+  if (o.vib) { const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vib[0]; lg.gain.value = f * o.vib[1]; l.connect(lg); lg.connect(s.frequency); l.start(t0); l.stop(end); }
+  s.connect(g); g.connect(BUS[SND.cat] || BUS.feedback); s.start(t0); s.stop(end); sndVoice(s, g, t0, end);
+}
+/* 一段滤过的噪声：freq → o.f2 扫频 */
+function noise(dur, vol, type, freq, q, delay, o) {
+  if (!AC || muted || !(vol > 0) || !(dur > 0)) return;
+  o = o || {}; const t0 = AC.currentTime + (delay || 0), att = Math.min(o.att || .0015, dur * .5), end = t0 + dur + .05;
+  if (!sndRoom(t0)) return;
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf; s.loop = true;
+  f.type = type || 'bandpass'; f.frequency.setValueAtTime(freq || 1000, t0); if (o.f2 > 0) f.frequency.exponentialRampToValueAtTime(o.f2, t0 + dur); f.Q.value = q || 1;
+  g.gain.value = 0; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + att); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
+  s.connect(f); f.connect(g); g.connect(BUS[SND.cat] || BUS.feedback); s.start(t0, Math.random() * .5, dur + .05); sndVoice(s, g, t0, end);
 }
 const HIT = {
   wood: p => { tone(190, .1, .5 * p, 'triangle', 110); noise(.07, .5 * p, 'bandpass', 900, 1.2); },
@@ -1209,19 +1271,150 @@ const HIT = {
   oldphone: p => { tone(150, .12, .5 * p, 'square', 90); noise(.06, .45 * p, 'bandpass', 1100, 1); tone(1320, .09, .08, 'square', 0, .1); },   // 闷响，再“嘀”一声
   octobear: p => { HIT.meat(p); tone(620, .1, .14 * p, 'sine', 1150, .03); },   // 软软一声 + 往上挑的“啾”
 };
-const sfx = {
-  thud: p => { tone(85, .08, .25 * p, 'sine', 55); noise(.04, .15 * p, 'lowpass', 500); },
-  crack: () => { noise(.3, .6, 'highpass', 1800); for (let k = 0; k < 4; k++) noise(.03, .5, 'bandpass', rand(2500, 5000), 3, k * .04); },
-  shatter: () => { noise(.7, .8, 'highpass', 1200); for (let k = 0; k < 9; k++) tone(rand(900, 3200), .12, .12, 'triangle', 0, k * .05); },
-  ready: () => { tone(880, .14, .25, 'sine'); tone(1320, .3, .25, 'sine', 0, .1); },
-  ach: (d = 0) => { noise(.05, .22, 'lowpass', 500, 1, d); tone(1175, .1, .14, 'triangle', 0, d + .03); tone(1568, .3, .13, 'triangle', 0, d + .12); },
-  star: n => { (n >= 3 ? [1047, 1319, 1568, 2093] : [988, 1480]).forEach((f, k) => tone(f, .2, .2, 'sine', 0, k * .07)); },
-  win: () => { [523, 659, 784, 1047].forEach((f, k) => tone(f, .22, .25, 'triangle', 0, k * .1)); },
-  fail: () => { tone(330, .5, .3, 'sawtooth', 70); tone(220, .7, .25, 'sawtooth', 50, .2); },
-  ui: () => tone(660, .06, .15, 'triangle'),
-  huff: () => { tone(110, .28, .4, 'sawtooth', 70); noise(.2, .25, 'lowpass', 600); },
-  sizzle: () => { noise(.5, .35, 'highpass', 4000); noise(.3, .2, 'bandpass', 2000, 2); },
+const blip = (f, v, d = 0) => { tone(f * .8, .1, v, 'sine', f, d, { glide: .035 }); tone(f * 2, .045, v * .22, 'triangle', 0, d); };   // 圆润的一声“啵”（界面的基本音色）
+const sparkle = (v, d = 0, dur = .16) => noise(dur, v, 'highpass', 6500, 1, d);
+const arp = (ns, step, dur, v, type, d = 0) => ns.forEach((n, k) => tone(nt(n), dur, v, type || 'triangle', 0, d + k * step));
+/* 全部声音：[类别, 最短间隔 ms, 合成, 分组]。类别对应 MIX 的音量；分组 card 的在换卡片时掐掉，cut 的在播片结束时掐掉 */
+const SFX = {
+  // —— 界面（ui）：都是一个圆润的“啵”。往前走往上跳（go），往回走往下落（back），打开一页（open），开声音（on）
+  ui: ['ui', 40, k => {
+    noise(.012, .03, 'highpass', 4000);
+    if (k === 'go') { blip(nt(5), .13); blip(nt(8), .11, .055); }
+    else if (k === 'back') { blip(nt(7), .11); blip(nt(5), .1, .055); }
+    else if (k === 'open') blip(nt(6), .12);
+    else if (k === 'on') { blip(nt(3), .1); blip(nt(5), .1, .05); blip(nt(8), .1, .1); }
+    else blip(nt(7), .1);
+  }],
+  pop: ['ui', 250, () => { if (performance.now() / 1000 - (SND.last.ui || -9) < .15) return; tone(nt(-2), .13, .08, 'sine', nt(0), 0, { glide: .07 }); tone(nt(5), .07, .025, 'triangle', 0, .035); }],   // 卡片自己弹出来（刚点过按钮就不再响）
+  start: ['ui', 200, () => { noise(.24, .05, 'bandpass', 500, .8, 0, { f2: 2400 }); tone(nt(3), .1, .12, 'triangle'); tone(nt(5), .22, .13, 'triangle', 0, .08); blip(nt(10), .045, .14); }],   // 接单开工
+  nope: ['ui', 200, () => { tone(nt(-3), .09, .12, 'triangle', nt(-3) * .92); tone(nt(-5), .15, .12, 'triangle', nt(-5) * .9, .11); }],   // 不行（还不够圆、合同没签名字）
+  paper: ['ui', 200, out => { noise(.36, .2, 'bandpass', out ? 3000 : 700, .9, 0, { f2: out ? 700 : 3000 }); noise(.22, .05, 'highpass', 5000, 1, .06); }],   // 合同飞进来 / 飞回去
+  press: ['ui', 100, () => { noise(.1, .14, 'lowpass', 900); tone(170, .09, .14, 'sine', 100); }],   // 按手印
+  wipe: ['ui', 500, (K, step) => { noise(.6, .07, 'bandpass', 700, .7, 0, { f2: 2600, att: .08 }); for (let k = 0; k < K; k++) tone(nt(4 + Math.round(k * 7 / Math.max(1, K - 1))), .16, .045, 'sine', 0, k * step); }],   // 星星过场：嗖一下，每颗星叮一声，一路往上
+  // —— 手上的动作（move）：拎起、松手、摇杆冒出来、转角度的咔哒、此刻松手会落进绿区 / 红区
+  grab: ['move', 80, () => { tone(nt(-2), .08, .1, 'sine', nt(1), 0, { glide: .05 }); noise(.03, .05, 'lowpass', 1200); }],
+  letgo: ['move', 80, () => { noise(.12, .04, 'bandpass', 1500, .8, 0, { f2: 700 }); tone(nt(1), .08, .05, 'sine', nt(-2)); }],
+  joy: ['move', 150, () => { blip(nt(4), .07); noise(.01, .025, 'highpass', 4000); }],
+  turn: ['move', 55, dir => { tone(dir > 0 ? nt(9) : nt(8), .025, .04, 'triangle'); noise(.012, .025, 'highpass', 5000); }],   // 顺时针高一点，逆时针低一点
+  zoneOk: ['move', 250, () => { tone(nt(7), .1, .06, 'triangle'); tone(nt(10), .07, .02, 'sine', 0, .02); }],
+  zoneHard: ['move', 300, () => { for (const d of [0, .09]) { tone(1760, .06, .07, 'triangle', 0, d); tone(1865, .06, .06, 'triangle', 0, d); } }],   // 两个挨着的音打架：嘀嘀，要砸碎了
+  // —— 砸（impact）：每种材料一个声音（HIT），太轻是一声闷响，砸过头裂开 / 碎掉
+  hit: ['impact', 35, (id, p) => (HIT[id] || HIT.wood)(p)],
+  thud: ['impact', 50, p => { tone(85, .08, .25 * p, 'sine', 55); noise(.04, .15 * p, 'lowpass', 500); }],
+  crack: ['impact', 80, () => { noise(.3, .5, 'highpass', 1800); for (let k = 0; k < 4; k++) noise(.03, .4, 'bandpass', rand(2500, 5000), 3, k * .04); }],
+  shatter: ['impact', 300, () => { noise(.7, .6, 'highpass', 1200); for (let k = 0; k < 9; k++) tone(rand(900, 3200), .12, .1, 'triangle', 0, k * .05); }],
+  huff: ['impact', 200, () => { tone(110, .28, .32, 'sawtooth', 70); noise(.2, .25, 'lowpass', 600); }],   // 活的东西急了
+  sizzle: ['impact', 200, () => { noise(.5, .3, 'highpass', 4000); noise(.3, .18, 'bandpass', 2000, 2); }],   // 烫手撒手
+  hop: ['impact', 90, () => { tone(220, .05, .06, 'sine', 140); noise(.02, .04, 'lowpass', 900); }],   // 活的东西跑掉时的脚步
+  boing: ['impact', 150, p => { tone(150, .32, .2 * p, 'sine', 360, 0, { glide: .06, vib: [16, .06] }); noise(.05, .18 * p, 'lowpass', 500); }],   // 失败后掉下来的那个圆（你）弹一下
+  // —— 反馈（feedback）：圆度、星级、交货、结算、成就
+  judge: ['feedback', 60, (kind, gain) => {   // 砸中一下：圆了就“叮”，越接近三星线音越高；砸歪了往下滑一声
+    if (gain > .002) {
+      const pr = clamp((G.round - G.round0) / Math.max(.01, G.lines[2] - G.round0), 0, 1), f = nt(5 + Math.round(pr * 6));
+      tone(f, .12, .05, 'sine'); tone(f * 2, .06, .015, 'sine');
+      if (kind === 'smash') { tone(f * 1.5, .1, .03, 'triangle', 0, .04); sparkle(.025, .03, .12); }
+    } else if (gain < -.012) tone(nt(-3), .17, .06, 'triangle', nt(-5), 0, { glide: .14 });
+  }],
+  hurt: ['feedback', 200, () => { tone(nt(2), .1, .08, 'triangle', 0, .1); tone(nt(0), .2, .08, 'triangle', nt(-1), .2, { glide: .2 }); }],   // 掉了一颗心
+  ready: ['feedback', 200, () => { tone(nt(5), .14, .16, 'triangle'); tone(nt(8), .34, .17, 'triangle', 0, .09); tone(nt(10), .28, .05, 'sine', 0, .09); sparkle(.03, .09, .2); }],   // 第一颗星 = 能交货了
+  star: ['feedback', 200, n => {   // 第二、第三颗星；三星多一串亮晶晶
+    if (n >= 3) { arp([5, 7, 8, 10], .065, .2, .15); [12, 13, 14].forEach((i, k) => tone(nt(i), .3, .03, 'sine', 0, .3 + k * .07)); sparkle(.035, .25, .35); }
+    else arp([5, 7, 8], .065, .18, .14);
+  }],
+  tierDown: ['feedback', 600, () => tone(nt(3), .2, .07, 'triangle', nt(1), 0, { glide: .16 })],   // 掉回下一档
+  reveal: ['feedback', 200, () => { tone(nt(6), .12, .07, 'triangle'); tone(nt(9), .2, .07, 'triangle', 0, .08); sparkle(.025, .08); }],   // 露出里面那层
+  soft: ['feedback', 300, () => { tone(nt(3), .22, .07, 'sine', nt(0), 0, { glide: .2 }); noise(.12, .03, 'lowpass', 700); }],   // 焐软了
+  melt: ['feedback', 300, () => { tone(nt(9), .09, .05, 'triangle'); tone(nt(8), .14, .05, 'triangle', 0, .1); noise(.35, .05, 'highpass', 4000, 1, .05); }],   // 太热了要化了
+  flee: ['feedback', 300, () => { SFX.huff[2](); [0, .12, .24].forEach((d, k) => tone(nt(4 + k * 2), .09, .08, 'triangle', nt(5 + k * 2), d, { glide: .07 })); }],   // 急够了跑掉
+  deliver: ['feedback', 500, n => {   // 交货：两边彩纸炮、「交货！」章落下、一段上行的小曲，三星再多一串
+    noise(.09, .2, 'bandpass', 1800, .7); noise(.09, .18, 'bandpass', 1400, .7, .06); noise(.5, .025, 'highpass', 6000, 1, .1);
+    tone(130, .12, .28, 'sine', 70, .2); noise(.07, .18, 'lowpass', 600, 1, .2);
+    arp([0, 2, 3, 5], .1, .22, .2, 'triangle', .05);
+    if (n >= 3) [10, 12, 13].forEach((i, k) => tone(nt(i), .3, .035, 'sine', 0, .5 + k * .06));
+  }],
+  win: ['feedback', 300, () => arp([0, 2, 3, 5], .1, .22, .2)],
+  rstar: ['feedback', 0, (k, at) => { const f = nt([5, 7, 8][k] || 8); tone(150, .08, .09, 'sine', 90, at); tone(f, .28, .15, 'triangle', 0, at); tone(f * 2, .14, .035, 'sine', 0, at); sparkle(.03, at, .12); }, 'card'],   // 结算卡上一颗星砸下来
+  rstar3: ['feedback', 0, at => arp([5, 7, 8, 10], .05, .4, .085, 'sine', at), 'card'],
+  coin: ['feedback', 70, i => tone(nt(10 + i % 3), .035, .025, 'triangle'), 'card'],   // 酬劳往上滚
+  paid: ['feedback', 200, (d = 0) => { tone(nt(12), .12, .06, 'triangle', 0, d); tone(3136, .22, .05, 'triangle', 0, d + .05); sparkle(.03, d, .06); }, 'card'],
+  record: ['feedback', 300, (d = 0) => { arp([8, 10, 12], .07, .14, .09, 'triangle', d); sparkle(.03, d + .14, .3); }, 'card'],   // 新纪录
+  dex: ['feedback', 300, (d = 0) => { for (let k = 0; k < 6; k++) tone(nt(5 + k), .12, .04, 'sine', 0, d + k * .035); tone(nt(12), .35, .035, 'sine', 0, d + .22); }, 'card'],   // 新物品收进图鉴 / 无尽模式解锁
+  ach: ['feedback', 300, (d = 0) => { noise(.05, .16, 'lowpass', 500, 1, d); tone(nt(6), .1, .12, 'triangle', 0, d + .03); tone(nt(8), .3, .12, 'triangle', 0, d + .12); tone(nt(10), .25, .04, 'sine', 0, d + .12); }, d => d ? 'card' : ''],
+  fail: ['feedback', 500, () => { tone(nt(2), .17, .12, 'triangle'); tone(nt(1), .17, .12, 'triangle', 0, .18); tone(nt(0), .7, .13, 'triangle', nt(-2), .36, { glide: .55, vib: [5, .018] }); tone(nt(-5), .7, .06, 'sine', nt(-7), .36, { glide: .55 }); }],   // 往下走的三个音，最后一个泄气地滑下去
+  extend: ['feedback', 300, () => { tone(nt(0), .32, .09, 'sine', nt(5), 0, { glide: .26, vib: [7, .01] }); tone(nt(8), .03, .06, 'triangle', 0, .32); tone(nt(7), .03, .06, 'triangle', 0, .47); }],   // 求来 20 秒：往上一挑，再滴答两下
+  endRun: ['feedback', 500, rec => { if (rec) { arp([0, 2, 3, 5, 7], .08, .22, .16); [10, 12].forEach((i, k) => tone(nt(i), .4, .04, 'sine', 0, .45 + k * .08)); sparkle(.03, .45, .4); } else arp([3, 2, 0], .16, .32, .11); }, 'card'],   // 无尽模式收工
+  clear: ['feedback', 500, () => { arp([0, 3, 5], .09, .2, .15); arp([2, 5, 7], .09, .2, .15, 'triangle', .32); arp([5, 7, 8, 10], .05, .6, .1, 'sine', .64); sparkle(.035, .64, .5); }, 'card'],   // 冒险模式通关
+  line: ['feedback', 300, () => { tone(nt(7), .12, .09, 'triangle'); tone(nt(9), .24, .085, 'triangle', 0, .06); }],   // 新手关：拎过虚线
+  aim: ['feedback', 600, () => { tone(nt(5), .3, .07, 'sine', nt(8), 0, { glide: .12 }); sparkle(.02, .1, .2); }],   // 新手关：凸起转到下面了，可以松手
+  stamp: ['feedback', 300, () => { tone(110, .16, .3, 'sine', 60); noise(.1, .28, 'lowpass', 500); arp([5, 7, 8], .07, .3, .1, 'triangle', .1); }],   // 合同盖章生效
+  cut: ['feedback', 300, i => {   // 占位播片三个镜头：地球一闪 / 光束把人吸走 / 甲方开口
+    if (i === 0) { tone(nt(-5), 1.1, .05, 'sine', 0, 0, { att: .35 }); tone(nt(10), .45, .04, 'sine', 0, .25); tone(nt(12), .35, .03, 'sine', 0, .38); }
+    else if (i === 1) { tone(nt(-2), 1.3, .055, 'sine', nt(5), 0, { att: .3, vib: [7, .03] }); tone(nt(1), 1.3, .03, 'triangle', nt(8), 0, { att: .3, vib: [7, .03] }); noise(1.2, .025, 'bandpass', 1800, 3, 0, { f2: 4200, att: .4 }); }
+    else SFX.alien[2]('hi', .3);
+  }, 'cut'],
+  // —— 甲方说话（voice）：几声叽里咕噜。hi 开口 / 高兴，no 别砸了，grr 不耐烦；poke 是首页点外星人，越点越高
+  alien: ['voice', 400, (kind, d = 0) => {
+    const low = kind === 'grr', seq = low ? [-3, -4, -5] : kind === 'no' ? [6, 3] : [4, 6, 5];
+    seq.forEach((n, k) => { const f = nt(n); tone(f, low ? .11 : .08, .1, 'triangle', f * (low ? .88 : 1.14), d + k * (low ? .13 : .1), { vib: [low ? 34 : 26, low ? .07 : .035] }); });
+  }],
+  poke: ['voice', 60, n => { const f = nt(3 + Math.min(n, 10)); tone(f, .07, .07, 'triangle', f * 1.25, 0, { vib: [30, .04] }); }],
+  // —— 环境（ambience）：都很轻、很稀，由 sndWatch 每帧按状态发
+  tick: ['ambience', 400, n => { const f = n <= 3 ? nt(5) : nt(3); tone(f, .05, .09, 'triangle'); tone(f / 2, .05, .06, 'sine'); }],   // 耐心最后几秒
+  crackle: ['ambience', 30, k => noise(.01 + .012 * Math.random(), .012 + .05 * k, 'highpass', rand(2800, 6000))],   // 烫手的东西拎着
+  drip: ['ambience', 300, () => { const f = rand(900, 1400); tone(f, .07, .045, 'sine', f * 2.1, 0, { glide: .045 }); }],   // 冰化了、焐过头了往下滴
+  grain: ['ambience', 60, kind => kind === 'coin' ? tone(rand(2600, 3800), .04, .025, 'triangle') : kind === 'goo' ? tone(rand(130, 190), .12, .045, 'sine', rand(220, 300)) : noise(.04, .05, 'bandpass', rand(1800, 3200), 1.5)],   // 里面在流：硬币 / 蜂蜜 / 沙
+  twinkle: ['ambience', 600, () => { const f = nt(9 + (Math.random() * 4 | 0)); tone(f, .35, .02, 'sine'); tone(f * 2, .18, .007, 'sine'); }],   // 三星了，偶尔叮一下
 };
+/* 触发一个声音：先记日志（静音、还没解锁、防连发挡掉的也记），再按类别和分组去合成 */
+function sndPlay(name, def, args) {
+  const cat = def[0], gap = def[1], now = cat === 'move' || cat === 'impact' || cat === 'ambience' ? G.time : performance.now() / 1000;
+  let why = !AC || AC.state === 'closed' || AC.state === 'interrupted' ? 'off' : muted ? 'muted' : document.hidden ? 'hidden' : '';   // 后台、来电时不排声音，免得回来一起响
+  if (!why && gap && !SND.nogate) { const l = SND.last[name]; if (l !== undefined && now >= l && now - l < gap / 1000) why = 'gap'; else SND.last[name] = now; }
+  if (SND.log) { SND.log.push({ n: name, c: cat, t: Math.round(G.time * 100) / 100, a: args.filter(v => typeof v !== 'object').join(','), x: why }); if (SND.log.length > 600) SND.log.shift(); }
+  if (why) return;
+  const c0 = SND.cat, g0 = SND.grp; SND.cat = cat; SND.grp = typeof def[3] === 'function' ? def[3](...args) : def[3] || '';
+  try { def[2](...args); } catch (e) {} finally { SND.cat = c0; SND.grp = g0; }
+}
+const sfx = {}; for (const k in SFX) sfx[k] = (...a) => sndPlay(k, SFX[k], a);
+/* 掐掉正在响的、已经排好还没响的：给 grp 只掐那一组 */
+function sndHush(grp) {
+  if (!AC) return; const V = SND.voices, now = AC.currentTime;
+  for (let i = V.length - 1; i >= 0; i--) if (!grp || V[i].grp === grp) { sndKill(V[i], now); V.splice(i, 1); }
+}
+function sndMute(on) {
+  if (!AC || !OUT) return;
+  try { const p = OUT.gain, now = AC.currentTime; p.cancelScheduledValues(now); p.setValueAtTime(p.value, now); p.setTargetAtTime(on ? 0 : MIX.master * (OUT.trim || 1), now, .02); } catch (e) {}
+  if (on) sndHush();
+}
+function sndApply() { for (const k in BUS) BUS[k].gain.value = MIX[k]; if (OUT) OUT.gain.value = muted ? 0 : MIX.master * (OUT.trim || 1); }
+// 解锁 / 叫醒：任何点按、按键都试一下（捕获阶段、在 flow.js 之前登记，它拦下的事件这里也先看到）。切到后台掐掉所有声音、挂起；回来再醒
+for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, audioInit, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) { sndHush(); try { const p = AC.suspend(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } else audioWake();
+});
+addEventListener('pageshow', () => audioWake());
+/* 调试：离线渲染。先空跑 at 秒（压缩器从静音起步要缓一下，跟游戏里一直开着的状态一样），再触发 fn 里的声音、录 sec 秒，
+   返回 { peak, loud }（dBFS；loud 是 50 毫秒窗口里最响的一段）。raw = 照以前的直连、不压缩、总音量 .6，用来对比新旧响度 */
+function sndRender(sec, fn, raw, at = .5) {
+  const O = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!O) return Promise.resolve(null);
+  const oc = new O(1, Math.ceil(44100 * (sec + at)), 44100), m0 = muted; muted = false; const g = sndGraph(oc, raw); muted = m0;
+  const V = [];
+  let started = 0;
+  const run = () => {
+    const keep = [AC, OUT, BUS, noiseBuf, muted, SND.nogate, SND.voices];
+    AC = oc; OUT = g.out; BUS = g.bus; noiseBuf = g.nb; muted = false; SND.nogate = true; SND.voices = V;
+    try { fn(); } catch (e) { console.error(e); } finally { [AC, OUT, BUS, noiseBuf, muted, SND.nogate, SND.voices] = keep; }
+    started = V.length;   // 这一下登记了几个声音
+  };
+  if (at > 0 && oc.suspend) oc.suspend(at).then(() => { run(); oc.resume(); }); else { at = 0; run(); }
+  return oc.startRendering().then(buf => new Promise(r => setTimeout(() => r(buf), 50))).then(buf => {
+    const d = buf.getChannelData(0), win = 2205, db = v => Math.round(200 * Math.log10(v + 1e-9)) / 10; let pk = 0, loud = 0;
+    for (let i = Math.round(at * 44100); i < d.length; i += win) { let ss = 0; for (let j = i; j < Math.min(d.length, i + win); j++) { const v = d[j]; ss += v * v; if (Math.abs(v) > pk) pk = Math.abs(v); } loud = Math.max(loud, Math.sqrt(ss / win)); }
+    return { peak: db(pk), loud: db(loud), clip: pk >= 1, voices: started, left: V.length };   // voices：这一下登记了几个声音；left：渲染完还没收走的（应该是 0）
+  });
+}
+const SNDAPI = { MIX, SFX, sfx, HIT, nt, apply: sndApply, hush: sndHush, render: sndRender, get log() { return SND.log; }, set log(v) { SND.log = v; }, get voices() { return SND.voices.length; }, get ctx() { return AC; } };
 
 /* ---------- 甲方的台词 ---------- */
 const LINES = {
@@ -1358,16 +1551,16 @@ function impact(b, F, cx) {
   const n = res.over ? 26 : Math.round(6 + 12 * res.t);
   burst(cx, lm.plastic ? Math.round(n * .5) : n, lm.chips, power, lm.wet ? 'drop' : 'chip'); dust(cx, 4 + 6 * power);
   if (MATFX[b.id]) MATFX[b.id](cx, power, res.over, b, res.core);
-  HIT[lm.snd || b.id](.45 + .55 * power);
+  sfx.hit(lm.snd || b.id, .45 + .55 * power);
   if (b.c && !res.core && faceMat(b).isCore) achUnlock('spilled_beans');
-  if (b.c && !res.core && faceMat(b).isCore) floatText(cx, FLOOR - 92, L('露出', 'Exposed: ') + L(m.core.label[0], lc(m.core.label[1])) + L('了', ''), C.coin, 22);
+  if (b.c && !res.core && faceMat(b).isCore) { floatText(cx, FLOOR - 92, L('露出', 'Exposed: ') + L(m.core.label[0], lc(m.core.label[1])) + L('了', ''), C.coin, 22); sfx.reveal(); }
   G.readyBefore = G.tier; const before = G.round; updateRoundness(); const gain = G.round - before;
   if (res.over) {
     G.hp--; G.stats.over++; (m.flee ? sfx.huff : sfx.crack)(); mood('angry', 2.2);
     floatText(cx, FLOOR - 56, lm.over, C.alarm, 28);
     floatText(cx, FLOOR - 22, L(`太重 ${Math.round(F)} > ${lm.brittle}`, `Too hard ${Math.round(F)} > ${lm.brittle}`), C.alarm, 17);
     if (G.hp <= 0) { shatter(b); return; }
-    say('over', true); talk('over', true);
+    sfx.hurt(); say('over', true); talk('over', true);
   } else {
     G.stats.good++;
     if (b.held) G.stats.held++; else if ((b.dropGood = (b.dropGood || 0) + 1) >= 2) achUnlock('two_for_one');   // 松手一次砸出两下（路锥会蹦）
@@ -1380,6 +1573,7 @@ function impact(b, F, cx) {
     }
     const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
+    if (G.tier === G.readyBefore) sfx.judge(res.t < .3 ? 'graze' : res.t < .75 ? 'good' : 'smash', gain);   // 这一下刚好升 / 掉了一星：那边的声音盖过它
     if (gain < -.012) say('worse'); else if (Math.random() < .3) say('good');
     if (Math.random() < .55) talk('good');
   }
@@ -1404,7 +1598,7 @@ function alreadyRound() {
 function shatter(b) {
   if (b.mat.flee) {   // 活的：急够了站直了就跑，不碎
     b.held = false; b.flee = true; b.fleeT = 0; let lo = 0; for (let i = 0; i < N; i++) lo = Math.max(lo, b.r[i] * SIN[i]); b.fleeY = FLOOR - lo;
-    sfx.huff(); [0, .12, .24].forEach(d => tone(520, .1, .16, 'square', 900, d)); G.shake = 10;
+    sfx.flee(); G.shake = 10;
     fail('shatter'); say('flee', true); talk('flee', true, .3); return;
   }
   b.dead = true; b.held = false; sfx.shatter(); G.shake = 24;
@@ -1526,7 +1720,7 @@ function floatText(x, y, text, color, size) { floats.push({ x: clamp(x, WALL_L +
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute'), homeBtn = document.getElementById('home'), replayBtn = document.getElementById('replay');
-function setCard(html) { stage.classList.remove('cover'); card.classList.remove('win'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; }
+function setCard(html) { const opening = overlay.hidden; sndHush('card'); stage.classList.remove('cover'); card.classList.remove('win'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; if (opening) setTimeout(() => sfx.pop(), 0); }   // 上一张卡片排好的声音掐掉；卡片从无到有时“啵”一声（换卡片、云存档回来重画不响；紧跟着按钮声的不响，所以等这一下点击处理完再看）
 /* 星级：★★★ 就是达标线；★★、★ 各往下让 3、6 个点，拿一星就能交货。
    起始圆度离达标线很近的单（晶洞、铜块）让得少，让出来的不超过「起始到达标」这段的 35%，免得一接单就能交 */
 function starLines(target, r0) {
@@ -2029,8 +2223,8 @@ function showChapter() {
     <div class="row"><button class="btn" type="button" data-act="enter">${L('进去看看', 'Go in')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button></div>`);
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
-function showCover() { G.coverT = 0; G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); if (showCover.n) stage.classList.add('seen'); showCover.n = 1; G.glowOn = false; G.glowK = 0; stage.classList.remove('star3'); startSync(); }
-function leaveCover(menu) { if (WIPE.on) return; audioInit(); sfx.ui(); const at = firstOpen(); if (menu === true || !(at || ORDER.some(id => SAVE.best[id]))) showMenu(); else if (advDone() && endlessOpen()) wipe(() => startEndless()); else wipe(() => startAt(at)); }
+function showCover() { sndHush('card'); G.coverT = 0; G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); if (showCover.n) stage.classList.add('seen'); showCover.n = 1; G.glowOn = false; G.glowK = 0; stage.classList.remove('star3'); startSync(); }
+function leaveCover(menu) { if (WIPE.on) return; audioInit(); sfx.ui(menu === true ? 'open' : 'go'); const at = firstOpen(); if (menu === true || !(at || ORDER.some(id => SAVE.best[id]))) showMenu(); else if (advDone() && endlessOpen()) wipe(() => startEndless()); else wipe(() => startAt(at)); }
 /* ---------- 开始界面 ----------
    画布上只画背景和一张标题图（drawCover）。按钮是页面元素（#startui，样式在上面「开始界面」那一段），电脑上在右边排成一列，手机上排在标题下面：
    · 最上面一颗大的绿色按钮：没做过单是「开始」，做过了是「接着做第 N / 冒险单数 单」，冒险模式通关以后是「无尽模式」；
@@ -2065,7 +2259,7 @@ startUI.addEventListener('click', e => {
   if (a === 'go') cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
   else if (a === 'menu') leaveCover(true);
   else if (a === 'lang') act('lang');
-  else if (a === 'endless') { audioInit(); sfx.ui(); wipe(() => startEndless()); }
+  else if (a === 'endless') { audioInit(); sfx.ui('go'); wipe(() => startEndless()); }
   else { showMenu(); act(a); }   // 先把首页的那一局摆好（卡片后面要画场景），再开对应的卡片
 });
 /* 回首页 = 回到开始界面（游戏里右上角的按钮、各张卡片上的「回首页」、Esc 都走这里）。
@@ -2095,7 +2289,7 @@ function wipe(mid) {
   c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;z-index:9;pointer-events:none'; document.body.appendChild(c);
   const K = Math.max(5, Math.round(H / 96)), rh = H / K, R = rh * .5, D = 480, D2 = 430, step = 46, last = (K - 1) * step, tMid = last + D + 40, tEnd = tMid + 90 + last + D2, t0 = performance.now();
   const out = v => 1 - Math.pow(1 - v, 3), inn = v => v * v * v, span = W + R * 4.6;
-  noise(.6, .1, 'bandpass', 1100, .7); for (let k = 0; k < K; k++) tone(1175 * Math.pow(1.122, k % 6), .16, .07, 'sine', 0, k * step / 1000);   // 嗖的一下，每颗星出来叮一声
+  sfx.wipe(K, step / 1000);   // 嗖的一下，每颗星出来叮一声，一路往上
   let did = false; const go = () => { if (!did) { did = true; mid(); } }, end = () => { if (c.parentNode) c.parentNode.removeChild(c); WIPE.on = false; };
   setTimeout(go, tMid); setTimeout(() => { go(); end(); }, tEnd + 140);
   const frame = now => {
@@ -2136,14 +2330,12 @@ function drawCover(t) {
   ctx.drawImage(k.c, -w / 2, -h / 2, w, h);
   ctx.restore(); ctx.globalAlpha = 1;
 }
-/* 结算卡上的星星一颗一颗亮（动画在样式里），每亮一颗响一声，一颗比一颗高 */
-new MutationObserver(() => { const on = card.querySelectorAll('.stars.big i.on'); if (!on.length || on[0].dataset.rung) return; on[0].dataset.rung = '1'; on.forEach((el, k) => tone([988, 1245, 1568][k] || 1568, .22, .16, 'sine', 0, .55 + k * .38)); }).observe(card, { childList: true });
 /* 首页右上角的小外星人（跟窗户里的甲方一个样） */
 const ALIEN_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 14 Q18 6 13 5" stroke="#93e85a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M42 14 Q46 6 51 5" stroke="#93e85a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="13" cy="5" r="3.6" fill="#ffd35c"/><circle cx="51" cy="5" r="3.6" fill="#ffd35c"/><ellipse cx="32" cy="35" rx="23" ry="25" fill="#93e85a"/><ellipse cx="22.5" cy="33" rx="7" ry="9.5" transform="rotate(-18 22.5 33)" fill="#110d2b"/><ellipse cx="41.5" cy="33" rx="7" ry="9.5" transform="rotate(18 41.5 33)" fill="#110d2b"/><circle cx="24.5" cy="29.5" r="2.2" fill="#fff"/><circle cx="43.5" cy="29.5" r="2.2" fill="#fff"/><path d="M27 48 Q32 51 37 48" stroke="#110d2b" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`;
 const POKE = { n: 0, t: 0 };
 function pokeAlien(el) {
   const now = performance.now(); if (now - POKE.t > 2500) POKE.n = 0; POKE.t = now; POKE.n++;
-  el.classList.remove('poke'); void el.offsetWidth; el.classList.add('poke'); tone(520 + POKE.n * 60, .08, .12, 'square');
+  el.classList.remove('poke'); void el.offsetWidth; el.classList.add('poke'); sfx.poke(POKE.n);
   if (DEV) return;
   const hint = el.querySelector('i'); if (hint) hint.textContent = POKE.n >= 5 && POKE.n < 10 ? L(`还差 ${10 - POKE.n} 下`, `${10 - POKE.n} more`) : '';
   if (POKE.n >= 10) { DEV = true; POKE.n = 0; try { localStorage.setItem('yuan.dev', '1'); } catch (e) {} showMenu(L('开发者模式：订单簿已解锁。', 'Developer mode: order book unlocked.')); }
@@ -2228,7 +2420,7 @@ function confetti(x, dir, n) {
   }
 }
 function celebrate(n) {
-  const b = G.body; sfx.win(); G.shake = Math.max(G.shake, 6);
+  const b = G.body; sfx.deliver(n); G.shake = Math.max(G.shake, 6);
   parts = parts.slice(-60); confetti(WALL_L + 24, 1, 50 + n * 12); confetti(WALL_R - 24, -1, 50 + n * 12);
   twinkle(b.x, b.y - b.meanR * .3, 10 + n * 6, ['#ffd35c', '#fffbe0', '#93e85a'], 300);
   parts.push({ x: b.x, y: FLOOR - 2, vx: 0, vy: 0, g: 0, life: 1.2, t: 0, s: 320, c: C.coin, rot: 0, vr: 0, kind: 'ring' });
@@ -2290,15 +2482,23 @@ function showResult() {
     ${endless ? `<p class="note">${L(`这一轮已交 ${G.done} 单，累计`, `${G.done} delivered this run, total`)} <strong>◎ ${G.score}</strong>${L(`。下一单甲方的耐心只剩平时的 ${Math.round(endlessPace(G.done) * 100)}%。`, `. Next order, the Client has ${Math.round(endlessPace(G.done) * 100)}% of the usual patience.`)}</p>` : ''}
     <div class="row"><button class="btn" type="button" data-act="next">${last ? L('看看甲方怎么说', 'Hear the verdict') : L('下一单', 'Next order')}</button>${endless ? `<button class="btn ghost" type="button" data-act="home">${L('收工结算', 'Clock out')}</button>` : `<button class="btn ghost" type="button" data-act="redo">${n < 3 ? L('再来一次', 'Try again') : L('再做一次', 'Again')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button>`}</div>`);
   card.classList.add('win');
-  // 每颗星弹出来时响一声，音一颗比一颗高；全亮再来一个和弦
-  for (let k = 0; k < n; k++) tone([784, 988, 1319][k], .22, .22, 'triangle', 0, .18 * (k + 1) + .05);
-  if (n >= 3) [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, .35, .14, 'sine', 0, .78 + i * .06));
-  if (G.newAch.length) sfx.ach(1.2);
+  // 声音的时间线（秒，从卡片出来算）：每颗星砸下来落定时响一声（跟样式里 starin 对齐：第 k 颗在 .17 + .38k 秒开始、再过 .14 秒落定），一颗比一颗高，
+  // 三颗全亮再来一个和弦；酬劳往上滚时一路细细地响，滚完“叮”一下（跟某颗星撞上了就往后让一点）；星星都落完以后再依次：破纪录、新物品 / 无尽模式解锁、新成就
+  const t00 = performance.now(), starAt = k => REDUCED ? .12 + k * .11 : .17 + (k + 1) * .38 + .14;
+  let paidAt = REDUCED ? .05 : 1.15; for (let k = 0; k < n; k++) if (Math.abs(paidAt - starAt(k)) < .15) paidAt = starAt(k) + .18;
+  let after = Math.max(n ? starAt(n - 1) + (n >= 3 ? .55 : .3) : .3, paidAt + .25);
+  for (let k = 0; k < n; k++) sfx.rstar(k, starAt(k));
+  if (n >= 3) sfx.rstar3(starAt(2) + .22);
+  if (rec && old) { sfx.record(after); after += .4; }
+  if (!old || G.res.unlock) { sfx.dex(after); after += .45; }
+  if (G.newAch.length) sfx.ach(after);
   const sum = card.querySelector('.sum'), t0 = performance.now() + (REDUCED ? 0 : 450), dur = REDUCED ? 1 : 700, to = p.total;
+  let shown = 0;
   const tick = now => {
     if (!sum.isConnected) return;
-    const k = clamp((now - t0) / dur, 0, 1); sum.textContent = '◎ ' + Math.round(to * (1 - Math.pow(1 - k, 3)));
-    if (k < 1) requestAnimationFrame(tick); else { sum.classList.add('done'); if (rec && old) tone(1568, .25, .18, 'sine'); }
+    const k = clamp((now - t0) / dur, 0, 1), v = Math.round(to * (1 - Math.pow(1 - k, 3))); sum.textContent = '◎ ' + v;
+    if (v > shown && k < 1) sfx.coin(shown = v);
+    if (k < 1) requestAnimationFrame(tick); else { sum.classList.add('done'); sfx.paid(Math.max(0, paidAt - (now - t00) / 1000)); }
   };
   requestAnimationFrame(tick);
 }
@@ -2321,7 +2521,7 @@ function showOver() {
   const m = G.mat;
   const why = G.failReason === 'shatter' ? m.dead : L(`甲方的耐心用完了。圆度停在 ${pct(G.round)}，一星线是 ${pct(G.lines[0])}。`, `The Client ran out of patience. Roundness stopped at ${pct(G.round)}; one star needed ${pct(G.lines[0])}.`);
   if (G.mode === 'endless') return endEndless(`<p>${why}</p>${G.failReason === 'shatter' ? overWhy() : ''}`);
-  G.state = 'over'; if (G.newAch.length) sfx.ach(.2);
+  G.state = 'over';
   setCard(`
     <p class="eyebrow">${L('交货失败', 'Delivery failed')}</p>
     <h2>${L('你被做成了圆形', 'You have been made round')}</h2>
@@ -2331,11 +2531,12 @@ function showOver() {
     <div class="row">${canExtend()
       ? `<button class="btn" type="button" data-act="extend">${L(`求甲方再等 ${EXTEND.sec} 秒`, `Beg for ${EXTEND.sec} more seconds`)}<span class="sub">${L(`接着砸，这单酬劳 ×${EXTEND.pay}，只能求一次`, `Keep going; this order pays ×${EXTEND.pay}. Once only`)}</span></button><button class="btn ghost" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button>`
       : `<button class="btn" type="button" data-act="retry">${L('重做这一单', 'Retry this order')}</button>`}<button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+  if (G.newAch.length) sfx.ach(.25);   // 卡片的声音都放在 setCard 之后：setCard 会掐掉上一张卡片排好的
 }
 const canExtend = () => G.state === 'over' && G.failReason === 'time' && !G.ext && G.mode !== 'endless' && G.body && !G.body.dead;
 function extendRound() {   // 超时以后求甲方再等一会儿：料还是原来那块，接着砸
   if (!canExtend()) return;
-  G.ext = 1; G.timeLeft = EXTEND.sec; G.warned = false; G.failReason = null; G.doom = null;
+  sfx.extend(); G.ext = 1; G.timeLeft = EXTEND.sec; G.warned = false; G.failReason = null; G.doom = null;
   G.state = 'play'; G.silent = muted; overlay.hidden = true; updateRoundness();
   G.bubble = { text: L(`${EXTEND.sec} 秒。一秒都不能再多了。这单酬劳 ×${EXTEND.pay}。`, `${EXTEND.sec} seconds. Not one more. This order pays ×${EXTEND.pay}.`), t0: G.time, dur: 3.6, lines: null }; mood('angry', 3);
   TRACK('extend', roundInfo());
@@ -2346,7 +2547,6 @@ function endEndless(why = '') {
   const eb = SAVE.endless, rec = G.score > eb.best, prev = eb.best;
   if (rec) { SAVE.endless = { best: G.score, n: G.done }; persist(); achCheck(); if (NAME) cloudSync(NAME).catch(() => {}); }
   TRACK('endless_end', { score: G.score, done: G.done, rec: rec ? 1 : 0, fail: why ? 1 : 0, ach: (G.newAch || []).join(',').slice(0, 64) });
-  if ((G.newAch || []).length) sfx.ach(.2);
   const items = G.runNew.filter((id, i, a) => a.indexOf(id) === i);
   setCard(`
     <p class="eyebrow">${L('无尽模式 · 收工', 'Endless · Clocked out')}</p>
@@ -2362,25 +2562,31 @@ function endEndless(why = '') {
     ${CLOUD && !NAME && G.score ? `<p class="note">${L('回首页起个名字，纪录就能上排行榜。', 'Pick a name on the home screen to put your record on the leaderboard.')}</p>` : ''}
     <div class="row"><button class="btn" type="button" data-act="endless">${L('再来一轮', 'Another run')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   card.classList.add('win');
+  sfx.endRun(rec && G.score > 0); if ((G.newAch || []).length) sfx.ach(1);
 }
 function showWin() {
-  G.state = 'win'; achWin(); TRACK('win', { loop: G.loop, score: G.score, done: G.done, ach: G.newAch.join(',').slice(0, 64) }); if (G.newAch.length) sfx.ach(.3);
-  if (G.mode !== 'book') return setCard(`
+  G.state = 'win'; achWin(); TRACK('win', { loop: G.loop, score: G.score, done: G.done, ach: G.newAch.join(',').slice(0, 64) });
+  if (G.mode !== 'book') setCard(`
     <p class="eyebrow">${L('冒险模式通关', 'Adventure complete')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
     <p>${L('所以他们决定不放你走了。这一趟累计酬劳', 'So they have decided to keep you. Total pay this trip:')} <strong>◎ ${G.score}</strong>${L('。', '.')}</p>
     <p>${L(`<strong>无尽模式解锁了。</strong>甲方的仓库里堆着 ${ORDER.length} 样东西，随机送来，交一单，甲方的耐心就短一截，失败一次就收工。没见过的东西交付了就收进图鉴，这一轮的总酬劳上排行榜。`, `<strong>Endless mode unlocked.</strong> The Client's warehouse holds ${ORDER.length} kinds of things, sent at random. Every order, the Client gets less patient; one failure ends the run. Deliver something new and it goes in the catalogue. The run's total pay goes on the leaderboard.`)}</p>
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="endless">${L('进无尽模式', 'Start endless')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
-  setCard(`
+  else setCard(`
     <p class="eyebrow">${G.done >= ORDER.length ? L(ORDER.length + ' 单全部交付', 'All ' + ORDER.length + ' orders delivered') : L('最后一单交付', 'Final order delivered')}</p>
     <h2>${L('甲方非常满意', 'The Client is very pleased')}</h2>
     <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的星线都会再高一点。', '. Next round, every star line goes a little higher.')}</p>
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+  sfx.clear(); if (G.newAch.length) sfx.ach(1.3);
 }
+/* 卡片和按钮的声音按动作分：开工是一段「开工」，往前走往上跳，回首页往下落，打开一页单响一声；点按和空格 / 回车 / Esc 走的是同一条路，所以一个样 */
+const UI_KIND = { go: 'start', redo: 'start', replay: 'start', next: 'go', enter: 'go', start: 'go', resume: 'go', endless: 'go', again: 'go', retry: 'go',
+  home: 'back', restart: 'back', devoff: 'back', wipe: 'back', dex: 'open', book: 'open', board: 'open', ach: 'open', lang: 'open', rename: 'open', extend: '' };
 function act(a) {
-  audioInit(); sfx.ui();
+  audioInit(); const k = UI_KIND[a] === undefined ? 'tap' : UI_KIND[a];
+  if (k === 'start') { if (a !== 'replay' || G.state === 'play') sfx.start(); } else if (k) sfx.ui(k);   // 求宽限（extend）自己有声音，在 extendRound 里
   if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
@@ -2389,7 +2595,7 @@ function act(a) {
   else if (a === 'book') { if (DEV) showBook(); else showMenu(); }
   else if (a === 'devoff') { DEV = false; try { localStorage.removeItem('yuan.dev'); } catch (e) {} showMenu(); }
   else if (a === 'enter') showOrder();
-  else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); alreadyRound(); TRACK('start', Object.assign(G.mode === 'endless' ? { mode: 'endless', n: G.done } : {}, { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) })); }   // 本来就圆的那一单，一接单就能交货
+  else if (a === 'go') { G.state = 'play'; G.silent = muted; overlay.hidden = true; say('start', true); talk('start', true, 1.6); updateRoundness(); alreadyRound(); sfx.alien(G.round0 >= G.lines[2] ? 'no' : 'hi', .3); TRACK('start', Object.assign(G.mode === 'endless' ? { mode: 'endless', n: G.done } : {}, { order: ORDER[G.idx], idx: G.idx, loop: G.loop, target: r3(G.target), round: r3(G.round) })); }   // 本来就圆的那一单，一接单就能交货
   else if (a === 'next') { if (G.mode === 'endless') nextEndless(); else if (G.idx + 1 >= (G.end || ADV_N)) showWin(); else { G.idx++; if (chapStart(G.idx)) showChapter(); else showOrder(); } }
   else if (a === 'retry') { G.score = G.startScore; showOrder(); }
   else if (a === 'extend') extendRound();
@@ -2418,10 +2624,10 @@ function act(a) {
   else if (a === 'again') { G.loop++; G.idx = 0; G.slips = 0; showOrder(); }
   else if (a === 'ach') showAch();
 }
-card.addEventListener('submit', e => { const f = e.target.closest('[data-who]'); if (!f) return; e.preventDefault(); audioInit(); sfx.ui(); setName(f.elements.who && f.elements.who.value); });
+card.addEventListener('submit', e => { const f = e.target.closest('[data-who]'); if (!f) return; e.preventDefault(); audioInit(); sfx.ui('go'); setName(f.elements.who && f.elements.who.value); });
 card.addEventListener('click', e => {
-  const lv = e.target.closest('[data-lv]'); if (lv) { audioInit(); sfx.ui(); startAt(+lv.dataset.lv, 'book'); return; }
-  const dx = e.target.closest('[data-dex]'); if (dx) { audioInit(); sfx.ui(); showDexItem(dx.dataset.dex); return; }
+  const lv = e.target.closest('[data-lv]'); if (lv) { audioInit(); sfx.ui('go'); startAt(+lv.dataset.lv, 'book'); return; }
+  const dx = e.target.closest('[data-dex]'); if (dx) { audioInit(); sfx.ui('open'); showDexItem(dx.dataset.dex); return; }
   const al = e.target.closest('.alien-tap'); if (al) { audioInit(); pokeAlien(al); return; }
   const t = e.target.closest('[data-act]'); if (t) act(t.dataset.act);
 });
@@ -2429,7 +2635,7 @@ deliverBtn.addEventListener('click', e => { e.currentTarget.blur(); deliver(); }
 replayBtn.addEventListener('click', e => { e.currentTarget.blur(); act('replay'); });
 homeBtn.addEventListener('click', e => { e.currentTarget.blur(); act('home'); });
 muteBtn.addEventListener('click', e => {
-  audioInit(); muted = !muted; if (!muted) G.silent = false; muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
+  audioInit(); muted = !muted; sndMute(muted); if (!muted) { G.silent = false; sfx.ui('on'); } muteBtn.textContent = muted ? L('声音 关', 'Sound off') : L('声音 开', 'Sound on'); muteBtn.setAttribute('aria-pressed', String(muted)); e.currentTarget.blur();
 });
 
 /* ---------- 输入 ---------- */
@@ -2452,11 +2658,11 @@ function tryGrab() {
   // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 64 像素（lift 为负 = 往下）
   b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
-  G.started = true; if (Math.random() < .35) talk('grab');
-  if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 4.5, lines: null }; mood('angry', 2); }
+  G.started = true; sfx.grab(); if (Math.random() < .35) talk('grab');
+  if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 4.5, lines: null }; mood('angry', 2); sfx.alien('no', .1); }
   return true;
 }
-function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
+function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); if (G.state === 'play') sfx.letgo(); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
 /* 第一根手指拎材料；拎着的时候第二根手指落在哪，哪里就出一根横向的摇杆（只有左右一个轴）。
    速率控制：钮推离中心越远转得越快，中间一小段是死区，推到头是 JOY_MAX 弧度/秒（A / D 是 2.4）；钮被限制在槽里。
    往右推 = 逆时针、往左推 = 顺时针（JOY_DIR = -1；试玩反馈说跟 D 键同向的那种是反的，改成 1 就回去）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
@@ -2464,7 +2670,7 @@ function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.st
 const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
 const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
-function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; }
+function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; sfx.joy(); }
 function joyMove(e) { JOY.x = joyAt(e).x; JOY.k = clamp((JOY.x - JOY.x0) / (JOY_R * JOY.s), -1, 1); }
 /* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
 function joyRate() {
@@ -2518,6 +2724,48 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { keys.left = keys.right = false; });
 
+/* ---------- 每帧听一听：该响就响一下 ----------
+   不改玩法，只看这一帧的状态比上一帧变了没有（跟 juiceWatch 一个路数）。只发短音、不开循环的声源，
+   所以松手、换状态、暂停（切后台时动画帧停了）时什么都不用关。换了一块料就从头记 */
+const SW = { body: null, held: false, rot: 0, acc: 0, zone: -1, tier: 0, sec: 0, red: false, th: 0, flow: 0, drip: 1.5, tw: 1, hop: 0 };
+const ROT_STEP = .3;   // 转多少弧度咔哒一下（约 17°）：A / D 一秒 8 下，摇杆推到头 10 下
+function sndWatch(dt) {
+  const b = G.body, play = G.state === 'play';
+  if (b !== SW.body) { SW.body = b; SW.held = false; SW.acc = 0; SW.zone = -1; SW.tier = G.tier; SW.sec = 0; SW.red = false; SW.flow = 0; SW.hop = 0; SW.drip = 1.5; SW.th = b && b.sd ? Math.atan2(b.sd[1], b.sd[0]) : 0; }
+  if (!b || b.dead) return;
+  if (b.flee) { const k = Math.floor(b.fleeT * 13 / Math.PI); if (k > SW.hop && b.x < WALL_R + 60) sfx.hop(); SW.hop = k; }   // 跑掉的时候一蹦一个脚步
+  // 转角度：A / D、滚轮、手机摇杆、左右转按钮改的都是 userRot，每转过一小格咔哒一下
+  if (b.held && SW.held) { const d = b.userRot - SW.rot; SW.acc += Math.abs(d); if (SW.acc >= ROT_STEP) { SW.acc = Math.min(SW.acc - ROT_STEP, ROT_STEP); sfx.turn(d >= 0 ? 1 : -1); } } else SW.acc = 0;
+  SW.held = !!b.held; SW.rot = b.userRot || 0;
+  // 拎着：此刻松手的力度往上进了绿区 / 红区各提醒一下（跟力度表上那道白线一个算法；新手关没有力度表，不响）
+  let zone = -1;
+  if (play && b.held && !G.tutUI) { zone = 0; if (b.clear > 2) { const m = faceMat(b), F = Math.sqrt(b.vy * b.vy + 2 * GRAV * b.clear) / VMAX * 100; zone = F > m.brittle && m.brittle < 97 ? 2 : F >= m.hard ? 1 : 0; } }
+  if (SW.zone >= 0 && zone > SW.zone) (zone === 2 ? sfx.zoneHard : sfx.zoneOk)();
+  SW.zone = zone;
+  if (play && G.tier < SW.tier) sfx.tierDown();   // 掉回下一档（砸歪了、塌了、化了）；往上升一档在 updateRoundness 里响
+  SW.tier = G.tier;
+  if (!play) return;
+  // 耐心：倒计时变红（剩两成）时甲方嘟囔一声；最后几秒每秒轻轻一下，最多 5 下，限时短的单按两成算（无尽模式 5 秒的单只响最后 1 下）
+  if (G.started && !G.tutUI) {
+    const left = G.timeLeft, sec = Math.ceil(left), last = Math.min(5, Math.max(1, Math.floor(G.timeMax * .2)));
+    if (left / G.timeMax <= .2) { if (!SW.red && G.timeMax >= 10 && left > 3 && !(G.ext && left > EXTEND.sec - 1.5)) sfx.alien('grr'); SW.red = true; } else SW.red = false;   // 刚求来 20 秒那一下不嘟囔（求宽限自己有声音）
+    if (SW.sec && sec < SW.sec && sec >= 1 && sec <= last) sfx.tick(sec);
+    SW.sec = sec;
+  }
+  // 烫手的东西拎着：噼啪声越来越密，快到要撒手的时候最密
+  if (b.held && b.mat.hot) { const k = clamp((b.holdT || 0) / b.mat.hot, 0, 1); if (Math.random() < dt * (2 + 16 * k * k)) sfx.crackle(k); }
+  // 滴水：冰一直在化；焐过头的东西拎着往下滴
+  const wm = b.mat.warm;
+  if ((b.mat.melt && G.started) || (wm && wm.hot && b.held && b.heat >= wm.peak + .15)) { SW.drip -= dt; if (SW.drip <= 0) { sfx.drip(); SW.drip = b.mat.melt ? rand(1.6, 3.2) : rand(.35, .8); } }
+  // 里面会流的（沙袋、存钱罐、蜂蜜）：翻过来以后里面往下流，流得越快声音越密
+  if (b.mat.fill && b.sd) {
+    const th = Math.atan2(b.sd[1], b.sd[0]); SW.flow += Math.abs(wrapPi(th - SW.th)); SW.th = th;
+    if (SW.flow >= .22) { SW.flow = Math.min(SW.flow - .22, .22); const c = b.mat.core || {}; sfx.grain(c.snd === 'can' ? 'coin' : c.wet ? 'goo' : 'sand'); }
+  }
+  // 三星了：偶尔叮一下，跟画面四周的彩虹光一起
+  if (G.tier >= 3 && !G.tutUI) { SW.tw -= dt; if (SW.tw <= 0) { sfx.twinkle(); SW.tw = rand(1.3, 2.8); } } else SW.tw = .8;
+}
+
 /* ---------- 每帧更新 ---------- */
 function update(dt) {
   G.time += dt; const b = G.body;
@@ -2551,8 +2799,8 @@ function update(dt) {
     if (b.mat.warm && G.state === 'play') {
       const w = b.mat.warm, h0 = b.heat || 0; b.heat = clamp(h0 + (b.held ? w.rate : -w.cool) * dt, 0, 1);
       const soft = w.peak || .6, hot = w.hot ? w.peak + .15 : 2;
-      if (h0 < soft && b.heat >= soft && (b.warmMsg || 0) < 2) { b.warmMsg = (b.warmMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('焐软了', 'Softened'), C.coin, 20); }
-      if (h0 < hot && b.heat >= hot && (b.hotMsg || 0) < 3) { b.hotMsg = (b.hotMsg || 0) + 1; floatText(b.x, b.y - b.meanR - 30, L('太热了，要化了！放下凉一凉', 'Too hot, melting! Put it down to cool'), C.alarm, 20); }
+      if (h0 < soft && b.heat >= soft && (b.warmMsg || 0) < 2) { b.warmMsg = (b.warmMsg || 0) + 1; sfx.soft(); floatText(b.x, b.y - b.meanR - 30, L('焐软了', 'Softened'), C.coin, 20); }
+      if (h0 < hot && b.heat >= hot && (b.hotMsg || 0) < 3) { b.hotMsg = (b.hotMsg || 0) + 1; sfx.melt(); floatText(b.x, b.y - b.meanR - 30, L('太热了，要化了！放下凉一凉', 'Too hot, melting! Put it down to cool'), C.alarm, 20); }
       if (b.heat >= hot && b.held && Math.random() < dt * 8) fxp(b.lowX + rand(-12, 12), FLOOR - b.clear - 2, 1, 'drop', b.mat.chips, { up: 0, g: 900 });   // 化得往下滴
     }
     if (b.mat.melt && G.state === 'play' && G.started) {   // 冰一直在化：整块等比缩小，形状不变，但留下的越来越少
@@ -2595,9 +2843,10 @@ function update(dt) {
   const d = G.doom;
   if (d) {
     d.vy += 2400 * dt; d.y += d.vy * dt; d.x += d.vx * dt; d.a += d.vx / 44 * dt;
-    if (d.y > FLOOR - 44) { d.y = FLOOR - 44; if (d.vy > 300) { sfx.thud(1); dust(d.x, 6); } d.vy = d.vy > 140 ? -d.vy * .5 : 0; }
+    if (d.y > FLOOR - 44) { d.y = FLOOR - 44; if (d.vy > 300) { sfx.boing(Math.min(1, d.vy / 1400)); dust(d.x, 6); } d.vy = d.vy > 140 ? -d.vy * .5 : 0; }
     if (d.x > WALL_R - 50 || d.x < WALL_L + 50) d.vx *= -1;
   }
+  sndWatch(dt);
 }
 
 /* ---------- 绘制：材质贴图（在材料最初的坐标系里画，再被当前轮廓裁掉） ---------- */
@@ -4126,9 +4375,9 @@ function sim(id, t, hits, aimErr) {
   }
   return { curve: out, keep: Math.round(b.area / b.area0 * 100) };
 }
-window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
+window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, snd: SNDAPI, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
-window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
+window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, sfx, audioInit, sndHush, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
   joyDraw: drawJoyAt, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x0: JOY.x0, y: JOY.y, k: JOY.k, s: JOY.s } : null; } };
 
 function boot(data) {
