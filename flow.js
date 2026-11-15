@@ -275,10 +275,27 @@ function startTutorial() {
   G.tutUI = true; document.documentElement.classList.add('flow-tut-on');   // 新手关的界面极简：index.html 不画力度表、底部提示和顶栏的小字   // 第一次来不给回首页，重看的时候可以走
   G.mood = 'calm'; G.moodT = 0;
   G.bubble = { text: L('先试工：把它弄圆。', 'Trial run: make it round.'), t0: G.time, dur: 4, lines: null }; T.introUntil = G.time + 2.4; S('alien', 'hi', .2);   // 先说一句，再换成第一步
-  cancelAnimationFrame(raf); raf = requestAnimationFrame(tutFrame);
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(tutFrame); addTutSkip();
   try { document.fonts.load(`600 17px 'Maoken Assorted Sans'`, HINT_TEXT); } catch (e) {}
 }
-function stopTutorial() { cancelAnimationFrame(raf); raf = 0; G.tutUI = false; document.documentElement.classList.remove('flow-tut-on'); stage.classList.remove('flow-tut', 'flow-lock'); }
+function stopTutorial() { cancelAnimationFrame(raf); raf = 0; G.tutUI = false; document.documentElement.classList.remove('flow-tut-on'); stage.classList.remove('flow-tut', 'flow-lock'); const k = $('flow-tskip'); if (k) k.remove(); }
+/* 新手关右上角的「跳过教程」：算过了新手关。没签合同的接着去签，签过的直接开工；重看的时候回首页 */
+function addTutSkip() {
+  if ($('flow-tskip')) return;
+  const k = document.createElement('button'); k.id = 'flow-tskip'; k.className = 'fc-skip'; k.type = 'button'; k.textContent = L('跳过教程', 'Skip tutorial');
+  k.addEventListener('click', skipTutorial); stage.appendChild(k);
+}
+function skipTutorial() {
+  if (phase !== 'tutorial') return;
+  X.sfx.ui(); track('tut_skip', { sec: Math.round((performance.now() - tutT0) / 100) / 10, st: T && T.stage || '' });
+  if (replaying) { quitTutorial(); return; }
+  if (G.body && G.body.held) Y.release();
+  stopTutorial(); phase = 'handoff'; G.state = 'flow'; deliverBtn.hidden = true;
+  FL.tut = 1; saveFL();
+  if (FL.signed) { startWork(); return; }
+  G.mood = 'calm'; G.moodT = 0;
+  setTimeout(() => openContract(0), 300);
+}
 function quitTutorial() {   // 只有重看的时候能走到这里
   stopTutorial(); phase = 'idle'; G.idx = 0; Y.release(); Y.act('restart');
 }
