@@ -26,7 +26,26 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=tskip6" defer></script>
+<script src="flow.js?v=name7" defer></script>
+<script>
+/* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
+   打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
+   不一样、而且玩家还停在开始界面，就换个网址参数刷新一次拿新版；已经在玩就不打断，下次打开再换。一分钟内最多刷一次，免得来回刷 */
+(() => {
+  if (location.protocol === 'file:' || !window.fetch) return;
+  const el = document.querySelector('script[src*="flow.js?v="]'), cur = el ? el.getAttribute('src') : '';
+  if (!cur) return;
+  fetch(location.pathname, { cache: 'no-cache', credentials: 'same-origin' }).then(r => r.ok ? r.text() : '').then(t => {
+    const m = t.match(/flow\.js\?v=[\w-]+/); if (!m || cur.indexOf(m[0]) >= 0) return;
+    const Y = window.__yuan, F = window.__yuanFlowDebug;
+    if ((Y && Y.G && Y.G.state !== 'cover') || (F && F.phase !== 'idle')) return;   // 已经离开开始界面：不打断
+    let last = 0; try { last = +sessionStorage.getItem('yuan.fresh') || 0; } catch (e) {}
+    if (Date.now() - last < 60000) return;
+    try { sessionStorage.setItem('yuan.fresh', String(Date.now())); } catch (e) {}
+    const u = new URL(location.href); u.searchParams.set('_v', m[0].split('=')[1]); location.replace(u.href);
+  }).catch(() => {});
+})();
+</script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
