@@ -2311,7 +2311,7 @@ function startSync() {
   startUI.innerHTML = `<div class="start-main">
     ${b('start-go', 'go', won && eo ? L('无尽模式', 'Endless') : at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开始', 'Start'), '', ticks)}
     ${eo && !won ? b('ghost start-endless', 'endless', L('无尽模式', 'Endless')) : ''}
-    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
+    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法', 'How to play'))}</div>
   </div>
   ${b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
 }
@@ -2416,12 +2416,6 @@ function pokeAlien(el) {
 }
 function showMenu(msg) {
   G.mode = 'main'; G.end = ADV_N; G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
-  const at = firstOpen(), won = advDone(), eo = endlessOpen(), eb = SAVE.endless;
-  const main = won
-    ? `<button class="btn" type="button" data-act="endless">${L('无尽模式', 'Endless')}</button><button class="btn ghost" type="button" data-act="start">${L('重玩冒险模式', 'Replay adventure')}</button>`
-    : `<button class="btn" type="button" data-act="${at ? 'resume' : 'start'}">${at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开工', 'Start')}</button>${eo
-      ? `<button class="btn ghost" type="button" data-act="endless">${L('无尽模式', 'Endless')}<span class="sub">${L('上排行榜', 'Leaderboard run')}</span></button>`
-      : `<button class="btn ghost" type="button" disabled>${L('无尽模式', 'Endless')}<span class="sub">${L(`做完前 ${ENDLESS.unlock} 单解锁`, `Unlocks after order ${ENDLESS.unlock}`)}</span></button>`}`;
   setCard(`
     <div class="hero"><div>
       <p class="eyebrow">${L('玩法', 'How to play')}</p>
@@ -2433,13 +2427,8 @@ function showMenu(msg) {
       <li><b>${L('砸', '2')}</b><span>${L('举高松手，让它自己掉下去；拿着往下砸是进阶手法。右边力度表绿区有效，红区会碎。', '<strong>Drop.</strong> Lift it high and let go; slamming while holding is the advanced move. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
     </ul>
-    <div class="row">${main}</div>
-    <div class="row">${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="dex">${L('图鉴', 'Catalogue')} <span class="cnt">${dexGot()}/${ORDER.length}</span></button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}<button class="btn ghost" type="button" data-act="ach">${L('成就', 'Achievements')} <span class="cnt">${achGot()}/${achList().length}</span>${ACH.some(a => A.got[a.id] > A.seen) ? '<i class="dot" aria-label="' + L('有新成就', 'new') + '"></i>' : ''}</button><button class="btn ghost" type="button" data-act="lang" lang="${EN ? 'zh' : 'en'}">${EN ? '中文' : 'English'}</button><button class="btn ghost" type="button" data-act="home">${L('返回', 'Back')}</button></div>
-    ${eb.best ? `<p class="note">${L(`无尽模式最好的一轮：交了 ${eb.n} 单，酬劳`, `Best endless run: ${eb.n} orders,`)} <strong>◎ ${eb.best}</strong>${L('。', '.')}</p>` : ''}
-    ${msg ? `<p class="note" role="status">${msg}</p>` : ''}
-    ${A.bfN ? `<p class="note">${L(`翻了翻你的旧存档，补发了 ${A.bfN} 个圆章。`, `Went through your old save and awarded ${A.bfN} stamps.`)} <button class="link" type="button" data-act="ach">${L('去看看', 'Have a look')}</button></p>` : ''}
-    ${whoRow()}
-    <p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级、无尽模式纪录和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars, endless record and achievements.')}</p>`);
+    <div class="row"><button class="btn" type="button" data-act="home">${L('返回', 'Back')}</button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}</div>
+    ${msg ? `<p class="note" role="status">${msg}</p>` : ''}`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
