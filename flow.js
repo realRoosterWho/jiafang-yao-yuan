@@ -18,7 +18,7 @@ const S = (name, ...a) => { try { const s = X.sfx || {}; if (s[name]) s[name](..
 /* ---------- 要改的东西都在这里 ---------- */
 const CONFIG = {
   video: '',            // 播片做好以后填文件名或完整网址（如 'intro.mp4'）。留空就放下面的占位动画
-  placeholderMs: 4200,  // 占位动画总时长，别超过 5 秒
+  placeholderMs: 7500,  // 三个镜头一共放多久（每个 2.5 秒；能跳过）
   collectionAct: 'dex' // 「去收藏室看看」点了以后做什么。现在接的是图鉴（act('dex')）；订单簿藏起来了，是开发者入口
 };
 /* 新手关：一块只有一个凸起的石头。砸不碎、不计时。只教两件事，限制得很死：
@@ -83,25 +83,41 @@ style.textContent = `
 @keyframes fcIn { from { opacity: 0; } }
 @keyframes fcOut { to { opacity: 0; } }
 #flow-cut video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-.fc-shot { position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease; }
+.fc-shot { position: absolute; inset: 0; opacity: 0; transition: opacity .3s ease; }
 .fc-shot.on { opacity: 1; }
 .fc-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.fc-shot.on .fc-move { animation: fcMove 1.6s ease-out both; }
-.fc-shot.on .fc-rise { animation: fcRise 1.5s ease-in both; }
-@keyframes fcMove { from { transform: scale(1.12); } to { transform: scale(1); } }
-@keyframes fcRise { from { transform: translateY(150px); } to { transform: translateY(-40px) scale(.5); } }
-.fc-move, .fc-rise { transform-origin: 50% 50%; transform-box: view-box; }
-.fc-bars::before, .fc-bars::after { content: ''; position: absolute; left: 0; right: 0; height: 11%; background: #000; z-index: 1; }
-.fc-bars::before { top: 0; } .fc-bars::after { bottom: 0; }
-.fc-cap { position: absolute; left: 6%; right: 6%; bottom: 15%; z-index: 2; margin: 0; text-align: center; font: 400 max(17px, calc(var(--u) * 34))/1.3 var(--display); letter-spacing: .04em; text-shadow: 0 2px 10px #000; text-wrap: balance; }
-.fc-tag { position: absolute; left: 2.2%; top: 2.6%; z-index: 3; font: 500 max(10px, calc(var(--u) * 13))/1 var(--body); letter-spacing: .1em; color: var(--dim); padding: .45em .8em; border: 1px dashed var(--rim); border-radius: .5em; }
-.fc-skip { position: absolute; right: 2.2%; bottom: 2.6%; z-index: 3; font: 500 max(11px, calc(var(--u) * 15))/1 var(--body); padding: .55em 1em; border: 0; border-radius: 999px; background: rgb(17 13 43 / .7); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer; }
-.fc-skip kbd { font: 500 .85em var(--num); opacity: .7; margin-left: .4em; }
+#flow-cut .o { stroke: #3b1c78; stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; }
+#flow-cut .pop, #flow-cut .rise, #flow-cut .bob, #flow-cut .spin, #flow-cut .tw { transform-box: fill-box; transform-origin: 50% 50%; }
+.fc-shot.on .pop { animation: fcPop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+.fc-shot.on .pop.d1 { animation-delay: .18s; } .fc-shot.on .pop.d2 { animation-delay: .34s; } .fc-shot.on .pop.d3 { animation-delay: .5s; }
+.fc-shot.on .bob { animation: fcBob 1.8s ease-in-out infinite alternate; }
+.fc-shot.on .rise { animation: fcRise 1.7s cubic-bezier(.5, 0, .7, .6) both; }
+.fc-shot.on .spin { animation: fcSpin 5s linear infinite; }
+.fc-shot.on .beam { animation: fcBeam .5s ease-out both; transform-box: fill-box; transform-origin: 50% 0; }
+#flow-cut .tw { animation: fcTw 1.3s ease-in-out infinite alternate; }
+#flow-cut .tw.b { animation-delay: .5s; } #flow-cut .tw.c { animation-delay: .9s; }
+@keyframes fcPop { from { transform: scale(0); } }
+@keyframes fcBob { from { transform: translateY(-7px); } to { transform: translateY(7px); } }
+@keyframes fcRise { from { transform: translateY(170px) rotate(-14deg); } to { transform: translateY(-70px) rotate(16deg) scale(.55); } }
+@keyframes fcSpin { to { transform: rotate(360deg); } }
+@keyframes fcBeam { from { transform: scaleY(0); opacity: 0; } }
+@keyframes fcTw { from { transform: scale(.55); opacity: .5; } to { transform: scale(1.1); opacity: 1; } }
+.fc-cap { position: absolute; left: 5%; right: 5%; bottom: 7.5%; z-index: 2; margin: 0; text-align: center; font: 400 max(18px, calc(var(--u) * 50))/1.2 var(--display); letter-spacing: .03em; color: #fff3c4; -webkit-text-stroke: .34em #3b1c78; paint-order: stroke fill; text-shadow: 0 .09em 0 #3b1c78; text-wrap: balance; }
+.fc-cap b { font-weight: 400; color: #ffc928; }
+.fc-shot.on .fc-cap { animation: fcCap .5s cubic-bezier(.3, 1.5, .5, 1) .25s both; }
+@keyframes fcCap { from { transform: translateY(40%) scale(.8); opacity: 0; } }
+.fc-skip { position: absolute; right: 2.4%; top: 3.6%; z-index: 3; font: 400 max(12px, calc(var(--u) * 20))/1 var(--display); padding: .6em 1.1em .7em; border: 0; border-radius: 999px; color: #653616; background: linear-gradient(#fff6dc, #f6dfae); box-shadow: 0 0 0 .16em #fff, 0 .28em 0 .16em #c9a25e, 0 .5em .7em rgb(18 12 84 / .45); cursor: pointer; }
+.fc-skip kbd { font: 400 .8em var(--num); opacity: .65; margin-left: .45em; }
 .touch .fc-skip kbd { display: none; }
 .fc-skip:focus-visible { outline: 3px solid var(--coin); outline-offset: 3px; }
-.fc-prog { position: absolute; left: 0; bottom: 0; z-index: 3; height: 3px; width: 100%; background: var(--alien); transform-origin: 0 50%; transform: scaleX(0); }
-#stage.port .fc-cap { bottom: 20%; font-size: max(17px, calc(var(--u) * 33)); }
-#stage.port .fc-tag, #stage.port .fc-skip { font-size: max(11px, calc(var(--u) * 19)); }
+.fc-dots { position: absolute; left: 0; right: 0; bottom: 2.6%; z-index: 3; display: flex; justify-content: center; gap: calc(var(--u) * 12); pointer-events: none; }
+.fc-dots i { width: calc(var(--u) * 21); height: calc(var(--u) * 21); background: #8f8cf5; clip-path: polygon(50% 0, 62% 35%, 100% 38%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 38%, 38% 35%); opacity: .55; transition: .25s; }
+.fc-dots i.on { background: #ffd23e; opacity: 1; transform: scale(1.35); }
+/* 竖屏：画是横的，整张缩进来放在中间偏上，上下垫深色；字幕挪到画的下面 */
+#stage.port #flow-cut { background: linear-gradient(#14124a, #2a2390); }
+#stage.port .fc-shot svg { inset: auto 0 auto 0; top: 16%; height: auto; aspect-ratio: 960 / 600; }
+#stage.port .fc-cap { bottom: auto; top: 58%; font-size: max(18px, calc(var(--u) * 40)); }
+#stage.port .fc-skip { font-size: max(12px, calc(var(--u) * 24)); top: 2.4%; }
 
 /* 合同：一张纸，不是卡片 */
 #flow-deal { position: fixed; inset: 0; z-index: 8; display: flex; overflow: auto; overscroll-behavior: contain; padding: 20px max(12px, env(safe-area-inset-right, 0px)) 30px max(12px, env(safe-area-inset-left, 0px)); background: rgb(8 6 24 / .66); animation: fcIn .3s ease-out both; }
@@ -191,7 +207,7 @@ html[lang="en"] .fd-stamp { font-size: 1.25em; letter-spacing: .08em; width: 11e
   .fd-alt { margin-top: 1.9em; }
   .fd-note { margin-left: .2em; }
 }
-@media (prefers-reduced-motion: reduce) { .fd-flag, .fd-stamp, .fd-hand, .fc-shot.on .fc-move, .fc-shot.on .fc-rise { animation: none; } .fd-hand { display: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-flag, .fd-stamp, .fd-hand, .fc-shot.on .pop, .fc-shot.on .bob, .fc-shot.on .rise, .fc-shot.on .spin, .fc-shot.on .beam, #flow-cut .tw, .fc-shot.on .fc-cap { animation: none; } .fd-hand { display: none; } }
 
 /* 签完以后的两个去处：下一关最大 */
 .flow-go { display: flex; flex-wrap: wrap; gap: .8em 1em; align-items: center; margin-top: .2em; }
@@ -447,14 +463,95 @@ function tutFrame() {
 
 /* ---------- 播片 ---------- */
 let cutSkip = null;
-const SHOTS = [
-  { cap: L('你是地球上手艺最好的工匠。', 'You are the finest artisan on Earth.'),
-    svg: `<g class="fc-move"><circle cx="480" cy="330" r="150" fill="#2f6fd0"/><path d="M398 262c34-30 78-18 92 8s-10 52-44 58-76-34-48-66zM520 372c26-12 62-2 66 22s-30 44-56 34-34-44-10-56z" fill="#4fae5a"/><circle cx="480" cy="330" r="150" fill="none" stroke="#9fd0ff" stroke-width="5" opacity=".5"/><path d="M468 206l10-34 12 34 34 10-34 12-12 34-10-34-34-12z" fill="#ffd35c"/></g>` },
-  { cap: L('所以，你被外星人绑走了。', 'So the aliens abducted you.'),
-    svg: `<path d="M420 190L330 600h300L540 190z" fill="#93e85a" opacity=".22"/><g class="fc-rise"><circle cx="480" cy="400" r="15" fill="#f4f0ff"/><path d="M480 415v48M480 428l-22 18M480 428l22-20M480 463l-16 34M480 463l16 34" stroke="#f4f0ff" stroke-width="8" stroke-linecap="round" fill="none"/></g><g class="fc-move"><ellipse cx="480" cy="150" rx="74" ry="50" fill="#9fd0ff" opacity=".55"/><ellipse cx="480" cy="178" rx="170" ry="40" fill="#5143a0"/><ellipse cx="480" cy="170" rx="170" ry="34" fill="#7a6ad0"/><circle cx="400" cy="178" r="8" fill="#ffd35c"/><circle cx="480" cy="186" r="8" fill="#ffd35c"/><circle cx="560" cy="178" r="8" fill="#ffd35c"/></g>` },
-  { cap: L('甲方只有一个需求：圆。', 'The Client wants one thing: round.'),
-    svg: `<g class="fc-move"><ellipse cx="480" cy="300" rx="250" ry="56" fill="none" stroke="#a9a1d6" stroke-width="10" opacity=".45" transform="rotate(-16 480 300)"/><circle cx="480" cy="300" r="140" fill="#93e85a"/><circle cx="480" cy="300" r="140" fill="none" stroke="#4f9c33" stroke-width="8"/><ellipse cx="432" cy="286" rx="26" ry="34" fill="#12202e"/><ellipse cx="528" cy="286" rx="26" ry="34" fill="#12202e"/><circle cx="440" cy="276" r="8" fill="#fff"/><circle cx="536" cy="276" r="8" fill="#fff"/><path d="M452 356q28 18 56 0" stroke="#2c5a1c" stroke-width="8" stroke-linecap="round" fill="none"/></g>` }
-];
+/* 三个镜头：地球上的工匠 → 被飞碟吸走 → 甲方只要圆。都是内联 SVG（960×600），各有自己的背景；动画在上面样式里（#flow-cut .pop / .bob / .rise…）。
+   字幕里 <b> 包着的词是金色的 */
+const SHOTS = (() => {
+  const DEFS = `<defs>
+    <radialGradient id="gEarth" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#9be4ff"/><stop offset=".6" stop-color="#4c9cf2"/><stop offset="1" stop-color="#3566d8"/></radialGradient>
+    <radialGradient id="gLime" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#e2ff7a"/><stop offset=".65" stop-color="#a6ec3a"/><stop offset="1" stop-color="#6fc522"/></radialGradient>
+    <radialGradient id="gBall" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffd98a"/><stop offset=".6" stop-color="#ff9d2e"/><stop offset="1" stop-color="#ee6f14"/></radialGradient>
+    <linearGradient id="gPurple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4b6ff"/><stop offset="1" stop-color="#8d5bf0"/></linearGradient>
+    <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff07a"/><stop offset="1" stop-color="#ffb21e"/></linearGradient>
+    <linearGradient id="gBeam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff9a8" stop-opacity=".95"/><stop offset="1" stop-color="#c8ff7a" stop-opacity=".15"/></linearGradient>
+    <radialGradient id="gGlow"><stop offset="0" stop-color="#fff6c9" stop-opacity=".55"/><stop offset="1" stop-color="#fff6c9" stop-opacity="0"/></radialGradient>
+    <clipPath id="cEarth"><circle cx="480" cy="262" r="138"/></clipPath><clipPath id="cBall"><circle cx="668" cy="290" r="72"/></clipPath>
+    <linearGradient id="b1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a66"/><stop offset=".55" stop-color="#2b55cc"/><stop offset="1" stop-color="#6fc3ff"/></linearGradient>
+    <linearGradient id="b2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#160c4a"/><stop offset=".6" stop-color="#4a2aa6"/><stop offset="1" stop-color="#9a62ea"/></linearGradient>
+    <radialGradient id="b3" cx="400" cy="262" r="640" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffc2e2"/><stop offset=".4" stop-color="#d568e8"/><stop offset="1" stop-color="#43209c"/></radialGradient>
+    <path id="star" d="M0-30 8.5-11 29-9 13.5 5 18 25 0 14.500-18 25-13.500 5-29-9-8.500-11Z"/>
+    <path id="spark" d="M0-20Q0 0 20 0 0 0 0 20 0 0-20 0 0 0 0-20Z"/>
+  </defs>`;
+  const star = (x, y, s, c, r) => `<g transform="translate(${x} ${y}) rotate(${r || 0}) scale(${s})"><g class="${c || ''}"><use href="#star" fill="#fff" stroke="#fff" stroke-width="14" stroke-linejoin="round"/><use href="#star" class="o" fill="url(#gGold)" style="stroke-width:5"/></g></g>`;
+  const spark = (x, y, s, c) => `<g transform="translate(${x} ${y}) scale(${s})"><use href="#spark" class="tw ${c || ''}" fill="#fff6c9"/></g>`;
+  const skyDots = n => Array.from({ length: 46 }, (_, i) => `<circle cx="${(i * 197 + n * 91) % 960}" cy="${(i * 113 + n * 57) % 440}" r="${1 + (i % 3) * .8}" fill="#fff" opacity="${.3 + (i % 4) * .15}"/>`).join('');
+  const rays = (cx, cy) => `<g class="spin" style="transform-origin:${cx}px ${cy}px;transform-box:view-box;animation-duration:40s">` + Array.from({ length: 12 }, (_, i) => { const a = i * Math.PI / 6, b = a + Math.PI / 12; return `<path d="M${cx} ${cy}L${cx + 1200 * Math.cos(a)} ${cy + 1200 * Math.sin(a)}L${cx + 1200 * Math.cos(b)} ${cy + 1200 * Math.sin(b)}Z" fill="#fff" opacity=".1"/>`; }).join('') + '</g>';
+  const BACK = [
+    `<rect width="960" height="600" fill="url(#b1)"/>${skyDots(1)}<g fill="#fff" opacity=".2"><ellipse cx="150" cy="590" rx="260" ry="90"/><ellipse cx="520" cy="620" rx="300" ry="90"/><ellipse cx="860" cy="580" rx="240" ry="100"/></g><g fill="#fff" opacity=".28"><ellipse cx="60" cy="620" rx="200" ry="70"/><ellipse cx="760" cy="630" rx="260" ry="70"/></g>`,
+    `<rect width="960" height="600" fill="url(#b2)"/>${skyDots(2)}<path d="M0 520q120-70 250-30t250-20 230 20 230-30v140H0Z" fill="#2c1a78"/><path d="M0 560q160-50 330-20t320-10 310-10v80H0Z" fill="#3a2494"/>`,
+    `<rect width="960" height="600" fill="url(#b3)"/>${rays(400, 262)}`
+  ];
+  const SHOTS = [
+    { cap: L('你是<b>地球</b>上手艺最好的工匠。', 'You are the finest artisan on <b>Earth</b>.'),
+      svg: `<circle cx="480" cy="262" r="250" fill="url(#gGlow)"/>
+        <g class="pop"><g class="bob">
+          <circle cx="480" cy="262" r="150" fill="#fff"/>
+          <circle cx="480" cy="262" r="138" fill="url(#gEarth)"/>
+          <g clip-path="url(#cEarth)"><path d="M372 190c40-44 104-30 118 6s-22 60-62 62-92-28-56-68zM520 300c36-20 96-8 100 26s-44 62-84 48-52-54-16-74zM350 318c22-8 44 6 42 28s-26 34-44 24-22-42 2-52zM560 150c22-10 50 0 60 20l-30 16c-18 4-40-22-30-36z" fill="#86e04f"/><path d="M372 190c40-44 104-30 118 6M520 300c36-20 96-8 100 26" fill="none" stroke="#c9f77a" stroke-width="8" stroke-linecap="round" opacity=".7"/></g>
+          <path d="M388 172a120 120 0 0 1 96-42" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" opacity=".75"/>
+          <circle cx="480" cy="262" r="138" fill="none" class="o"/>
+          <ellipse cx="440" cy="270" rx="15" ry="20" fill="#2a1750"/><ellipse cx="520" cy="270" rx="15" ry="20" fill="#2a1750"/><circle cx="445" cy="262" r="6" fill="#fff"/><circle cx="525" cy="262" r="6" fill="#fff"/>
+          <ellipse cx="410" cy="300" rx="16" ry="10" fill="#ff8fb0" opacity=".8"/><ellipse cx="550" cy="300" rx="16" ry="10" fill="#ff8fb0" opacity=".8"/>
+          <path d="M462 300q18 16 36 0" fill="none" stroke="#2a1750" stroke-width="7" stroke-linecap="round"/>
+        </g></g>
+        <g class="pop d2"><g transform="rotate(-24 640 170)"><rect x="628" y="150" width="18" height="96" rx="8" fill="#c98a4b" class="o" style="stroke-width:5"/><rect x="596" y="118" width="84" height="46" rx="12" fill="url(#gPurple)" class="o" style="stroke-width:5"/><path d="M608 130h40" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".7"/></g></g>
+        ${star(302, 150, 1.5, 'pop d1', -14)}${star(700, 330, .9, 'pop d3', 12)}${spark(250, 300, 1)}${spark(730, 120, .8, 'b')}${spark(650, 400, .6, 'c')}${spark(330, 400, .7, 'b')}` },
+    { cap: L('所以，你被外星人<b>绑走了</b>。', 'So the aliens <b>abducted</b> you.'),
+      svg: `<g class="beam"><path d="M420 190 310 560h340L540 190Z" fill="url(#gBeam)"/><path d="M420 190 310 560M540 190l110 370" stroke="#fff9a8" stroke-width="5" stroke-linecap="round" opacity=".6"/></g>
+        <g class="rise"><g>
+          <ellipse cx="480" cy="392" rx="40" ry="44" fill="#fff"/>
+          <ellipse cx="480" cy="392" rx="32" ry="36" fill="#ffe2b8" class="o" style="stroke-width:5"/>
+          <path d="M450 372q30-34 60 0" fill="#ffb21e" class="o" style="stroke-width:5"/>
+          <circle cx="468" cy="392" r="5.500" fill="#2a1750"/><circle cx="492" cy="392" r="5.500" fill="#2a1750"/><ellipse cx="480" cy="408" rx="6" ry="8" fill="#2a1750"/>
+          <path d="M450 404l-22-16M510 404l24-18M468 426l-8 22M492 426l8 22" stroke="#3b1c78" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <g transform="rotate(30 548 372)"><rect x="544" y="362" width="8" height="34" rx="4" fill="#c98a4b" stroke="#3b1c78" stroke-width="3"/><rect x="532" y="350" width="32" height="18" rx="5" fill="url(#gPurple)" stroke="#3b1c78" stroke-width="3"/></g>
+        </g></g>
+        <g class="pop"><g class="bob">
+          <ellipse cx="480" cy="160" rx="196" ry="74" fill="#fff"/><path d="M398 150a82 80 0 0 1 164 0Z" fill="#fff" stroke="#fff" stroke-width="16"/>
+          <path d="M398 150a82 80 0 0 1 164 0Z" fill="#bfeaff" class="o"/><path d="M424 118a60 58 0 0 1 44-36" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".85"/>
+          <circle cx="462" cy="122" r="7" fill="#2a1750"/><circle cx="498" cy="122" r="7" fill="#2a1750"/><path d="M468 138q12 9 24 0" fill="none" stroke="#2a1750" stroke-width="5" stroke-linecap="round"/><ellipse cx="480" cy="128" rx="34" ry="30" fill="url(#gLime)" opacity=".0"/>
+          <ellipse cx="480" cy="168" rx="184" ry="52" fill="url(#gPurple)" class="o"/>
+          <path d="M312 160q168-44 336 0" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+          <ellipse cx="480" cy="204" rx="92" ry="20" fill="#6a3fd0" class="o" style="stroke-width:5"/>
+          <g class="o" style="stroke-width:4" fill="url(#gGold)"><circle cx="350" cy="180" r="12"/><circle cx="414" cy="192" r="12"/><circle cx="546" cy="192" r="12"/><circle cx="610" cy="180" r="12"/></g>
+        </g></g>
+        ${star(236, 150, 1.1, 'pop d2', -18)}${star(742, 250, .8, 'pop d3', 14)}${spark(200, 330, .9)}${spark(760, 110, .8, 'b')}${spark(690, 420, .6, 'c')}` },
+    { cap: L('甲方只有一个需求：<b>圆</b>。', 'The Client wants one thing: <b>round</b>.'),
+      svg: `<circle cx="400" cy="262" r="250" fill="url(#gGlow)"/>
+        <g class="pop"><path d="M400 262 150 190l110 70-130 60 150 6-60 110 120-70 60 120 60-120 120 70-60-110 150-6-130-60 110-70Z" fill="#ff5fa5" stroke="#fff" stroke-width="10" stroke-linejoin="round" opacity=".95" transform="translate(0 6)"/></g>
+        <g class="pop d1"><g class="bob">
+          <g class="o" fill="#b6f03c"><path d="M352 150q-12-50-30-60" fill="none" stroke-width="16"/><path d="M448 150q12-50 30-60" fill="none" stroke-width="16"/><circle cx="318" cy="84" r="20"/><circle cx="482" cy="84" r="20"/></g>
+          <path d="M352 150q-12-50-30-60M448 150q12-50 30-60" fill="none" stroke="#b6f03c" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="400" cy="262" r="134" fill="#fff"/>
+          <circle cx="400" cy="262" r="122" fill="url(#gLime)" class="o"/>
+          <path d="M286 220a122 122 0 0 1 228 0q-114-44-228 0Z" fill="url(#gPurple)" class="o"/>
+          <path d="M322 172a100 100 0 0 1 70-30" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" opacity=".75"/>
+          <rect x="262" y="212" width="34" height="78" rx="17" fill="url(#gPurple)" class="o" style="stroke-width:6"/><rect x="504" y="212" width="34" height="78" rx="17" fill="url(#gPurple)" class="o" style="stroke-width:6"/>
+          <ellipse cx="356" cy="268" rx="27" ry="31" fill="#2a1750"/><ellipse cx="444" cy="268" rx="27" ry="31" fill="#2a1750"/>
+          <g transform="translate(358 266) scale(.85)"><use href="#spark" fill="#ffe84a"/></g><g transform="translate(446 266) scale(.85)"><use href="#spark" fill="#ffe84a"/></g>
+          <circle cx="343" cy="252" r="6" fill="#fff"/><circle cx="431" cy="252" r="6" fill="#fff"/>
+          <ellipse cx="316" cy="310" rx="18" ry="11" fill="#ff8fb0" opacity=".85"/><ellipse cx="484" cy="310" rx="18" ry="11" fill="#ff8fb0" opacity=".85"/>
+          <path d="M384 312q16 34 32 0Z" fill="#ff6fa0" class="o" style="stroke-width:5"/>
+        </g></g>
+        <g class="pop d2"><g class="bob" style="animation-delay:.4s">
+          <circle cx="668" cy="290" r="84" fill="#fff"/><circle cx="668" cy="290" r="74" fill="url(#gBall)" class="o"/>
+          <g clip-path="url(#cBall)" fill="none" stroke="#ffd98a" stroke-width="8" opacity=".75"><path d="M590 270q78 26 156 0M592 310q76 24 152 0M604 344q64 18 128 0"/></g>
+          <path d="M618 248a62 62 0 0 1 44-28" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".85"/>
+          <g class="spin" style="transform-origin:668px 290px;transform-box:view-box"><circle cx="668" cy="290" r="100" fill="none" stroke="#fff6c9" stroke-width="5" stroke-dasharray="4 22" stroke-linecap="round"/></g>
+        </g></g>
+        ${star(776, 168, 1.1, 'pop d3', 14)}${star(180, 330, .8, 'pop d3', -16)}${spark(214, 140, .9)}${spark(790, 400, .7, 'b')}${spark(590, 130, .6, 'c')}` }
+  ];
+  return SHOTS.map((s, i) => ({ cap: s.cap, svg: DEFS + BACK[i] + s.svg }));
+})();
 function playCutscene(done) {
   phase = 'cutscene';
   const el = document.createElement('div'); el.id = 'flow-cut'; el.setAttribute('role', 'img'); el.setAttribute('aria-label', L('开场动画', 'Opening cutscene'));
@@ -472,12 +569,11 @@ function playCutscene(done) {
   el.querySelector('.fc-skip').addEventListener('click', cutSkip);
   const placeholder = () => {
     if (video) { video.remove(); video = null; }
-    const d = clamp(CONFIG.placeholderMs, 900, 5000) / SHOTS.length;
-    el.classList.add('fc-bars');
-    el.insertAdjacentHTML('afterbegin', SHOTS.map(s => `<div class="fc-shot"><svg viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="960" height="600" fill="#0a0722"/><g transform="translate(0 -44)">${s.svg}</g></svg><p class="fc-cap">${s.cap}</p></div>`).join('') + `<span class="fc-tag">${L('播片占位', 'Cutscene placeholder')}</span><i class="fc-prog"></i>`);
+    const d = clamp(CONFIG.placeholderMs, 900, 9000) / SHOTS.length;
+    el.insertAdjacentHTML('afterbegin', SHOTS.map(s => `<div class="fc-shot"><svg viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.svg}</svg><p class="fc-cap">${s.cap}</p></div>`).join('') + `<div class="fc-dots">${SHOTS.map(() => '<i></i>').join('')}</div>`);
     const shots = el.querySelectorAll('.fc-shot');
-    shots.forEach((s, i) => timers.push(setTimeout(() => { shots.forEach(o => o.classList.toggle('on', o === s)); S('cut', i); }, i * d + 20)));   // 每个镜头一小段声音（换成真视频就用视频自己的声音）
-    try { el.querySelector('.fc-prog').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: d * SHOTS.length, fill: 'forwards' }); } catch (e) {}
+    const dots = el.querySelectorAll('.fc-dots i');
+    shots.forEach((s, i) => timers.push(setTimeout(() => { shots.forEach(o => o.classList.toggle('on', o === s)); dots.forEach((o, k) => o.classList.toggle('on', k === i)); S('cut', i); }, i * d + 20)));   // 每个镜头一小段声音（换成真视频就用视频自己的声音）
     timers.push(setTimeout(end, d * SHOTS.length));
   };
   if (!CONFIG.video) { placeholder(); return; }
