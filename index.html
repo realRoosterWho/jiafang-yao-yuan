@@ -886,6 +886,7 @@ const ADV_IDS = ADV_LIST.map(a => a[0]);
 /* 无尽模式：全部物品有放回地抽；每交一单，甲方耐心（限时）× 0.9（第 10 单只剩四成，交满 10 单就算高手），最低到原来的一成（第 23 单到底，多数东西只剩 7 到 16 秒），砸一次就结束。
    unlock：冒险模式前几单都交付过就解锁（不用等通关：评委和大多数玩家打不完 22 单，排行榜和图鉴里一半的东西都在无尽模式里） */
 const ENDLESS = { decay: .9, floor: .1, minTime: 5, unlock: 5 };
+const ADV_EASE = { target: .02, time: 1.15 };   // 冒险模式的放宽：达标线 -0.02、限时 ×1.15
 /* 超时没到一星：可以求甲方再宽限一次，多给 sec 秒，这单酬劳 × pay（剩余耐心的加成也不给了）。每次开工只能求一次；无尽模式不能求（失败一次就收工的规则不变） */
 const EXTEND = { sec: 20, pay: .7 };
 const endlessPace = n => Math.max(ENDLESS.floor, Math.pow(ENDLESS.decay, n));
@@ -1838,7 +1839,8 @@ const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 function pips(v) { const k = clamp(Math.round(v), 1, 5); return '●'.repeat(k) + '○'.repeat(5 - k); }
 function setupRound() {
   const id = ORDER[G.idx], m = MATS[id];
-  G.mat = m; G.body = makeBody(id); G.target = Math.min(.95, m.target + G.loop * .04); G.timeLeft = G.timeMax = G.mode === 'endless' ? Math.max(ENDLESS.minTime, Math.round(m.time * endlessPace(G.done))) : m.time; G.hp = m.hp;
+  G.mat = m; G.body = makeBody(id); const easy = G.mode === 'main' ? ADV_EASE : { target: 0, time: 1 };   // 冒险模式松一点：达标线低一点、限时多一点；无尽和订单簿不变
+  G.target = Math.min(.95, Math.round((m.target - easy.target + G.loop * .04) * 100) / 100); G.timeLeft = G.timeMax = G.mode === 'endless' ? Math.max(ENDLESS.minTime, Math.round(m.time * endlessPace(G.done))) : Math.round(m.time * easy.time); G.hp = m.hp;
   G.stats = { good: 0, over: 0, light: 0, held: 0 }; G.acc = { good: 0, over: 0, light: 0 }; G.newAch = []; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
   G.lines = starLines(G.target, G.round); G.tier = 0; G.cele = null; G.resultT = 0; G.res = null;
   G.round0 = G.peak = G.round; G.lastUp = ''; G.readyBefore = 0; G.nudged = false; G.ext = 0; deliverBtn.classList.remove('nudge');   // 成就用：接单时的圆度、本单最高圆度、最后一次升星是砸的还是塌的
