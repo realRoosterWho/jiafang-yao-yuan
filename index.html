@@ -409,6 +409,7 @@ body {
 /* flow.js 给新玩家放在封面上的换语言按钮：换成一样的皮；这时候我们自己的那个和四颗小按钮都收起来（新玩家先看开场、签合同） */
 #stage #flow-lang { font-family: var(--display); font-weight: 400; line-height: 1; }
 #stage:not(.seen):has(#flow-lang) .start-more, #stage:not(.seen):has(#flow-lang) .start-lang { display: none; }
+#stage:not(.seen):not(.port):has(#flow-lang) .start-main { top: 50%; translate: 0 -50%; }   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
 #stage.seen #flow-lang { display: none; }   /* 这一次打开以后已经离开过开始界面（.seen，showCover 第二次起加上）：开场流程走过了，按钮全给，换语言用我们自己的 */
 /* 封面上的声音按钮跟效果图一样大一号，往里收一点 */
 #stage.cover { --ib: max(44px, calc(var(--u) * 70)); }
