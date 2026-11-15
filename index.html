@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=name8" defer></script>
+<script src="flow.js?v=dial9" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
@@ -198,6 +198,7 @@ body {
 .rnd b { font: 400 1.5em/1 var(--display); color: var(--alien); margin-left: .2em; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: .4em; }
 .chip { padding: .2em .7em; border-radius: 999px; font-size: .85em; background: var(--hull-hi); color: var(--coin); box-shadow: inset 0 0 0 1.5px rgb(255 211 92 / .45); }
+.eyebrow .chip { font-size: .9em; letter-spacing: .04em; vertical-align: .05em; }
 .chip.gold { background: var(--coin); color: var(--space); box-shadow: none; font-weight: 700; animation: chippop .5s .9s cubic-bezier(.3, 1.8, .5, 1) both; }
 @keyframes chippop { from { transform: scale(0); } }
 .spec .sum.done { animation: sumpop .3s ease-out; transform-origin: right center; }
@@ -2479,25 +2480,12 @@ function showMenu(msg) {
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
-  const lines = G.lines.map((v, k) => `<span class="nw">${'★'.repeat(k + 1)} <strong>${pct(v)}</strong></span>`).join(' · ');
+  /* 精简过：只留第几单、标题、一句描述、时间（做过的再加最高成绩）。力度条、特性、能失手几次这些都不写，关卡里甲方会说、玩家自己摸 */
   setCard(`
-    <p class="eyebrow">${orderTag()}${G.mode === 'endless' ? '' : ' · ' + CHAPS[chapAt(G.idx)].name}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime round ' + G.loop) : ''}</p>
-    ${best ? '' : `<p class="chips"><span class="chip gold">${L('新物品', 'New item')}</span></p>`}
+    <p class="eyebrow">${orderTag()}${G.loop ? L(' · 加班第 ' + G.loop + ' 轮', ' · Overtime ' + G.loop) : ''}${best ? '' : ` <span class="chip gold">${L('新', 'New')}</span>`}</p>
     <h2>${L(`把这${m.unit}${m.name}弄圆`, `Make this ${lc(m.name)} round`)}</h2>
     <p>${m.blurb}</p>
-    <dl class="spec">
-      <dt>${m.core ? (m.fill ? L('空的那面', 'Hollow') : L('外层', 'Shell')) : L('力度', 'Force')}</dt><dd><div class="window" role="img" aria-label="${L(`力度 ${m.hard} 到 ${m.brittle} 之间有效`, `Works between force ${m.hard} and ${m.brittle}`)}"><i class="w-light" style="width:${m.hard}%"></i><i class="w-ok" style="width:${m.brittle - m.hard}%"></i><i class="w-break" style="width:${100 - m.brittle}%"></i></div></dd>
-      ${m.core ? `<dt>${L(m.core.label[0], m.core.label[1])}</dt><dd><div class="window" role="img" aria-label="${L(`${m.fill ? '有' + m.core.label[0] + '垫着' : '里面那层'}：力度 ${m.core.hard} 到 ${m.core.brittle} 之间有效`, `${m.fill ? 'Backed by ' + lc(m.core.label[1]) : 'Inner layer'}: works between force ${m.core.hard} and ${m.core.brittle}`)}"><i class="w-light" style="width:${m.core.hard}%"></i><i class="w-ok" style="width:${m.core.brittle - m.core.hard}%"></i><i class="w-break" style="width:${100 - m.core.brittle}%"></i></div></dd>` : ''}
-      ${m.harden ? `<dt>${L('越砸越硬', 'Hardens')}</dt><dd>${L(`每砸好一下，下限 +${m.harden}`, `Each good hit: floor +${m.harden}`)}</dd>` : ''}
-      ${m.sag ? `<dt>${L('放着会塌', 'Slumps')}</dt><dd>${L('朝下的那面会被压平', 'The side facing down flattens')}</dd>` : ''}
-      ${m.warm ? `<dt>${L('拎着会软', 'Softens')}</dt><dd>${m.warm.hot ? L('焐软好砸，焐过头一碰就坏', 'Warm is easier; too hot breaks') : L('越拎越软，一下砸得越多', 'Softer the longer you hold it')}</dd>` : ''}
-      ${m.fill ? `<dt>${L('里面会流', 'Contents flow')}</dt><dd>${L('翻过来要等它流到底', 'Wait for it to settle after a flip')}</dd>` : ''}
-      ${m.hot ? `<dt>${L('烫手', 'Hot')}</dt><dd>${L(`最多拎 ${m.hot} 秒`, `Hold ${m.hot} s max`)}</dd>` : ''}
-      <dt>${L('能失手', 'Slips')}</dt><dd>${m.flee ? L(`急 ${m.hp - 1} 次，再急就跑`, `${m.hp - 1}, then they run`) : m.floor ? L(`地板能裂 ${m.hp - 1} 次`, `Floor survives ${m.hp - 1} cracks`) : m.brittle >= 100 ? L('砸不坏', 'Unbreakable') : m.hp > 1 ? L(`${m.hp - 1} 次`, `${m.hp - 1}`) : L('<strong>0 次</strong>', '<strong>None</strong>')}</dd>
-    </dl>
-    <p>${lines}</p>
-    <p class="note">${L('一星就能交货，星越多酬劳越高', 'One star delivers; more stars, more pay')} · <strong>${G.timeMax} ${L('秒', 's')}</strong>${G.timeMax < m.time ? L(`（甲方的耐心只剩平时的 ${Math.round(G.timeMax / m.time * 100)}%）`, ` (the Client has ${Math.round(G.timeMax / m.time * 100)}% of the usual patience)`) : ''}${best ? ` · ${L('最高', 'Best')} <span class="stars">${starStr(got)}</span> <strong>◎ ${best}</strong>` : ''}</p>
-    ${G.mode === 'endless' && !G.done ? `<p class="note">${L(`无尽模式：${ORDER.length} 样东西随机抽，交一单，甲方的耐心就短一截。失败一次就收工，按这一轮的总酬劳上排行榜。`, `Endless: random picks from all ${ORDER.length} items, and the Client's patience shrinks after every order. One failure ends the run; the run's total pay goes on the leaderboard.`)}</p>` : ''}
+    <p class="note"><strong>${G.timeMax} ${L('秒', 's')}</strong>${best ? ` · ${L('最高', 'Best')} <span class="stars">${starStr(got)}</span> <strong>◎ ${best}</strong>` : ''}${G.mode === 'endless' && !G.done ? L(' · 失败一次就收工', ' · One failure ends the run') : ''}</p>
     <div class="row"><button class="btn" type="button" data-act="go">${L('接单', 'Accept')}</button><button class="btn ghost" type="button" data-act="home">${G.mode === 'endless' && G.done ? L('收工结算', 'Clock out') : L('回首页', 'Home')}</button></div>`);
 }
 function computePay() {
@@ -2777,18 +2765,18 @@ function tryGrab() {
 function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); if (G.state === 'play') sfx.letgo(); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
 /* 第一根手指拎材料；拎着的时候第二根手指落在哪，哪里就出一根横向的摇杆（只有左右一个轴）。
    位置控制：手指挪多远材料转多少（见 joyMove）；钮被限制在槽里，推出槽外槽跟着走。
-   往右推 = 逆时针、往左推 = 顺时针（JOY_DIR = -1；试玩反馈说跟 D 键同向的那种是反的，改成 1 就回去）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
+   方向像拨轮子：手指落在材料中心下面，往右拨 = 逆时针（JOY_DIR = -1，试玩反馈定的）；落在中心上面就反过来，往右拨 = 顺时针（JOY.sg 记这一下按在哪边）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
    尺寸按 CSS 像素算（槽的半长 ≈ 两个拇指宽），画的时候换成画面单位，所以不同屏幕上手感一样 */
-const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
+const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0, sg: -1 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
 const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
-function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.off = 0; JOY.dir = 0; JOY.tm = -9; JOY.t0 = G.time; sfx.joy(); }
+function joyStart(e) { const p = joyAt(e), b0 = G.body; JOY.sg = b0 && p.y < b0.y ? -JOY_DIR : JOY_DIR; JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.off = 0; JOY.dir = 0; JOY.tm = -9; JOY.t0 = G.time; sfx.joy(); }
 /* 按距离转：手指横着挪多少，材料就转多少（JOY_GAIN 弧度 / CSS 像素，挪满半个槽 ≈ 45°），手指停材料就停；
    推出槽外时槽跟着手指走，所以一直往一边拖能一直转 */
 const JOY_GAIN = (Math.PI / 4) / JOY_R;
 function joyMove(e) {
   const x = joyAt(e).x, dx = x - JOY.x; JOY.x = x;
-  const b = G.body; if (b && b.held && rotId !== null) b.userRot += JOY_DIR * JOY_GAIN * dx / JOY.s;
+  const b = G.body; if (b && b.held && rotId !== null) b.userRot += JOY.sg * JOY_GAIN * dx / JOY.s;
   JOY.off += dx / JOY.s; if (Math.abs(dx) > .01) { JOY.dir = Math.sign(dx); JOY.tm = G.time; }   // off：拨过的总距离（CSS 像素，刻度跟着滑）；dir / tm：最近往哪边拨、什么时候
 }
 /* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
@@ -4251,9 +4239,18 @@ function drawGauge() {
 const TIPS = EN
   ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger anywhere: swipe ← → to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
   : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指在空白处左右拨，就能转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
-/* 触屏拎着材料、还没出摇杆时的提示：另一根手指按下去就是摇杆。摇杆出来以后它自己会说往哪推转哪边，这条就不画了 */
+/* 卡住了才给操作提示（底下那行轮换提示、拎着时「另一根手指拨」）：接单后 STUCK_IDLE 秒还没拎起来，
+   或者开拎以后 STUCK_FLAT 秒圆度没涨过半个点。换一单（新的 body）、第一次拎起来都重新计 */
+const STUCK_IDLE = 5, STUCK_FLAT = 12;
+function stuck() {
+  if (G.state !== 'play' || !G.body) return false;
+  if (G.hintKey !== G.body || G.hintGo !== G.started) { G.hintKey = G.body; G.hintGo = G.started; G.hintAt = G.time; G.hintBest = G.round; }
+  if (G.round > G.hintBest + .005) { G.hintBest = G.round; G.hintAt = G.time; }
+  return G.time - G.hintAt > (G.started ? STUCK_FLAT : STUCK_IDLE);
+}
+/* 触屏拎着材料、还没出摇杆、又卡住了时的提示：另一根手指按下去就是摇杆。摇杆出来以后它自己会说往哪推转哪边，这条就不画了 */
 function drawRotHint() {
-  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor' || rotId !== null) return;   // 新手关（flow.js）自己画第二根手指的提示
+  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor' || rotId !== null || !stuck()) return;   // 新手关（flow.js）自己画第二根手指的提示
   const x = PORT ? midX() : 440, y = PORT ? 30 : 136, fs = PORT ? 18 : 15;   // 横屏：让到目标栏下面
   const txt = L('另一根手指在空白处左右拨，就能转', 'Second finger on empty space: swipe ← → to turn');
   ctx.font = `700 ${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -4293,12 +4290,13 @@ function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住
   const pop = clamp((G.time - JOY.t0) / .12, 0, 1);
   ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.translate(-CAMX, TOP);
   drawJoyAt(JOY.x, JOY.y, JOY.off, JOY.s * (.85 + .15 * pop), .55 + .4 * pop);
-  drawTurnArc(b, JOY.dir * JOY_DIR, clamp(1 - (G.time - JOY.tm) / .6, 0, 1) * .9);
+  drawTurnArc(b, JOY.dir * JOY.sg, clamp(1 - (G.time - JOY.tm) / .6, 0, 1) * .9);
 }
 /* 底下那条轮换的提示：素材包的紫色药丸（instruction_hint）。电脑上前面带鼠标 / 按键图标；
    手机竖屏排在左下角两个图标按钮的右边，放不下就折成两行 */
 function drawHints() {
   if (G.state !== 'play' || G.tutUI || (!PORT && toastInPlay())) return;   // 新手关里不放底下这行轮换的提示
+  if (!stuck()) return;   // 正式关卡里只有卡住了才放
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
   const old = G.idx >= 4 || G.mode === 'endless'; if (old && !G.started) return;   // TIPS[0] only for the first four orders
   const i = !G.started ? 0 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];
@@ -4509,7 +4507,7 @@ function sim(id, t, hits, aimErr) {
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, snd: SNDAPI, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
 window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, kit, sfx, audioInit, sndHush, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
-  joyDraw: drawJoyAt, turnArc: drawTurnArc, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x: JOY.x, y: JOY.y, off: JOY.off, s: JOY.s, dir: G.time - JOY.tm < .25 ? JOY.dir : 0 } : null; } };
+  joyDraw: drawJoyAt, turnArc: drawTurnArc, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x: JOY.x, y: JOY.y, off: JOY.off, s: JOY.s, sg: JOY.sg, dir: G.time - JOY.tm < .25 ? JOY.dir : 0 } : null; } };
 
 function boot(data) {
   const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);

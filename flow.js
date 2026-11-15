@@ -436,7 +436,7 @@ function drawHints(b, g, ready) {
   if (!ready && b.held && !high) lightRise(c, b, t);              // ① 拎着还没过线：拎到这儿
   if (!ready && b.held && aligned && high) lightDrop(c, b, t);     // ③ 拎高了也对准了：松手让它掉
   if (TOUCH && !ready && high && !aligned) {   // ② 手机：第二根手指还没按就画虚手指拨的示范；按下了拨反了就在手指旁指方向
-    const joy = X.joy, push = (g.err > 0 ? 1 : -1) * (X.JOY_DIR || 1);   // 凸起要顺时针转（err > 0）手指就往 JOY_DIR 那边拨
+    const joy = X.joy, push = (g.err > 0 ? 1 : -1) * ((joy && joy.sg) || X.JOY_DIR || 1);   // 凸起要顺时针转（err > 0）手指往哪拨：看手指按在石头上面还是下面（joy.sg），示范的虚手指在下面（JOY_DIR）
     if (joy) joyNudge(c, v, joy, push, t); else ghostJoy(c, v, b, push, t);
   }
   if (!TOUCH && b.held && !ready && X.kit) {   // 电脑：石头两边贴新界面的 A / D 键图标，该按的那个一跳一跳，正在按的压下去
