@@ -26,7 +26,26 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=name1" defer></script>
+<script src="flow.js?v=name8" defer></script>
+<script>
+/* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
+   打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
+   不一样、而且玩家还停在开始界面，就换个网址参数刷新一次拿新版；已经在玩就不打断，下次打开再换。一分钟内最多刷一次，免得来回刷 */
+(() => {
+  if (location.protocol === 'file:' || !window.fetch) return;
+  const el = document.querySelector('script[src*="flow.js?v="]'), cur = el ? el.getAttribute('src') : '';
+  if (!cur) return;
+  fetch(location.pathname, { cache: 'no-cache', credentials: 'same-origin' }).then(r => r.ok ? r.text() : '').then(t => {
+    const m = t.match(/flow\.js\?v=[\w-]+/); if (!m || cur.indexOf(m[0]) >= 0) return;
+    const Y = window.__yuan, F = window.__yuanFlowDebug;
+    if ((Y && Y.G && Y.G.state !== 'cover') || (F && F.phase !== 'idle')) return;   // 已经离开开始界面：不打断
+    let last = 0; try { last = +sessionStorage.getItem('yuan.fresh') || 0; } catch (e) {}
+    if (Date.now() - last < 60000) return;
+    try { sessionStorage.setItem('yuan.fresh', String(Date.now())); } catch (e) {}
+    const u = new URL(location.href); u.searchParams.set('_v', m[0].split('=')[1]); location.replace(u.href);
+  }).catch(() => {});
+})();
+</script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -2207,10 +2226,10 @@ function whoRow() {
   if (!CLOUD) return '';
   if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字 / 用访客玩', 'Switch name / play as guest')}</button></p>`;
   return `<form class="who" data-who autocomplete="off">
-      <label class="note" for="who-name">${L('起个名字存档（可不填）：', 'Name to save progress (optional):')}</label>
+      <label class="note" for="who-name">${L('起个名字存档（可不填）', 'Name to save (optional)')}</label>
       <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('你的名字', 'Your name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('存档', 'Save')}</button></span>
       ${WHO.err ? `<span class="note err" role="alert">${WHO.err}</span>` : ''}
-      <span class="note">${L('起新名字会从头开始；输以前用过的名字就接着那份进度。', 'A new name starts fresh; a name you used before picks up where it left off.')}${Object.keys(SAVE.best).length || achGot() ? ` <button class="link" type="button" data-act="wipe">${L('访客进度清空，从头开始', 'Wipe guest progress and start over')}</button>` : ''}</span>
+      <span class="note">${L('输以前用过的名字就接着玩。', 'Use an old name to pick up where you left off.')}${Object.keys(SAVE.best).length || achGot() ? ` <button class="link" type="button" data-act="wipe">${L('访客进度清空，从头开始', 'Wipe guest progress and start over')}</button>` : ''}</span>
     </form>`;
 }
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -2444,19 +2463,19 @@ function showMenu(msg) {
   G.mode = 'main'; G.end = ADV_N; G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; G.slips = 0; setupRound(); G.state = 'menu';
   setCard(`
     <div class="hero"><div>
-      <p class="eyebrow">${L('玩法', 'How to play')}</p>
-      <h1>${L('怎么把东西弄圆', 'How to make it round')}</h1>
+      <p class="eyebrow">${L('玩法 · 存档', 'Rules & save')}</p>
+      <h1>${L('怎么玩', 'How to play')}</h1>
     </div><button class="alien-tap" type="button" data-act="alien" aria-label="${L('外星甲方', 'The alien Client')}">${ALIEN_SVG}<i></i></button></div>
-    <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`冒险模式 ${ADV_N} 单：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到。做完前 ${ENDLESS.unlock} 单就能玩无尽模式：${ORDER.length} 样东西随机来，甲方越来越没耐心。`, ` Adventure mode is ${ADV_N} orders: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. Finish the first ${ENDLESS.unlock} to unlock endless mode: ${ORDER.length} kinds of things at random, and the Client gets less patient every order.`)}</p>
+    <p>${L('东西弄圆就交货。弄不圆，<strong>被弄圆的是你</strong>。', 'Make it round, then deliver. Fail, and <strong>you get made round</strong>.')}</p>
     <ul class="how">
-      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来；另一根手指在空白处左右拨，就能转角度。', '<strong>Lift.</strong> One finger holds it up; swipe a second finger left or right on empty space to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
-      <li><b>${L('砸', '2')}</b><span>${L('举高松手，让它自己掉下去；拿着往下砸是进阶手法。右边力度表绿区有效，红区会碎。', '<strong>Drop.</strong> Lift it high and let go; slamming while holding is the advanced move. Green on the gauge works, red breaks.')}</span></li>
-      <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一指拎起，另一指左右拨来转向', '<strong>Lift</strong> with one finger, swipe another to turn') : L('按住拎起，A / D 转向', '<strong>Hold</strong> to lift, A / D to turn')}</span></li>
+      <li><b>${L('砸', '2')}</b><span>${L('举高松手。力度绿区有效，红区会碎', '<strong>Drop</strong> it from high. Green works, red breaks')}</span></li>
+      <li><b>${L('磨', '3')}</b><span>${L('凸出来的角转到朝下再松手', '<strong>Turn</strong> bumps face-down before you drop')}</span></li>
     </ul>
     <div class="row"><button class="btn" type="button" data-act="home">${L('返回', 'Back')}</button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}</div>
     ${msg ? `<p class="note" role="status">${msg}</p>` : ''}
     ${whoRow()}
-    ${CLOUD ? `<p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级、无尽模式纪录和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars, endless record and achievements.')}</p>` : ''}`);
+    ${CLOUD ? `<p class="note">${L('匿名记录成绩，用来调难度。', 'Anonymous stats help tune difficulty.')}</p>` : ''}`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
