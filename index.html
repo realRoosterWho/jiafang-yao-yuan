@@ -402,6 +402,11 @@ body {
 #stage.port #startui .start-more .btn { width: calc(50% - var(--u) * 6); padding-left: .4em; padding-right: .4em; font-size: max(13px, calc(var(--u) * 25)); }
 #stage.port #startui .start-lang, #stage.port #flow-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 14); font-size: max(13px, calc(var(--u) * 24)); }
 #stage.cover.port #mute { left: calc(var(--u) * 8); bottom: calc(var(--u) * 10); }
+/* 竖着拿的平板（.short，比手机矮一截）：大按钮和下面四颗都小一号、挨紧一点，不然最后一排会压到右下角的换语言 */
+#stage.port.short .start-main { top: 53%; gap: calc(var(--u) * 11); }
+#stage.port.short #startui .start-go { font-size: max(18px, calc(var(--u) * 31)); }
+#stage.port.short .start-more { gap: calc(var(--u) * 9) calc(var(--u) * 10); }
+#stage.port.short #startui .start-more .btn { font-size: max(13px, calc(var(--u) * 21)); }
 #mute:hover, #replay:hover, #home:hover { transform: translateY(-6%) scale(1.08); filter: brightness(1.07); color: transparent; }
 #mute:active, #replay:active, #home:active { transform: translateY(4%) scale(.93); filter: brightness(.95); }
 /* 电脑上：图标按钮右下角挂一个小键帽，写着快捷键。触屏没有键盘，不显示（上面 .touch 那条规则管着） */
@@ -1274,10 +1279,12 @@ function stepBody(b, dt) {
     // 手握：角度和位置都跟着手走，材料越沉跟得越慢
     b.w = clamp((b.targetA + b.userRot - b.a) * 16, -14, 14); b.a += b.w * dt;
     const c = Math.cos(b.a), s = Math.sin(b.a);
-    b.lift = (b.lift || 0) + ((b.liftTo || 0) - (b.lift || 0)) * Math.min(1, dt * 9);
-    const fol = TOUCH ? FOLLOW_T : FOLLOW;
+    // 手指离屏幕顶不到 170 时，料挂在手指下面的那段距离跟着缩（最少留 45%，料的上沿大约贴着屏幕顶，不会整个顶出去）：不然挂着的那段把能拎的高度吃掉了
+    const hangK = b.touchGrab ? clamp((P.y - (6 - TOP)) / 170, .45, 1) : 1;
+    b.lift = (b.lift || 0) + ((b.liftTo || 0) * hangK - (b.lift || 0)) * Math.min(1, dt * 9);
+    const fol = b.touchGrab ? FOLLOW_T : FOLLOW;
     let dvx = (P.x - (b.gx * c - b.gy * s) - b.x) * fol, dvy = (P.y - b.lift - (b.gx * s + b.gy * c) - b.y) * fol;
-    if (!TOUCH) {
+    if (!b.touchGrab) {
       const sp = Math.hypot(dvx, dvy); if (sp > VMAX) { dvx *= VMAX / sp; dvy *= VMAX / sp; }
       let ax = dvx - b.vx, ay = dvy - b.vy; const al = Math.hypot(ax, ay), mx = m.accel * dt;
       if (al > mx) { ax *= mx / al; ay *= mx / al; }
@@ -2436,7 +2443,8 @@ muteBtn.addEventListener('click', e => {
 /* ---------- 输入 ---------- */
 function setPointer(e) {
   const rc = cv.getBoundingClientRect(); if (!rc.width) return;
-  P.k = VW / rc.width; P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6, FLOOR + 420);
+  P.k = VW / rc.width; P.x = (e.clientX - rc.left) * VW / rc.width + CAMX; P.y = clamp((e.clientY - rc.top) * VH / rc.height - TOP, 6 - TOP, FLOOR + 420);   // 竖屏上手指可以一直拎到屏幕最上面（顶栏那块也算），砸得更狠
+  if (e.pointerType) P.touch = e.pointerType === 'touch' || e.pointerType === 'pen';   // 这一下是手指还是鼠标：平板接了触控板、带触屏的电脑也按实际的来
 }
 function toLocal(b, px, py, slop = 14) {
   const dx = px - b.x, dy = py - b.y, c = Math.cos(b.a), s = Math.sin(b.a);
@@ -2448,10 +2456,11 @@ function toLocal(b, px, py, slop = 14) {
 }
 function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
-  const h = toLocal(b, P.x, P.y, TOUCH ? 30 * P.k : 14); if (!h.inside) return false;   // 触屏手指粗，料边外 30 像素内都算抓到
-  b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
+  const tg = P.touch == null ? TOUCH : P.touch;   // 这一下是不是手指（平板接触控板、触屏电脑都可能混着来）
+  const h = toLocal(b, P.x, P.y, tg ? 30 * P.k : 14); if (!h.inside) return false;   // 触屏手指粗，料边外 30 像素内都算抓到
+  b.touchGrab = tg; b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
   // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 64 像素（lift 为负 = 往下）
-  b.lift = 0; b.liftTo = TOUCH ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
+  b.lift = 0; b.liftTo = tg ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
   G.started = true; if (Math.random() < .35) talk('grab');
   if (!G.nudged && G.round0 >= G.lines[2] && G.round >= G.lines[2]) { G.nudged = true; G.bubble = { text: pick(LINES.handsOff()), t0: G.time, dur: 4.5, lines: null }; mood('angry', 2); }
@@ -4095,7 +4104,7 @@ function fit() {
   const aw = wrap.clientWidth, ah = wrap.clientHeight;
   PORT = ah > aw * 1.15;
   if (PORT) { VW = 540; BOT = 104; TOP = clamp(Math.round(VW * ah / aw) - H - BOT, 110, 300); VH = H + TOP + BOT; CAMX = WALL_R + 10 - VW; } else { VW = W; VH = H; TOP = 0; BOT = 0; CAMX = 0; }
-  WALL_L = CAMX; stage.classList.toggle('port', PORT);
+  WALL_L = CAMX; stage.classList.toggle('port', PORT); stage.classList.toggle('short', PORT && TOP < 200);   // short：竖着拿的平板（3:4 这种），比手机矮，开始界面的按钮要收一点
   let w = Math.floor(Math.min(aw, ah > 40 ? ah * VW / VH : aw, 1280)); if (!(w > 0)) w = 320;
   const h = Math.floor(w * VH / VW), dpr = Math.min(window.devicePixelRatio || 1, 2);
   stage.style.width = w + 'px'; stage.style.height = h + 'px'; stage.style.setProperty('--u', (w / VW) + 'px'); stage.style.setProperty('--bot', BOT);
