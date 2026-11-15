@@ -17,5 +17,5 @@ rsync -az -e "${SSH[*]}" "$TMP" "$HOST:$DEST/public/flow.js"
 # 图片和字体（assets/，文件名带哈希）：也只发 HEAD 里的；旧的留着，还开着老页面的人不会缺图
 ATMP=$(mktemp -d); trap 'rm -f "$TMP"; rm -rf "$ATMP"' EXIT
 git archive HEAD assets | tar -x -C "$ATMP"
-rsync -az --chmod=D755,F644 -e "${SSH[*]}" "$ATMP/assets/" "$HOST:$DEST/public/assets/"
-"${SSH[@]}" "$HOST" "chmod 644 $DEST/public/index.html $DEST/public/flow.js && sudo systemctl restart fullcircle && sleep 1 && curl -fsS http://127.0.0.1:2504/healthz && echo ' deployed'"
+rsync -az -e "${SSH[*]}" "$ATMP/assets/" "$HOST:$DEST/public/assets/"
+"${SSH[@]}" "$HOST" "chmod 644 $DEST/public/index.html $DEST/public/flow.js && chmod 755 $DEST/public/assets && chmod 644 $DEST/public/assets/* && sudo systemctl restart fullcircle && sleep 1 && curl -fsS http://127.0.0.1:2504/healthz && echo ' deployed'"
