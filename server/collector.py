@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import os
@@ -69,6 +70,16 @@ def db() -> sqlite3.Connection:
 
 
 CON: sqlite3.Connection | None = None
+_gz: dict[str, bytes] = {}
+
+
+def _gzipped(tag: str, body: bytes) -> bytes:
+    """页面压好一次就记住（按内容哈希），文件换了哈希也跟着换。"""
+    if tag not in _gz:
+        if len(_gz) > 8:
+            _gz.clear()
+        _gz[tag] = gzip.compress(body, 9)
+    return _gz[tag]
 
 
 def rate_ok(key: str) -> bool:
@@ -226,13 +237,17 @@ class Handler(BaseHTTPRequestHandler):
         # 用弱 ETag：Cloudflare 边压缩边转发时会把强 ETag 去掉，弱的才会留下
         tag = '"%s"' % hashlib.sha256(body).hexdigest()[:16]
         etag = "W/" + tag
-        extra = {"Cache-Control": "no-cache", "ETag": etag}
+        # no-transform：不让 Cloudflare 改写 HTML（它一改写就把 ETag 去掉了），压缩就自己在这里 gzip
+        extra = {"Cache-Control": "no-cache, no-transform", "ETag": etag, "Vary": "Accept-Encoding"}
         if tag in (self.headers.get("If-None-Match") or ""):
             self.send_response(304)
             for k, v in extra.items():
                 self.send_header(k, v)
             self.end_headers()
             return
+        if "gzip" in (self.headers.get("Accept-Encoding") or ""):
+            body = _gzipped(tag, body)
+            extra["Content-Encoding"] = "gzip"
         self._send(200, body, hit[1], extra)
 
     do_HEAD = do_GET
