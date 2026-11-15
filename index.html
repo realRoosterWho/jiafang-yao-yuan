@@ -2900,7 +2900,12 @@ function update(dt) {
     // 塌不靠“睡着”判断：底面很宽的东西停在地上会一直微微抖，永远睡不着。只要贴着地、几乎不动就算放着
     if (b.mat.fill) flowFill(b, dt);
     // 快圆了的活物放在地上会自己慢慢滚正，脸朝前坐好
-    if (b.mat.upright && !b.held && b.clear < 4 && G.round >= b.mat.upright && Math.abs(wrapPi(b.a)) > .02 && Math.hypot(b.vx, b.vy) < 80) { b.a -= wrapPi(b.a) * Math.min(1, dt * 2.5); snapToFloor(b); }
+    // 扶正的时候把物理的转动掐掉，扶正了就让它睡着：不然形状的自然倒向不是正脸时，物理往一边翻、扶正往回拧，来回拉扯，看着就是在地上蠕动、慢慢爬
+    if (b.mat.upright && !b.held && b.clear < 4 && G.round >= b.mat.upright && Math.hypot(b.vx, b.vy) < 80) {
+      const off = wrapPi(b.a);
+      if (Math.abs(off) > .02) { b.a -= off * Math.min(1, dt * 2.5); b.w = 0; b.vx *= 1 - Math.min(1, dt * 6); snapToFloor(b); }
+      else if (off && Math.hypot(b.vx, b.vy) < 14) { b.a -= off; b.sleeping = true; b.vx = b.vy = b.w = 0; snapToFloor(b); }
+    }
     if (b.mat.warm && G.state === 'play') {
       const w = b.mat.warm, h0 = b.heat || 0; b.heat = clamp(h0 + (b.held ? w.rate : -w.cool) * dt, 0, 1);
       const soft = w.peak || .6, hot = w.hot ? w.peak + .15 : 2;
