@@ -1,0 +1,10 @@
+[Unit]
+Description=Full Circle: deploy GitHub main if it changed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=roosterwho
+Group=roosterwho
+ExecStart=/home/roosterwho/services/fullcircle/pi-autodeploy.sh
