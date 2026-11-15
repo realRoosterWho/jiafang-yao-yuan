@@ -2406,7 +2406,7 @@ function wipe(mid) {
 const BG2 = new Image(); BG2.src = 'assets/bg-cover.e63bd97aab.webp';
 function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  coverBg(0, 0, VW, VH, .5, BG2); skyFx(0, 0, VW, VH * .62, t, !PORT);
+  coverBg(0, 0, VW, VH, PORT ? 1 : .5, BG2); skyFx(0, 0, VW, VH * .62, t, !PORT);
   const k = (EN ? KIT.aLogo : KIT.aLogoZh) || KIT.aLogo; if (!k) return;
   const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * .335) : 372 - h / 2;
   // 电脑上标题下面：一个发光的台子（aPed），上面一颗裂开的球（aBall）。两张都画在标题后面，球的上半截可以被标题挡住。
