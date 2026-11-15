@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=deal4en" defer></script>
+<script src="flow.js?v=name1" defer></script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -2412,7 +2412,7 @@ function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   coverBg(0, 0, VW, VH, PORT ? 1 : .5, BG2); skyFx(0, 0, VW, VH * .62, t, !PORT);
   const k = (EN ? KIT.aLogo : KIT.aLogoZh) || KIT.aLogo; if (!k) return;
-  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * .255) : 372 - h / 2;
+  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * (!stage.classList.contains("seen") && document.getElementById("flow-lang") ? .32 : .255)) : 372 - h / 2;
   // 电脑上标题下面：一个发光的台子（aPed），上面一颗裂开的球（aBall）。两张都画在标题后面，球的上半截可以被标题挡住。
   // 台子先出来，球晚一点砸下来弹两下，之后轻轻一压一弹。手机竖屏只放标题
   const q = KIT.aBall, pd = KIT.aPed;
@@ -3171,6 +3171,8 @@ const STARS = []; for (let k = 0; k < 90; k++) STARS.push({ x: Math.random() * W
 /* 背景图：一整张夜空（带环的行星、两个底角的云和小星星、顶上两角的叶子、一格一格的地砖），WebP 放在 assets/（文件名带哈希，服务器让浏览器缓存一年，换图就换文件名）。
    要换图：新图放进 assets/（文件名带哈希）、改下面这一行的路径；图是 16:9 的，地平线大约在高度的 78% 处，料站的地板线（FLOOR）要落在地砖上 */
 const BG = new Image(); BG.src = 'assets/bg-game.3e8186aa69.webp';
+/* 游戏里手机竖屏的背景：一张竖的夜空（顶上几颗金星、两边的云、地砖），只在竖屏时才下载 */
+const BGP = new Image(), BGP_URL = 'assets/bg-game-port.95414820a9.webp';
 /* 背景图贴满 (x, y, w, h)：等比放大到盖住，贴底；左右默认居中，ax 给 0–1 可以往左或往右靠（1 = 露出图的最右边）。图还没解码好就先垫一个差不多的渐变 */
 function coverBg(x, y, w, h, ax, img) {
   const B = img && img.complete && img.naturalWidth ? img : BG;
@@ -3206,8 +3208,10 @@ function skyFx(x, y, w, h, t, twinkle) {
 }
 /* 场景：整张背景图（夜空、带环的行星、两个底角的云、一格一格的地砖）。料站在地砖上，身后一团柔光跟着它走 */
 function drawBg(t) {
-  coverBg(CAMX, -TOP, VW, TOP + H); skyFx(CAMX, -TOP, VW, (TOP + H) * .62, t, !PORT);
-  if (PORT) portDecor(CAMX, -TOP, VW, TOP + H, -TOP + (TOP + H) * .78, t);
+  if (PORT && !BGP.src) BGP.src = BGP_URL;   // first time in portrait: start the download
+  const bp = PORT && BGP.complete && BGP.naturalWidth;   // 手机竖屏用自己那张竖图（地平线同样在 78%）；还没下好时先用横图加两边补的星球和云
+  coverBg(CAMX, -TOP, VW, TOP + H, .5, bp ? BGP : null); skyFx(CAMX, -TOP, VW, (TOP + H) * .62, t, !PORT);
+  if (PORT && !bp) portDecor(CAMX, -TOP, VW, TOP + H, -TOP + (TOP + H) * .78, t);
   // 料身后的一团柔光、脚下一汪亮：它是主角
   const b = G.body;
   if (b && !b.dead) {

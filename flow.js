@@ -190,7 +190,14 @@ html[lang="en"] .fd-stamp { font-size: 1.25em; letter-spacing: .08em; width: 11e
 
 /* 签合同之前的起名字（游戏自己的卡片里） */
 .flow-name h2 { margin-top: .1em; }
-.flow-name .who-row input { flex: 1 1 auto; min-width: 0; font-size: max(16px, 1em); }
+/* 手机 Safari 上整张表单会被输入框的默认宽度（size=20）撑出卡片：网格只给一列、可以缩到 0，里面每一块都不许撑宽 */
+#card .flow-name { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; box-sizing: border-box; }
+#card .flow-name > * { min-width: 0; max-width: 100%; }
+#card .flow-name .note { overflow-wrap: anywhere; }
+.flow-name .who-row { min-width: 0; width: 100%; }
+.flow-name .who-row input { flex: 1 1 0; width: 0; min-width: 0; box-sizing: border-box; font-size: max(16px, 1em); }
+.flow-name .flow-go { flex-wrap: wrap; min-width: 0; }
+.flow-name .flow-go .btn { min-width: 0; max-width: 100%; }
 .flow-name .fd-dice { flex: 0 0 auto; align-self: center; width: 2.7em; height: 2.7em; min-height: 0; padding: 0; font-size: 1.15em; line-height: 1; }
 .flow-name .fd-dice.roll { animation: fdRoll .35s ease-out; }
 @keyframes fdRoll { from { transform: rotate(-200deg) scale(.7); } }
