@@ -207,3 +207,5 @@ git config core.hooksPath .githooks
 ## 加载和缓存
 
 图片和字体都是 `assets/` 下的单独文件，文件名带内容哈希（`tools/make_art.py`、`tools/subset_fonts.py` 生成时自动加）。服务器给 `/assets/` 发一年的 `immutable` 缓存，所以**换图一定要换文件名**（重新跑脚本就会换），别原地覆盖同名文件。`index.html` 和 `flow.js` 是 `no-cache` + ETag：每次打开问一下，没变就回 304。部署（`server/deploy.sh`）会把 HEAD 里的 `assets/` 一起推上去，旧文件留在服务器上不删。
+
+不再用 Google Fonts：界面字体全是 `assets/` 里自带的（猫啃、Chewy）。开场合同的宋体（Noto Serif SC）和手写体（Long Cang，都是 OFL）由 `tools/subset_contract_fonts.py` 只裁合同里出现的字，合同改字要重跑，再把它打印的两条 `@font-face` 换进 `flow.js`。开始界面的标题、台子、球在 `<head>` 里就开始下载，标题只下当前语言那张（换语言都会重新加载页面）。

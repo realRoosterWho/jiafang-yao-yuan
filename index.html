@@ -10,8 +10,21 @@
 <!-- 开始界面的背景和中文字体最先要用，先开始下载 -->
 <link rel="preload" href="assets/bg-cover.e63bd97aab.webp" as="image">
 <link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Fredoka:wght@500;700&display=swap">
+<script>
+/* 语言（zh / en）：网址里的 ?lang= 优先，其次是存下的选择，再看浏览器。放在最前面，开始界面的图好按语言先下 */
+const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
+/* 开始界面的贴纸图：标题两张（aLogo 英文、aLogoZh 中文）、发光的台子（aPed）、裂开的球（aBall），用户给的，抠好边、存成带透明的 WebP 放在 assets/，这里只写路径。
+   由 tools/make_art.py 生成，别手改；下面马上就开始下载（ART_EARLY），kitBoot 等它们解码好放进 KIT，drawCover 拿来画。
+   标题只下当前语言那张：换语言都会重新加载页面 */
+const ART_IMG = {
+  aLogo: 'assets/logo-en.f63302cf77.webp',
+  aLogoZh: 'assets/logo-zh.a71a2caf60.webp',
+  aPed: 'assets/pedestal.6d800c67fd.webp',
+  aBall: 'assets/ball.4cd695f480.webp',
+};
+const ART_EARLY = {};
+for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
+</script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -545,7 +558,6 @@ const midX = () => (WALL_L + WALL_R) / 2;
 const mq = q => !!(window.matchMedia && matchMedia(q).matches);
 const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
-const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
 const VMAX = 2600;      // 这个速度记为力度 100
@@ -3837,14 +3849,6 @@ const SK_SVG = {
   sPlanetS: [110, 110, '<circle cx="55" cy="55" r="45" fill="url(#planet)"/><circle cx="40" cy="35" r="9" fill="#c99df6" opacity=".4"/><circle cx="69" cy="65" r="7" fill="#5b31b1" opacity=".3"/>'],
   sCloud: [280, 152, '<circle cx="45" cy="82" r="40" fill="url(#purple)"/><circle cx="99" cy="64" r="57" fill="url(#purple)"/><circle cx="158" cy="73" r="52" fill="url(#purple)"/><circle cx="219" cy="81" r="42" fill="url(#purple)"/><rect x="20" y="80" width="236" height="55" rx="27" fill="url(#purple)"/>'],
 };
-/* 开始界面的贴纸图：标题两张（aLogo 英文、aLogoZh 中文）、发光的台子（aPed）、裂开的球（aBall），用户给的，抠好边、存成带透明的 WebP 放在 assets/，这里只写路径。
-   由 tools/make_art.py 生成，别手改；kitBoot 把它们解码以后放进 KIT，drawCover 拿来画 */
-const ART_IMG = {
-  aLogo: 'assets/logo-en.f63302cf77.webp',
-  aLogoZh: 'assets/logo-zh.a71a2caf60.webp',
-  aPed: 'assets/pedestal.6d800c67fd.webp',
-  aBall: 'assets/ball.4cd695f480.webp',
-};
 /* 九宫格的边：[左, 上, 右, 下]，素材 1 倍图上的像素。上下是 0 的只横着拉 */
 const KIT_SLICE = { sCard: [36, 62, 36, 44], sTrack: [34, 0, 34, 0], sFill: [26, 0, 26, 0], sMeter: [68, 64, 68, 64], sHint: [42, 0, 42, 0],
   sBadgeGood: [28, 0, 28, 0], sBadgeBreak: [28, 0, 28, 0], sBadgeLight: [28, 0, 28, 0] };
@@ -3880,7 +3884,7 @@ function kitTint(svg, map) { return svg.replace(/#[0-9a-f]{6}/gi, c => map[c.toL
     img.onload = () => { const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, c = document.createElement('canvas'); c.width = w * S; c.height = h * S; c.getContext('2d').drawImage(img, 0, 0, w * S, h * S); KIT[name] = { c, w, h, S }; };
     img.src = url;
   }
-  for (const n in ART_IMG) { const img = new Image(); img.onload = () => { KIT[n] = { c: img, w: img.naturalWidth, h: img.naturalHeight, S: 1 }; }; img.src = ART_IMG[n]; }   // 开始界面的贴纸图，直接拿图来画
+  for (const n in ART_EARLY) { const img = ART_EARLY[n], done = () => { KIT[n] = { c: img, w: img.naturalWidth, h: img.naturalHeight, S: 1 }; }; if (img.complete && img.naturalWidth) done(); else img.onload = done; }   // 开始界面的贴纸图，直接拿图来画
 })();
 /* 整张贴：把素材拉到 (x, y, w, h)。没解码好返回 false */
 function kit(name, x, y, w, h) { const k = KIT[name]; if (!k) return false; ctx.drawImage(k.c, x, y, w, h); return true; }
@@ -4458,7 +4462,7 @@ if (EN) {
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
   document.getElementById('rotL').setAttribute('aria-label', 'Turn left'); document.getElementById('rotR').setAttribute('aria-label', 'Turn right');
 }
-try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'ZCOOL KuaiLe'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬疼0123456789%！'); document.fonts.load('700 20px Fredoka', '0123456789◎'); } } catch (e) {}
+try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'Maoken Assorted Sans'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬疼0123456789%！'); document.fonts.load('700 20px Chewy', '0123456789'); } } catch (e) {}
 let last = 0;
 function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
 

@@ -201,11 +201,12 @@ html[lang="en"] .fd-stamp { font-size: 1.25em; letter-spacing: .08em; width: 11e
 .flow-again { text-align: right; }
 `;
 document.head.appendChild(style);
-// 合同用的宋体和手写体。加载不到也没关系，有系统字体兜底
-const fontLink = document.createElement('link');
-fontLink.rel = 'stylesheet'; fontLink.href = 'https://fonts.googleapis.com/css2?family=Long+Cang&family=Noto+Serif+SC:wght@500;700&display=swap';
-fontLink.media = 'print'; fontLink.onload = () => { fontLink.media = 'all'; };
-document.head.appendChild(fontLink);
+// 合同用的宋体和手写体：只裁了合同里出现的字，放在 assets/（tools/subset_contract_fonts.py 生成，合同改字要重跑）。
+// 浏览器只在合同真的显示出来时才去下；没裁进去的字（比如玩家签的名字）退到系统的楷体 / 宋体
+const fontFace = document.createElement('style');
+fontFace.textContent = `@font-face { font-family: "Noto Serif SC"; font-weight: 500 700; font-display: swap; src: url(assets/notoserif.66392edeb9.woff2) format("woff2"); }
+@font-face { font-family: "Long Cang"; font-weight: 400; font-display: swap; src: url(assets/longcang.b8c5885324.woff2) format("woff2"); }`;
+document.head.appendChild(fontFace);
 
 /* ---------- 新手关的石头 ---------- */
 Y.MATS.tutor = Object.assign({}, Y.MATS.stone, { hard: TUT.hard, brittle: TUT.brittle, loose: 1, accel: TUT.accel, rough: 0, rnd: null, snd: 'stone', target: TUT.target, talk: null });   // 新手关的石头不说话：画面上只留甲方气泡那一句
