@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 推送 main 到 GitHub 后让 roosterpi 立刻部署（不用等它自己每分钟检查一次的定时器，见 server/pi-autodeploy.sh）。
+# git 没有「推送之后」的钩子：这里在后台等 GitHub 上的 main 变成刚推的那个提交，再叫树莓派去拉。
+# 提交本身不再部署，只有推到 GitHub 的才会上线。日志：.git/deploy.log；失败弹 macOS 通知。跳过一次：FC_NO_DEPLOY=1 git push
+[ -n "${FC_NO_DEPLOY:-}" ] && exit 0
+remote=$1 sha=""
+while read -r _lref lsha rref _rsha; do [ "$rref" = "refs/heads/main" ] && [ "$lsha" != "0000000000000000000000000000000000000000" ] && sha=$lsha; done
+[ -n "$sha" ] || exit 0
+gitdir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+echo "🚀 推送完会让 roosterpi 部署 ${sha:0:7}（后台进行，日志：.git/deploy.log）"
+(
+  echo "=== $(date '+%F %T') ${sha:0:7}"
+  for _ in $(seq 90); do [ "$(git ls-remote "$remote" refs/heads/main 2>/dev/null | cut -f1)" = "$sha" ] && break; sleep 1; done
+  O=""; ssh -o ConnectTimeout=8 roosterpi true 2>/dev/null || O="-o ProxyCommand=none"
+  if ssh $O roosterpi "sudo -n systemctl start fullcircle-autodeploy.service && cat ~/services/fullcircle/.deployed" | grep -q "^$sha"; then
+    echo "OK ${sha:0:7}"
+  else
+    echo "FAILED ${sha:0:7}（树莓派的定时器一分钟内还会再试）"
+    osascript -e "display notification \"${sha:0:7} 没能立刻部署，详情看 .git/deploy.log\" with title \"甲方要圆：部署失败\" sound name \"Basso\"" >/dev/null 2>&1 || true
+  fi
+) >> "$gitdir/deploy.log" 2>&1 < /dev/null &
+disown 2>/dev/null || true
+exit 0

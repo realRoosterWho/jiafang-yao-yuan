@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# 在 main 上直接提交后部署（见 deploy-if-changed）
-exec "$(dirname "$0")/deploy-if-changed" "$(git rev-parse -q --verify HEAD~1 2>/dev/null)"

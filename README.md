@@ -196,19 +196,13 @@
 - 云存档：玩家在首页可以起个名字，每单最高酬劳、最高星数、无尽模式最好的一轮和解锁的成就会存到服务器，换设备输同一个名字就能接着玩。没有密码，服务器合并时酬劳和星数按每单取较大值、无尽模式取酬劳高的那轮、成就取并集，所以同名只会让成绩变高、抹不掉进度；后台「存档玩家」里能看到并删掉不合适的名字。星级、成就和无尽纪录存在 `saves` 表的 `extra` 列（JSON），老库启动时自动加列。排行榜（`/api/leaderboard`）只看无尽纪录。
 - 服务端代码在 `server/`：`collector.py` 收事件写 SQLite，`saves.py` 是云存档，`admin.py` + `admin.html` 是后台。
 
-**部署是自动的**：`main` 上的 HEAD 一变，并且这次变化碰了 `index.html`、`flow.js` 或 `server/`，钩子就在后台把 HEAD（不是工作区）部署到 roosterpi：
-
-- 直接提交、`--amend`（`post-commit`）
-- 合并分支、`git pull`，包括快进合并（`post-merge`）
-- `git rebase`、`git pull --rebase`（`post-rewrite`）
-
-在别的分支或 worktree 上提交不会部署，合并进 `main` 才会。日志在 `.git/deploy.log`，部署失败会弹 macOS 通知。新 clone 要先启用钩子：
+**部署是自动的：推到 GitHub 的 `main` 就上线。** roosterpi 上的 `fullcircle-autodeploy.timer` 每分钟看一眼 GitHub 的 `main`，变了就拉下来部署（`server/pi-autodeploy.sh`，日志 `journalctl -u fullcircle-autodeploy`），谁推的都一样。在 Mac 上推送时，`pre-push` 钩子还会在推完后叫树莓派立刻部署，不用等那一分钟（日志在 `.git/deploy.log`，失败弹 macOS 通知）。只提交不推送不会上线。新 clone 要先启用钩子：
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-手动部署：`server/deploy.sh`；跳过一次自动部署：`FC_NO_DEPLOY=1 git commit ...`。终端里看汇总：`ssh roosterpi 'cd ~/services/fullcircle && python3 collector.py report'`。
+手动部署本地 HEAD：`server/deploy.sh`；推送时不立刻部署：`FC_NO_DEPLOY=1 git push`（树莓派一分钟内还是会部署）。终端里看汇总：`ssh roosterpi 'cd ~/services/fullcircle && python3 collector.py report'`。
 
 ## 加载和缓存
 
