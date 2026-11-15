@@ -282,6 +282,7 @@ function tag(c, v, text, x, y) {
    不再画横穿屏幕的虚线、也不在画面里写字，界面尽量干净 */
 const COIN = '255,211,92', GREEN = '147,232,90';
 const easeOut = f => 1 - Math.pow(1 - f, 3);
+const easeInOut = f => f < .5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;
 function glowRing(c, x, y, rx, ry, al, rgb) {   // 发光的环：一道宽的淡光 + 一道细的亮线
   if (al <= .01) return;
   c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU);
@@ -324,23 +325,25 @@ function lightDrop(c, b, t) {
 }
 /* 摇杆在这块屏幕上的比例：画面单位 / CSS 像素（跟 index.html 里真摇杆一样大） */
 const joyScale = v => { const w = cv.getBoundingClientRect().width; return w ? v.VW / w : 1; };
-/* 手机、第二根手指还没按下：在石头下面、地板上方那片空地画一个虚的摇杆（石头拎过线了，这里一定空着；石头偏到一边时往另一边让）。
-   先从中间扩出一圈光（按这里），再把钮推向该推的那边，一遍遍重复。不写字 */
+/* 手机、第二根手指还没按下：在石头下面、地板上方那片空地画一只虚的手指来回拨（石头拎过线了，这里一定空着；石头偏到一边时往另一边让）。
+   先按下（一圈光），再往该拨的那边滑，刻度跟着走；同时石头身上亮起它会转的方向。一遍遍重复，不写字 */
 function ghostJoy(c, v, b, push, t) {
-  const s = joyScale(v), R = X.JOY_R * s, kr = X.JOY_KNOB * s, h = kr * 1.3, half = R + h / 2 + 12, mid = v.CAMX + v.VW / 2;
+  const s = joyScale(v), kr = X.JOY_KNOB * s, R = 70 * s, half = R + kr + 20, mid = v.CAMX + v.VW / 2;
   const x0 = clamp(mid + (mid - b.x) * .6, v.CAMX + half, v.CAMX + v.VW - half), y = FLOOR - 55;
-  const u = (t % 2) / 2, k = u < .15 ? 0 : u < .45 ? .9 * easeOut((u - .15) / .3) : u < .78 ? .9 : .9 * (1 - easeOut((u - .78) / .22));
-  if (u < .4) { const f = u / .4, r = kr * (1 + 1.5 * easeOut(f)); glowRing(c, x0, y, r, r, 1 - f, COIN); }
-  glowSpot(c, x0 + k * push * R, y, kr * 1.5, kr * 1.5, .3 + .4 * k, COIN);
-  X.joyDraw(x0, y, k * push, s, .7);
+  const u = (t % 2) / 2, k = u < .15 ? 0 : u < .55 ? easeInOut((u - .15) / .4) : u < .8 ? 1 : 1 - easeOut((u - .8) / .2);
+  const x = x0 - push * R / 2 + k * push * R, alpha = u < .8 ? .75 : .75 * (1 - (u - .8) / .2);
+  if (u < .2) { const f = u / .2, r = kr * (1 + 1.2 * easeOut(f)); glowRing(c, x0 - push * R / 2, y, r, r, 1 - f, COIN); }
+  glowSpot(c, x, y, kr * 1.4, kr * 1.4, .25 + .3 * alpha, COIN);
+  X.joyDraw(x, y, k * push * R / s, s, alpha);
+  if (u >= .15 && u < .8 && X.turnArc) X.turnArc(b, push * (X.JOY_DIR || 1), .8);
 }
-/* 真摇杆出来了、但还没往对的方向推：槽里一串光点往该推的那头流 */
+/* 第二根手指按下了、但没往对的方向拨：手指旁边一串小箭头往该拨的那头流 */
 function joyNudge(c, v, joy, push, t) {
-  if (joy.k * push > X.JOY_DEAD) return;
-  const s = joy.s, R = X.JOY_R * s, h = X.JOY_KNOB * s * 1.3;
+  if (joy.dir * push > 0) return;
+  const s = joy.s;
   c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = 3.2 * s;
   for (let k = 0; k < 3; k++) {
-    const f = (t * 1.3 + k / 3) % 1, x = joy.x0 + push * R * (.3 + .75 * f);
+    const f = (t * 1.3 + k / 3) % 1, x = joy.x + push * (40 + 60 * f) * s;
     c.strokeStyle = `rgba(${COIN},${.95 * Math.sin(Math.PI * f)})`; c.beginPath(); c.moveTo(x - push * 5 * s, joy.y - 7 * s); c.lineTo(x + push * 2 * s, joy.y); c.lineTo(x - push * 5 * s, joy.y + 7 * s); c.stroke();
   }
   c.restore();
@@ -368,8 +371,8 @@ function drawHints(b, g, ready) {
   if (!ready && !b.held) lightPress(c, b, t);   // ① 没拎着：按这里
   if (!ready && b.held && !high) lightRise(c, b, t);              // ① 拎着还没过线：拎到这儿
   if (!ready && b.held && aligned && high) lightDrop(c, b, t);     // ③ 拎高了也对准了：松手让它掉
-  if (TOUCH && !ready && high && !aligned) {   // ② 手机：第二根手指还没按就画虚摇杆示范；按下了就在真摇杆上指方向
-    const joy = X.joy, push = (g.err > 0 ? 1 : -1) * (X.JOY_DIR || 1);   // 凸起要顺时针转（err > 0）就往 JOY_DIR 那边推
+  if (TOUCH && !ready && high && !aligned) {   // ② 手机：第二根手指还没按就画虚手指拨的示范；按下了拨反了就在手指旁指方向
+    const joy = X.joy, push = (g.err > 0 ? 1 : -1) * (X.JOY_DIR || 1);   // 凸起要顺时针转（err > 0）手指就往 JOY_DIR 那边拨
     if (joy) joyNudge(c, v, joy, push, t); else ghostJoy(c, v, b, push, t);
   }
   if (!TOUCH && b.held && !ready && X.kit) {   // 电脑：石头两边贴新界面的 A / D 键图标，该按的那个一跳一跳，正在按的压下去

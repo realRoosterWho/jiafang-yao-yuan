@@ -2429,7 +2429,7 @@ function showMenu(msg) {
     </div><button class="alien-tap" type="button" data-act="alien" aria-label="${L('外星甲方', 'The alien Client')}">${ALIEN_SVG}<i></i></button></div>
     <p>${L('外星甲方只有一个要求：<strong>什么都得是圆的。</strong>不达标，被做成圆的就是你。', 'The alien Client has one rule: <strong>everything must be round.</strong> Miss the target and you get made round.')}${L(`冒险模式 ${ADV_N} 单：从一块木头一路做到 Games Now! 的章鱼熊，每种花样都会遇到。做完前 ${ENDLESS.unlock} 单就能玩无尽模式：${ORDER.length} 样东西随机来，甲方越来越没耐心。`, ` Adventure mode is ${ADV_N} orders: from a block of wood all the way to the Games Now! octo-bear, with every kind of trick on the way. Finish the first ${ENDLESS.unlock} to unlock endless mode: ${ORDER.length} kinds of things at random, and the Client gets less patient every order.`)}</p>
     <ul class="how">
-      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来；另一根手指按在空白处就出一根摇杆，往左推、往右推调角度。', '<strong>Lift.</strong> One finger holds it up; a second finger on empty space becomes a joystick: push left or right to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
+      <li><b>${L('拎', '1')}</b><span>${TOUCH ? L('一根手指按住拎起来；另一根手指在空白处左右拨，就能转角度。', '<strong>Lift.</strong> One finger holds it up; swipe a second finger left or right on empty space to turn it.') : L('按住材料拎起来，A / D 调角度。', '<strong>Lift.</strong> Hold to pick it up; A / D to turn it.')}</span></li>
       <li><b>${L('砸', '2')}</b><span>${L('举高松手，让它自己掉下去；拿着往下砸是进阶手法。右边力度表绿区有效，红区会碎。', '<strong>Drop.</strong> Lift it high and let go; slamming while holding is the advanced move. Green on the gauge works, red breaks.')}</span></li>
       <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
     </ul>
@@ -2746,15 +2746,14 @@ function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.st
 const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
 const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
-function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; sfx.joy(); }
+function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.off = 0; JOY.dir = 0; JOY.tm = -9; JOY.t0 = G.time; sfx.joy(); }
 /* 按距离转：手指横着挪多少，材料就转多少（JOY_GAIN 弧度 / CSS 像素，挪满半个槽 ≈ 45°），手指停材料就停；
    推出槽外时槽跟着手指走，所以一直往一边拖能一直转 */
 const JOY_GAIN = (Math.PI / 4) / JOY_R;
 function joyMove(e) {
   const x = joyAt(e).x, dx = x - JOY.x; JOY.x = x;
   const b = G.body; if (b && b.held && rotId !== null) b.userRot += JOY_DIR * JOY_GAIN * dx / JOY.s;
-  const R = JOY_R * JOY.s; JOY.x0 = clamp(JOY.x0, x - R, x + R);
-  JOY.k = clamp((x - JOY.x0) / R, -1, 1);
+  JOY.off += dx / JOY.s; if (Math.abs(dx) > .01) { JOY.dir = Math.sign(dx); JOY.tm = G.time; }   // off：拨过的总距离（CSS 像素，刻度跟着滑）；dir / tm：最近往哪边拨、什么时候
 }
 /* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
 function joyRate() { return 0; }   // 改成按距离转（见 joyMove），不再按推多远决定转速
@@ -4217,41 +4216,51 @@ function drawGauge() {
   }
 }
 const TIPS = EN
-  ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger anywhere = joystick: push ← → to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
-  : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指按哪儿哪儿就是摇杆，左右推来转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
+  ? ['Lift it high, let go to drop it', TOUCH ? 'Second finger anywhere: swipe ← → to turn' : 'A / D or wheel to turn', 'Force gauge: green works, red breaks', 'Hit the corners outside the dashed circle']
+  : ['按住拎高，松手让它掉下去', TOUCH ? '另一根手指在空白处左右拨，就能转' : 'A / D 或滚轮转角度', '力度表：绿区有效，红区会碎', '专砸凸出虚线圆的角'];
 /* 触屏拎着材料、还没出摇杆时的提示：另一根手指按下去就是摇杆。摇杆出来以后它自己会说往哪推转哪边，这条就不画了 */
 function drawRotHint() {
   const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor' || rotId !== null) return;   // 新手关（flow.js）自己画第二根手指的提示
   const x = PORT ? midX() : 440, y = PORT ? 30 : 136, fs = PORT ? 18 : 15;   // 横屏：让到目标栏下面
-  const txt = L('另一根手指按住空白处，左右推来转', 'Second finger on empty space: push ← → to turn');
+  const txt = L('另一根手指在空白处左右拨，就能转', 'Second finger on empty space: swipe ← → to turn');
   ctx.font = `700 ${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const w = ctx.measureText(txt).width + 34, h = fs * 2.1;
   ctx.globalAlpha = .75 + .25 * Math.sin(G.time * 4);
   wellPanel(x - w / 2, y - h / 2, w, h);
   ctx.fillStyle = '#fff'; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
 }
-/* 横向摇杆：只有半透明的槽 + 钮，推出去的那一截亮起来，别的什么都不画。x0, y 中心（画面坐标），k 钮推了多少（-1…1），s 画面单位 / CSS 像素，a 整体不透明度。
-   新手关（flow.js）也拿它画示范用的虚影 */
-function drawJoyAt(x0, y, k, s, a) {
-  const R = JOY_R * s, kr = JOY_KNOB * s, h = kr * 1.3, kx = x0 + clamp(k, -1, 1) * R, on = Math.abs(k) > JOY_DEAD, dir = Math.sign(k);
-  ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // 外观跟新界面一套：槽是底部提示条那种半透明紫玻璃，钮是金色的糖果按钮。大小、方向、透明度没变
-  rr(ctx, x0 - R - h / 2, y - h / 2, 2 * R + h, h, h / 2); ctx.fillStyle = vgrad(y - h / 2, y + h / 2, 'rgba(150,142,255,.45)', 'rgba(84,88,196,.5)'); ctx.fill();
-  ctx.strokeStyle = 'rgba(190,190,250,.6)'; ctx.lineWidth = 2 * s; ctx.stroke();
-  if (on) {   // 推出去的那一截亮起来，推得越远越亮
-    const xa = x0 + dir * JOY_DEAD * R, w = Math.abs(kx - xa), hh = h * .44;
-    ctx.globalAlpha = a * (.4 + .5 * Math.abs(k)); ctx.fillStyle = '#ffd759'; rr(ctx, Math.min(xa, kx), y - hh / 2, w, hh, Math.min(hh / 2, w / 2)); ctx.fill(); ctx.globalAlpha = a;
+/* 第二根手指的「拨点」：手指底下一个小光点 + 几条短刻度，拨的时候刻度跟着滑（off = 拨过的 CSS 像素），没有边界。
+   x, y 手指（画面坐标），s 画面单位 / CSS 像素，a 不透明度。新手关（flow.js）也拿它画示范用的虚影 */
+function drawJoyAt(x, y, off, s, a) {
+  const kr = JOY_KNOB * s, gap = 16 * s, n = 7, w = gap * (n - 1) / 2, ph = ((off * s) % gap + gap) % gap;
+  ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'round';
+  ctx.lineWidth = 2.6 * s; ctx.strokeStyle = '#fff';
+  for (let i = -1; i <= n; i++) {   // 刻度：越靠边越淡，中间那几条长一点
+    const tx = x - w + i * gap + ph, d = Math.abs(tx - x) / (w + gap * .5); if (d >= 1) continue;
+    const hh = kr * (.55 + .35 * (1 - d)); ctx.globalAlpha = a * .8 * (1 - d * d);
+    ctx.beginPath(); ctx.moveTo(tx, y - hh); ctx.lineTo(tx, y + hh); ctx.stroke();
   }
-  ctx.beginPath(); ctx.arc(kx, y, kr, 0, TAU); ctx.fillStyle = vgrad(y - kr, y + kr, '#ffe98a', '#f6ac2a'); ctx.globalAlpha = a * (on ? 1 : .85); ctx.fill();
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.4 * s; ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(kx - kr * .25, y - kr * .42, kr * .42, kr * .2, -.3, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fill();   // 钮上一点高光
+  ctx.globalAlpha = a;
+  ctx.beginPath(); ctx.arc(x, y, kr * .62, 0, TAU); ctx.fillStyle = vgrad(y - kr * .6, y + kr * .6, '#ffe98a', '#f6ac2a'); ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.2 * s; ctx.stroke();
+  ctx.restore();
+}
+/* 料身上的弧形箭头：往哪边转就往哪边亮，拨得越近亮得越足，停手就慢慢淡掉。dir = 料转的方向（+1 顺时针） */
+function drawTurnArc(b, dir, a) {
+  if (!(a > .02) || !dir) return;
+  const R = (b.meanR || 60) + 26, mid = -Math.PI / 2, span = .9, a0 = mid - dir * span / 2, a1 = mid + dir * span / 2;
+  ctx.save(); ctx.globalAlpha = a; ctx.lineCap = 'round'; ctx.strokeStyle = '#ffd759'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(b.x, b.y, R, a0, a1, dir < 0); ctx.stroke();
+  const ex = b.x + Math.cos(a1) * R, ey = b.y + Math.sin(a1) * R, tx = -Math.sin(a1) * dir, ty = Math.cos(a1) * dir;
+  ctx.fillStyle = '#ffd759'; ctx.beginPath(); ctx.moveTo(ex + tx * 14, ey + ty * 14); ctx.lineTo(ex - tx * 6 + ty * 10, ey - ty * 6 - tx * 10); ctx.lineTo(ex - tx * 6 - ty * 10, ey - ty * 6 + tx * 10); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
 function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住它），不跟着震屏
   const b = G.body; if (rotId === null || !b || !b.held || G.state !== 'play') return;
   const pop = clamp((G.time - JOY.t0) / .12, 0, 1);
   ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.translate(-CAMX, TOP);
-  drawJoyAt(JOY.x0, JOY.y, JOY.k, JOY.s * (.85 + .15 * pop), .5 + .45 * pop);
+  drawJoyAt(JOY.x, JOY.y, JOY.off, JOY.s * (.85 + .15 * pop), .55 + .4 * pop);
+  drawTurnArc(b, JOY.dir * JOY_DIR, clamp(1 - (G.time - JOY.tm) / .6, 0, 1) * .9);
 }
 /* 底下那条轮换的提示：素材包的紫色药丸（instruction_hint）。电脑上前面带鼠标 / 按键图标；
    手机竖屏排在左下角两个图标按钮的右边，放不下就折成两行 */
@@ -4438,12 +4447,12 @@ function fit() {
 }
 if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap); else window.addEventListener('resize', fit);
 fit();
-if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 二指按住当摇杆转'; }
+if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 二指左右拨来转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
   document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 49-order whacking game.';
   document.getElementById('help').textContent = TOUCH
-    ? 'Lift with one finger, let go to drop · 2nd finger = joystick to turn'
+    ? 'Lift with one finger, let go to drop · swipe a 2nd finger to turn'
     : 'Hold to lift, let go to drop · A / D to turn · Space delivers';
   deliverBtn.innerHTML = 'Deliver<span class="st"></span><kbd>Space</kbd>'; replayBtn.innerHTML = 'Retry<kbd>R</kbd>'; homeBtn.innerHTML = 'Home<kbd>Esc</kbd>'; muteBtn.textContent = 'Sound on';
   cv.setAttribute('aria-label', 'Game view: the material, the floor, the Client and the force gauge');
@@ -4467,7 +4476,7 @@ function sim(id, t, hits, aimErr) {
 window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, snd: SNDAPI, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
 window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, kit, sfx, audioInit, sndHush, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
-  joyDraw: drawJoyAt, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x0: JOY.x0, y: JOY.y, k: JOY.k, s: JOY.s } : null; } };
+  joyDraw: drawJoyAt, turnArc: drawTurnArc, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x: JOY.x, y: JOY.y, off: JOY.off, s: JOY.s, dir: G.time - JOY.tm < .25 ? JOY.dir : 0 } : null; } };
 
 function boot(data) {
   const back = achCheck(true) + (NAME && achUnlock('name_tag', true) ? 1 : 0);
@@ -4487,7 +4496,7 @@ try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
 })();
 </script>
-<script src="flow.js"></script>
+<script src="flow.js?v=dial1"></script>
 
 </body>
 </html>
