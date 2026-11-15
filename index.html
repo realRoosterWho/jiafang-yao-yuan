@@ -12,7 +12,7 @@
 <link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
 <script>
 /* 语言（zh / en）：网址里的 ?lang= 优先，其次是存下的选择，再看浏览器。放在最前面，开始界面的图好按语言先下 */
-const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; })();
+const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return 'en'; })();   // 没指定过就是英文（不看浏览器语言）；开始界面右下角可以换成中文
 /* 开始界面的贴纸图：标题两张（aLogo 英文、aLogoZh 中文）、发光的台子（aPed）、裂开的球（aBall），用户给的，抠好边、存成带透明的 WebP 放在 assets/，这里只写路径。
    由 tools/make_art.py 生成，别手改；下面马上就开始下载（ART_EARLY），kitBoot 等它们解码好放进 KIT，drawCover 拿来画。
    标题只下当前语言那张：换语言都会重新加载页面 */
@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=cut2" defer></script>
+<script src="flow.js?v=en1" defer></script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {

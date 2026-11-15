@@ -778,7 +778,7 @@ const langChosen = () => { try { return !!localStorage.getItem('yuan.lang') || !
 function pickLang(then) {
   phase = 'lang'; track('lang');
   const browserZh = /^zh/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
-  const opts = browserZh ? [['zh', '中文'], ['en', 'English']] : [['en', 'English'], ['zh', '中文']];
+  const opts = [['en', 'English'], ['zh', '中文']];   // 游戏默认英文：English 一律排前面、高亮（browserZh 只留着备用）
   X.setCard(`<p class="eyebrow">语言 · Language</p>
     <div class="flow-go">${opts.map(([v, t], i) => `<button class="btn${i ? ' ghost' : ''}" type="button" data-lang="${v}" lang="${v}">${t}</button>`).join('')}</div>`);
   const first = card.querySelector('[data-lang]'); if (first) first.focus();
