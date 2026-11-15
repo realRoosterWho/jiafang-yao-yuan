@@ -113,10 +113,8 @@ style.textContent = `
 .fc-dots { position: absolute; left: 0; right: 0; bottom: 2.6%; z-index: 3; display: flex; justify-content: center; gap: calc(var(--u) * 12); pointer-events: none; }
 .fc-dots i { width: calc(var(--u) * 21); height: calc(var(--u) * 21); background: #8f8cf5; clip-path: polygon(50% 0, 62% 35%, 100% 38%, 70% 60%, 80% 100%, 50% 77%, 20% 100%, 30% 60%, 0 38%, 38% 35%); opacity: .55; transition: .25s; }
 .fc-dots i.on { background: #ffd23e; opacity: 1; transform: scale(1.35); }
-/* 竖屏：画是横的，整张缩进来放在中间偏上，上下垫深色；字幕挪到画的下面 */
-#stage.port #flow-cut { background: linear-gradient(#14124a, #2a2390); }
-#stage.port .fc-shot svg { inset: auto 0 auto 0; top: 16%; height: auto; aspect-ratio: 960 / 600; }
-#stage.port .fc-cap { bottom: auto; top: 58%; font-size: max(18px, calc(var(--u) * 40)); }
+/* 竖屏：用竖着摆的那一版画（600×1000，铺满），字幕放在画面主体下面 */
+#stage.port .fc-cap { bottom: 17%; font-size: max(20px, calc(var(--u) * 46)); left: 7%; right: 7%; }
 #stage.port .fc-skip { font-size: max(12px, calc(var(--u) * 24)); top: 2.4%; }
 
 /* 合同：一张纸，不是卡片 */
@@ -550,7 +548,14 @@ const SHOTS = (() => {
         </g></g>
         ${star(776, 168, 1.1, 'pop d3', 14)}${star(180, 330, .8, 'pop d3', -16)}${spark(214, 140, .9)}${spark(790, 400, .7, 'b')}${spark(590, 130, .6, 'c')}` }
   ];
-  return SHOTS.map((s, i) => ({ cap: s.cap, svg: DEFS + BACK[i] + s.svg }));
+  /* 竖屏（手机）：同一套画重新摆在 600×1000 的竖画布上。背景按比例放大铺满（第三幕的放射光另画，圆心对着甲方）；
+     画面主体放大一点、移到上半屏正中，下面留给字幕。PL[i] = [缩放, 主体中心 x, 主体中心 y] */
+  const PL = [[1.08, 480, 262], [1.02, 480, 330], [.8, 462, 262]], PY = 410;
+  const pBack = i => i === 2
+    ? (([s, cx, cy]) => { const ax = 300 + (400 - cx) * s, ay = PY + (262 - cy) * s; return `<g transform="translate(${ax - 400} ${ay - 262})"><rect x="-500" y="-500" width="1600" height="1800" fill="url(#b3)"/></g>${rays(ax, ay)}`; })(PL[2])
+    : `<g transform="translate(-500 0) scale(${1000 / 600})">${BACK[i]}</g>`;
+  const pBody = (svg, [s, cx, cy]) => `<g transform="translate(${300 - cx * s} ${PY - cy * s}) scale(${s})">${svg}</g>`;
+  return SHOTS.map((s, i) => ({ cap: s.cap, svg: DEFS + BACK[i] + s.svg, psvg: DEFS + pBack(i) + pBody(s.svg, PL[i]) }));
 })();
 function playCutscene(done) {
   phase = 'cutscene';
@@ -570,7 +575,8 @@ function playCutscene(done) {
   const placeholder = () => {
     if (video) { video.remove(); video = null; }
     const d = clamp(CONFIG.placeholderMs, 900, 9000) / SHOTS.length;
-    el.insertAdjacentHTML('afterbegin', SHOTS.map(s => `<div class="fc-shot"><svg viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.svg}</svg><p class="fc-cap">${s.cap}</p></div>`).join('') + `<div class="fc-dots">${SHOTS.map(() => '<i></i>').join('')}</div>`);
+    const port = stage.classList.contains('port');   // 手机竖屏用竖着摆的那一版
+    el.insertAdjacentHTML('afterbegin', SHOTS.map(s => `<div class="fc-shot">${port ? `<svg viewBox="0 0 600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.psvg}</svg>` : `<svg viewBox="0 0 960 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s.svg}</svg>`}<p class="fc-cap">${s.cap}</p></div>`).join('') + `<div class="fc-dots">${SHOTS.map(() => '<i></i>').join('')}</div>`);
     const shots = el.querySelectorAll('.fc-shot');
     const dots = el.querySelectorAll('.fc-dots i');
     shots.forEach((s, i) => timers.push(setTimeout(() => { shots.forEach(o => o.classList.toggle('on', o === s)); dots.forEach((o, k) => o.classList.toggle('on', k === i)); S('cut', i); }, i * d + 20)));   // 每个镜头一小段声音（换成真视频就用视频自己的声音）

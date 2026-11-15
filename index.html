@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=en1" defer></script>
+<script src="flow.js?v=port1" defer></script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -404,7 +404,7 @@ body {
 .start-main:has(.start-endless) { top: 7%; gap: calc(var(--u) * 12); }   /* 多了一颗，整列往上提、收紧，不压到右下角的换语言 */
 .start-main:has(.start-endless) .start-more { gap: calc(var(--u) * 9); }
 #stage.port #startui .start-endless { width: 70%; font-size: max(15px, calc(var(--u) * 30)); }
-#stage.port .start-main:has(.start-endless) { top: 50%; gap: calc(var(--u) * 14); }
+#stage.port .start-main:has(.start-endless) { top: 44%; gap: calc(var(--u) * 14); }
 #startui .start-lang, #stage #flow-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 16 + var(--ib) / 2); translate: 0 50%; font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
 /* flow.js 给新玩家放在封面上的换语言按钮：换成一样的皮；这时候我们自己的那个和四颗小按钮都收起来（新玩家先看开场、签合同） */
 #stage #flow-lang { font-family: var(--display); font-weight: 400; line-height: 1; }
@@ -415,14 +415,14 @@ body {
 #stage.cover { --ib: max(44px, calc(var(--u) * 70)); }
 #stage.cover #mute { left: calc(var(--u) * 26); bottom: calc(var(--u) * 16); }
 /* 手机竖屏 */
-#stage.port .start-main { left: 0; right: 0; top: 55%; width: auto; gap: calc(var(--u) * 18); }
+#stage.port .start-main { left: 0; right: 0; top: 48%; width: auto; gap: calc(var(--u) * 18); }
 #stage.port #startui .start-go { width: 80%; font-size: max(18px, calc(var(--u) * 40)); }
 #stage.port .start-more { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 12) calc(var(--u) * 10); width: 74%; }
 #stage.port #startui .start-more .btn { width: calc(50% - var(--u) * 6); padding-left: .4em; padding-right: .4em; font-size: max(13px, calc(var(--u) * 25)); }
 #stage.port #startui .start-lang, #stage.cover.port #flow-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 10 + var(--ib) / 2); font-size: max(10px, calc(var(--u) * 15)); }
 #stage.cover.port #mute { left: calc(var(--u) * 8); bottom: calc(var(--u) * 10); }
 /* 竖着拿的平板（.short，比手机矮一截）：大按钮和下面四颗都小一号、挨紧一点，不然最后一排会压到右下角的换语言 */
-#stage.port.short .start-main { top: 53%; gap: calc(var(--u) * 11); }
+#stage.port.short .start-main { top: 47%; gap: calc(var(--u) * 11); }
 #stage.port.short #startui .start-go { font-size: max(18px, calc(var(--u) * 31)); }
 #stage.port.short .start-more { gap: calc(var(--u) * 9) calc(var(--u) * 10); }
 #stage.port.short #startui .start-more .btn { font-size: max(13px, calc(var(--u) * 21)); }
@@ -2411,7 +2411,7 @@ function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   coverBg(0, 0, VW, VH, PORT ? 1 : .5, BG2); skyFx(0, 0, VW, VH * .62, t, !PORT);
   const k = (EN ? KIT.aLogo : KIT.aLogoZh) || KIT.aLogo; if (!k) return;
-  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * .335) : 372 - h / 2;
+  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * .255) : 372 - h / 2;
   // 电脑上标题下面：一个发光的台子（aPed），上面一颗裂开的球（aBall）。两张都画在标题后面，球的上半截可以被标题挡住。
   // 台子先出来，球晚一点砸下来弹两下，之后轻轻一压一弹。手机竖屏只放标题
   const q = KIT.aBall, pd = KIT.aPed;
