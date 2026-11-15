@@ -1177,7 +1177,7 @@ let parts = [], frags = [], floats = [], stains = [];
    __yuan.snd.render(秒, () => __yuan.snd.sfx.名字(...)) 离线渲染一遍，返回峰值和 50 毫秒窗口里最响的响度（dBFS），不用耳朵也能比大小、查爆音 */
 const MIX = { master: .6, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5 };   // 各类音量（0…1），调音先改这里。master .6 = 以前的总音量
 let AC = null, OUT = null, BUS = {}, noiseBuf = null, muted = false;
-const SND = { cat: 'feedback', grp: '', voices: [], max: 32, last: {}, log: null, nogate: false };
+const SND = { cat: 'feedback', grp: '', voices: [], max: 32, last: {}, log: null, nogate: false, ran: false };   // nogate：render 离线渲染时开着（不防连发、不看在线的 AudioContext 状态）
 const PENT = [0, 2, 4, 7, 9], nt = i => 523.25 * Math.pow(2, (PENT[((i % 5) + 5) % 5] + 12 * Math.floor(i / 5)) / 12);
 /* 总线：各类音量 → 压缩器（软膝的限幅：-10 dB 以下原样过，往上 8:1 压住，几个声音叠在一起也不会顶破 0 dB）→ 总音量 → 扬声器。
    Web Audio 的压缩器会自动补一截增益（这组参数约 +3.6 dB，用 render 量的），COMP_TRIM 把它扣回去，所以平时不响的声音跟以前一样大、只有顶上去的那几下被压 */
@@ -1245,7 +1245,7 @@ function noise(dur, vol, type, freq, q, delay, o) {
   const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf; s.loop = true;
   f.type = type || 'bandpass'; f.frequency.setValueAtTime(freq || 1000, t0); if (o.f2 > 0) f.frequency.exponentialRampToValueAtTime(o.f2, t0 + dur); f.Q.value = q || 1;
   g.gain.value = 0; g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + att); g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
-  s.connect(f); f.connect(g); g.connect(BUS[SND.cat] || BUS.feedback); s.start(t0, Math.random() * .5, dur + .05); sndVoice(s, g, t0, end);
+  s.connect(f); f.connect(g); g.connect(BUS[SND.cat] || BUS.feedback); s.start(t0, Math.random() * .5, dur + .05); s.stop(end); sndVoice(s, g, t0, end);
 }
 const HIT = {
   wood: p => { tone(190, .1, .5 * p, 'triangle', 110); noise(.07, .5 * p, 'bandpass', 900, 1.2); },
@@ -1368,12 +1368,15 @@ const SFX = {
 /* 触发一个声音：先记日志（静音、还没解锁、防连发挡掉的也记），再按类别和分组去合成 */
 function sndPlay(name, def, args) {
   const cat = def[0], gap = def[1], now = cat === 'move' || cat === 'impact' || cat === 'ambience' ? G.time : performance.now() / 1000;
-  let why = !AC || AC.state === 'closed' || AC.state === 'interrupted' ? 'off' : muted ? 'muted' : document.hidden ? 'hidden' : '';   // 后台、来电时不排声音，免得回来一起响
+  if (AC && AC.state === 'running') SND.ran = true;
+  // 后台、来电、切回来还没叫醒时不排声音（时钟停着，排进去的会在叫醒那一下一起响）。刚建好、还没跑起来的那一下照常排：第一次点按的声音要它
+  let why = !AC || AC.state === 'closed' || (SND.ran && AC.state !== 'running' && !SND.nogate) ? 'off' : muted ? 'muted' : document.hidden ? 'hidden' : '';
   if (!why && gap && !SND.nogate) { const l = SND.last[name]; if (l !== undefined && now >= l && now - l < gap / 1000) why = 'gap'; else SND.last[name] = now; }
-  if (SND.log) { SND.log.push({ n: name, c: cat, t: Math.round(G.time * 100) / 100, a: args.filter(v => typeof v !== 'object').join(','), x: why }); if (SND.log.length > 600) SND.log.shift(); }
+  const ent = SND.log ? { n: name, c: cat, t: Math.round(G.time * 100) / 100, a: args.filter(v => typeof v !== 'object').join(','), x: why } : null;
+  if (ent) { SND.log.push(ent); if (SND.log.length > 600) SND.log.shift(); }
   if (why) return;
   const c0 = SND.cat, g0 = SND.grp; SND.cat = cat; SND.grp = typeof def[3] === 'function' ? def[3](...args) : def[3] || '';
-  try { def[2](...args); } catch (e) {} finally { SND.cat = c0; SND.grp = g0; }
+  try { def[2](...args); } catch (e) { if (ent) ent.x = 'err: ' + (e && e.message || e); } finally { SND.cat = c0; SND.grp = g0; }   // 合成出错不影响游戏，开着日志时记下来
 }
 const sfx = {}; for (const k in SFX) sfx[k] = (...a) => sndPlay(k, SFX[k], a);
 /* 掐掉正在响的、已经排好还没响的：给 grp 只掐那一组 */
@@ -2586,7 +2589,7 @@ const UI_KIND = { go: 'start', redo: 'start', replay: 'start', next: 'go', enter
   home: 'back', restart: 'back', devoff: 'back', wipe: 'back', dex: 'open', book: 'open', board: 'open', ach: 'open', lang: 'open', rename: 'open', extend: '' };
 function act(a) {
   audioInit(); const k = UI_KIND[a] === undefined ? 'tap' : UI_KIND[a];
-  if (k === 'start') { if (a !== 'replay' || G.state === 'play') sfx.start(); } else if (k) sfx.ui(k);   // 求宽限（extend）自己有声音，在 extendRound 里
+  if (k === 'start') { if (a !== 'replay' || (G.state === 'play' && G.mode !== 'endless')) sfx.start(); } else if (k) sfx.ui(k);   // 求宽限（extend）自己有声音，在 extendRound 里
   if (a === 'lang') { const to = EN ? 'zh' : 'en'; try { localStorage.setItem('yuan.lang', to); } catch (e) {} location.href = location.pathname + '?lang=' + to; return; }
   if (a === 'start') startAt(0);
   else if (a === 'resume') startAt(firstOpen());
