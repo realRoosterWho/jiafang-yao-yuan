@@ -817,7 +817,8 @@ function pickLang(then) {
   }));
 }
 function begin(replay) {
-  if (!replay && !langChosen()) { X.audioInit(); S('ui', 'go'); pickLang(() => begin(replay)); return; }
+  // 不再先弹语言选择：开场直接跟着开始界面的语言放（默认英文，开始界面右下角能换成中文）。pickLang 留着没删
+  try { if (!langChosen()) localStorage.setItem('yuan.lang', EN ? 'en' : 'zh'); } catch (e) {}
   ran = true; replaying = replay ? 1 : 0;
   X.audioInit(); S('ui', 'go');
   card.innerHTML = ''; overlay.hidden = true; stage.classList.remove('cover'); deliverBtn.hidden = true;

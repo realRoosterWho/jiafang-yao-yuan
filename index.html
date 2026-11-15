@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=deal4" defer></script>
+<script src="flow.js?v=deal4en" defer></script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -409,7 +409,8 @@ body {
 /* flow.js 给新玩家放在封面上的换语言按钮：换成一样的皮；这时候我们自己的那个和四颗小按钮都收起来（新玩家先看开场、签合同） */
 #stage #flow-lang { font-family: var(--display); font-weight: 400; line-height: 1; }
 #stage:not(.seen):has(#flow-lang) .start-more, #stage:not(.seen):has(#flow-lang) .start-lang { display: none; }
-#stage:not(.seen):not(.port):has(#flow-lang) .start-main { top: 50%; translate: 0 -50%; }   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
+#stage:not(.seen):not(.port):has(#flow-lang) .start-main { top: 50%; translate: 0 -50%; }
+#stage.port:not(.seen):has(#flow-lang) .start-main { top: 62%; }   /* 新玩家竖屏只有一颗「开始」：往下放一些，离标题远一点 */   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
 #stage.seen #flow-lang { display: none; }   /* 这一次打开以后已经离开过开始界面（.seen，showCover 第二次起加上）：开场流程走过了，按钮全给，换语言用我们自己的 */
 /* 封面上的声音按钮跟效果图一样大一号，往里收一点 */
 #stage.cover { --ib: max(44px, calc(var(--u) * 70)); }
@@ -1241,7 +1242,7 @@ function audioInit() {
    the limiter and the pause when the tab is hidden all apply to it. Not fetched while muted; if it cannot load, the game just has no music. */
 const BGM = { url: 'assets/bgm.b98819cfe3.mp3', buf: null, src: null, req: false, dead: false };
 function bgmStart() {
-  if (!AC || !BUS.music || BGM.src || BGM.dead || muted || SND.nogate) return;
+  if (!AC || !BUS.music || BGM.src || BGM.dead || muted || SND.nogate || !BGM.ok) return;   // ok：已经正式开工过一单（sndWatch 里置上）。开始界面、开场动画、新手关、合同都不放音乐
   if (BGM.buf) { try { const s = AC.createBufferSource(); s.buffer = BGM.buf; s.loop = true; s.connect(BUS.music); s.start(0); BGM.src = s; } catch (e) { BGM.dead = true; } return; }
   if (BGM.req) return; BGM.req = true; const ctx = AC;
   fetch(BGM.url).then(r => r.ok ? r.arrayBuffer() : Promise.reject(r.status)).then(b => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no))).then(buf => { BGM.buf = buf; bgmStart(); }).catch(() => { BGM.dead = true; });
@@ -2827,6 +2828,7 @@ const SW = { body: null, held: false, rot: 0, acc: 0, zone: -1, tier: 0, sec: 0,
 const ROT_STEP = .3;   // 转多少弧度咔哒一下（约 17°）：A / D 一秒 8 下，摇杆推到头 10 下
 function sndWatch(dt) {
   const b = G.body, play = G.state === 'play';
+  if (play && !BGM.ok && b && b.id !== 'tutor') { BGM.ok = true; bgmStart(); }   // 第一次正式开工（不是新手关的石头）：背景音乐从这里开始，之后一直循环
   if (b !== SW.body) { SW.body = b; SW.held = false; SW.acc = 0; SW.zone = -1; SW.tier = G.tier; SW.sec = 0; SW.red = false; SW.flow = 0; SW.hop = 0; SW.drip = 1.5; SW.th = b && b.sd ? Math.atan2(b.sd[1], b.sd[0]) : 0; }
   if (!b || b.dead) return;
   if (b.flee) { const k = Math.floor(b.fleeT * 13 / Math.PI); if (k > SW.hop && b.x < WALL_R + 60) sfx.hop(); SW.hop = k; }   // 跑掉的时候一蹦一个脚步
