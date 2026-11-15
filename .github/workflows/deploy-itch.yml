@@ -1,0 +1,77 @@
+name: Deploy HTML5 to itch.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - flow.js
+      - assets/**
+      - .github/workflows/deploy-itch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: itch-html5
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ITCH_TARGET: roosterwho/the-client-wants-it-round:html5
+    steps:
+      - name: Check deployment credential
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo '::error::Add the repository Actions secret BUTLER_API_KEY before deploying. See README.md.'
+            exit 1
+          fi
+
+      - name: Check out the game
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Stage only committed game files
+        run: |
+          stage="$RUNNER_TEMP/itch-game"
+          mkdir -p "$stage"
+          git archive HEAD -- index.html flow.js assets | tar -x -C "$stage"
+          test -s "$stage/index.html"
+          test -s "$stage/flow.js"
+          test -d "$stage/assets"
+
+      - name: Install official butler
+        env:
+          BUTLER_VERSION: 15.32.0
+          BUTLER_SHA256: 2335971394ef6596f95ded0833e85ee28755e13761716ef4c91d6b11f69162f5
+        run: |
+          archive="$RUNNER_TEMP/butler.zip"
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://broth.itch.zone/butler/linux-amd64/$BUTLER_VERSION/archive/default" \
+            --output "$archive"
+          echo "$BUTLER_SHA256  $archive" | sha256sum --check --strict
+          unzip -q "$archive" -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          "$RUNNER_TEMP/butler/butler" version
+
+      - name: Upload the HTML5 build
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          "$RUNNER_TEMP/butler/butler" push "$RUNNER_TEMP/itch-game" "$ITCH_TARGET" \
+            --userversion "${GITHUB_SHA:0:12}"
+          "$RUNNER_TEMP/butler/butler" status "$ITCH_TARGET"
+          {
+            echo '### itch.io HTML5 upload'
+            echo "Target: \`$ITCH_TARGET\`"
+            echo "Commit: \`$GITHUB_SHA\`"
+            echo 'Uploads update the game build; project visibility, cover, banner and description are managed on itch.io.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -204,6 +204,17 @@ git config core.hooksPath .githooks
 
 手动部署本地 HEAD：`server/deploy.sh`；推送时不立刻部署：`FC_NO_DEPLOY=1 git push`（树莓派一分钟内还是会部署）。终端里看汇总：`ssh roosterpi 'cd ~/services/fullcircle && python3 collector.py report'`。
 
+## itch.io 自动更新
+
+`.github/workflows/deploy-itch.yml` 把 `main` 上的 `index.html`、`flow.js` 和 `assets/` 上传到 `roosterwho/the-client-wants-it-round:html5`。这些文件或工作流变化时自动运行，也可在 GitHub Actions 的 **Deploy HTML5 to itch.io → Run workflow** 手动运行（选择 `main`）。只上传提交里的游戏运行文件，不上传服务端、玩家数据或宣传素材。版本号是提交 SHA 的前 12 位。
+
+首次启用需要两步：
+
+1. 用官方 [butler 登录流程](https://itch.io/docs/butler/login.html)取得 `wharf` 凭据，将它存为这个 GitHub 仓库的 Actions secret **`BUTLER_API_KEY`**。不要把密钥提交进仓库或贴到聊天里。Mac 上登录后的凭据位于 `~/Library/Application Support/itch/butler_creds`，可直接用 `gh secret set BUTLER_API_KEY < "$HOME/Library/Application Support/itch/butler_creds"` 安全写入当前仓库。
+2. 首次运行成功后，在 itch 编辑页把新出现的 **html5** 上传勾选为「该文件将在浏览器中运行」，保存并预览。旧的手动 ZIP 不会自动变成这个 channel；确认新版本能运行后，可将旧 ZIP 隐藏以免玩家下载旧版。之后工作流始终更新同一个 channel，不需要反复勾选。
+
+工作流只更新游戏文件，保留 itch 页面的草稿/公开状态、封面、横幅、介绍与主题；玩家已经打开的游戏需要刷新才会加载新版。运行状态和失败原因见 GitHub Actions，首次凭据缺失时会在上传前明确报错。butler 从官方 broth 下载，固定版本并校验 SHA-256；更新 butler 时需一起更新版本号和校验值。参见 [butler 上传文档](https://itch.io/docs/butler/pushing.html)。
+
 ## 加载和缓存
 
 图片和字体都是 `assets/` 下的单独文件，文件名带内容哈希（`tools/make_art.py`、`tools/subset_fonts.py` 生成时自动加）。服务器给 `/assets/` 发一年的 `immutable` 缓存，所以**换图一定要换文件名**（重新跑脚本就会换），别原地覆盖同名文件。`index.html` 和 `flow.js` 是 `no-cache` + ETag：每次打开问一下，没变就回 304。部署（`server/deploy.sh`）会把 HEAD 里的 `assets/` 一起推上去，旧文件留在服务器上不删。
