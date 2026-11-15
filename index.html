@@ -1474,6 +1474,10 @@ function stepBody(b, dt) {
   if (b.held) {
     // 手握：角度和位置都跟着手走，材料越沉跟得越慢
     b.w = clamp((b.targetA + b.userRot - b.a) * 16, -14, 14); b.a += b.w * dt;
+    // 玩家主动转角度（摇杆、A / D、滚轮）时绕质心转：这一帧转过的角度里属于 userRot 的那份，把拎着的点在料上反着转回去，料的中心就不跟着甩
+    { const pend = b.userRot - (b.uDone || 0), da = b.w * dt;
+      const part = Math.sign(da) === Math.sign(pend) ? Math.sign(pend) * Math.min(Math.abs(da), Math.abs(pend)) : 0;
+      if (part) { const pc = Math.cos(-part), ps = Math.sin(-part), gx = b.gx; b.gx = gx * pc - b.gy * ps; b.gy = gx * ps + b.gy * pc; b.uDone = (b.uDone || 0) + part; } }
     const c = Math.cos(b.a), s = Math.sin(b.a);
     // 手指离屏幕顶不到 170 时，料挂在手指下面的那段距离跟着缩（最少留 45%，料的上沿大约贴着屏幕顶，不会整个顶出去）：不然挂着的那段把能拎的高度吃掉了
     const hangK = b.touchGrab ? clamp((P.y - (6 - TOP)) / 170, .45, 1) : 1;
@@ -2667,7 +2671,7 @@ function tryGrab() {
   const b = G.body; if (!b || b.dead || G.state !== 'play') return false;
   const tg = P.touch == null ? TOUCH : P.touch;   // 这一下是不是手指（平板接触控板、触屏电脑都可能混着来）
   const h = toLocal(b, P.x, P.y, tg ? 30 * P.k : 14); if (!h.inside) return false;   // 触屏手指粗，料边外 30 像素内都算抓到
-  b.touchGrab = tg; b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.holdT = 0;
+  b.touchGrab = tg; b.held = true; b.sleeping = false; b.sleepT = 0; b.primary = true; b.dropGood = 0; b.gx = h.x; b.gy = h.y; b.userRot = 0; b.uDone = 0; b.holdT = 0;
   // 触屏：手指会挡住料，拎起来时把料挂到手指下方，料的最高点离手指留 64 像素（lift 为负 = 往下）
   b.lift = 0; b.liftTo = tg ? -(Math.max(0, b.meanR - Math.hypot(h.x, h.y)) + 64 * P.k) : 0;
   b.targetA = Math.hypot(h.x, h.y) > b.meanR * .3 ? b.a + wrapPi(-Math.PI / 2 - Math.atan2(h.y, h.x) - b.a) : b.a;
