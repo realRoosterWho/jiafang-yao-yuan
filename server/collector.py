@@ -39,7 +39,7 @@ RATE = 120            # 每个来源每分钟最多这么多条（只在内存�
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/flow.js": ("flow.js", "text/javascript; charset=utf-8")}   # 开场流程：播片、新手关、签合同
 # /assets/ 下是图片和字体，文件名里带内容哈希（改了图就换名字），所以可以让浏览器和 Cloudflare 缓存一年
-ASSET_TYPES = {".webp": "image/webp", ".png": "image/png", ".woff2": "font/woff2", ".woff": "font/woff"}
+ASSET_TYPES = {".webp": "image/webp", ".png": "image/png", ".woff2": "font/woff2", ".woff": "font/woff", ".mp3": "audio/mpeg"}
 
 _db_lock = threading.Lock()
 _hits: dict[str, deque] = defaultdict(deque)

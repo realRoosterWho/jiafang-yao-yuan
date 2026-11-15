@@ -1194,7 +1194,7 @@ let parts = [], frags = [], floats = [], stains = [];
    · 没做背景音乐：听不到效果之前不敢放一段一直响的东西。
    调音：控制台 __yuan.snd.MIX.ui = .4; __yuan.snd.apply()。__yuan.snd.log = [] 以后每次触发都记一条（被静音、防连发挡掉的也记，x 是原因）。
    __yuan.snd.render(秒, () => __yuan.snd.sfx.名字(...)) 离线渲染一遍，返回峰值和 50 毫秒窗口里最响的响度（dBFS），不用耳朵也能比大小、查爆音 */
-const MIX = { master: .6, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5 };   // 各类音量（0…1），调音先改这里。master .6 = 以前的总音量
+const MIX = { master: .6, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5, music: .18 };   // 各类音量（0…1），调音先改这里。master .6 = 以前的总音量
 let AC = null, OUT = null, BUS = {}, noiseBuf = null, muted = false;
 const SND = { cat: 'feedback', grp: '', voices: [], max: 32, last: {}, log: null, nogate: false, ran: false };   // nogate：render 离线渲染时开着（不防连发、不看在线的 AudioContext 状态）
 const PENT = [0, 2, 4, 7, 9], nt = i => 523.25 * Math.pow(2, (PENT[((i % 5) + 5) % 5] + 12 * Math.floor(i / 5)) / 12);
@@ -1219,7 +1219,17 @@ function audioInit() {
     const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
     try { AC = new Ctx(); const g = sndGraph(AC); OUT = g.out; BUS = g.bus; noiseBuf = g.nb; } catch (e) { AC = null; return; }
   }
-  audioWake();
+  audioWake(); bgmStart();
+}
+/* BGM: one looping track (assets/bgm.*.mp3, mono 80 kbps, about 1 MB), kept well under the sound effects (MIX.music).
+   Fetched after the first tap or key press, decoded once and looped through the same bus as everything else, so the mute button,
+   the limiter and the pause when the tab is hidden all apply to it. Not fetched while muted; if it cannot load, the game just has no music. */
+const BGM = { url: 'assets/bgm.b98819cfe3.mp3', buf: null, src: null, req: false, dead: false };
+function bgmStart() {
+  if (!AC || !BUS.music || BGM.src || BGM.dead || muted || SND.nogate) return;
+  if (BGM.buf) { try { const s = AC.createBufferSource(); s.buffer = BGM.buf; s.loop = true; s.connect(BUS.music); s.start(0); BGM.src = s; } catch (e) { BGM.dead = true; } return; }
+  if (BGM.req) return; BGM.req = true; const ctx = AC;
+  fetch(BGM.url).then(r => r.ok ? r.arrayBuffer() : Promise.reject(r.status)).then(b => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no))).then(buf => { BGM.buf = buf; bgmStart(); }).catch(() => { BGM.dead = true; });
 }
 /* 挂起了就叫醒（切后台时是我们自己挂的，回到前台再醒）。顺手放一个空声音：老 iOS 要在点按里放过一个声音才算解锁 */
 function audioWake() {
@@ -1467,7 +1477,7 @@ function sndRender(sec, fn, raw, at = .5) {
     return { peak: db(pk), loud: db(loud), clip: pk >= 1, voices: started, left: V.length };   // voices：这一下登记了几个声音；left：渲染完还没收走的（应该是 0）
   });
 }
-const SNDAPI = { MIX, SFX, sfx, HIT, nt, apply: sndApply, hush: sndHush, render: sndRender, get log() { return SND.log; }, set log(v) { SND.log = v; }, get voices() { return SND.voices.length; }, get ctx() { return AC; } };
+const SNDAPI = { bgm: BGM, MIX, SFX, sfx, HIT, nt, apply: sndApply, hush: sndHush, render: sndRender, get log() { return SND.log; }, set log(v) { SND.log = v; }, get voices() { return SND.voices.length; }, get ctx() { return AC; } };
 
 /* ---------- 甲方的台词 ---------- */
 const LINES = {
@@ -2311,7 +2321,7 @@ function startSync() {
   startUI.innerHTML = `<div class="start-main">
     ${b('start-go', 'go', won && eo ? L('无尽模式', 'Endless') : at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开始', 'Start'), '', ticks)}
     ${eo && !won ? b('ghost start-endless', 'endless', L('无尽模式', 'Endless')) : ''}
-    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法', 'How to play'))}</div>
+    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
   </div>
   ${b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
 }
@@ -2428,7 +2438,9 @@ function showMenu(msg) {
       <li><b>${L('磨', '3')}</b><span>${L('把凸出虚线圆的角转到朝下再松手。', '<strong>Trim.</strong> Turn the corners outside the dashed circle to face down, then let go.')}</span></li>
     </ul>
     <div class="row"><button class="btn" type="button" data-act="home">${L('返回', 'Back')}</button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}</div>
-    ${msg ? `<p class="note" role="status">${msg}</p>` : ''}`);
+    ${msg ? `<p class="note" role="status">${msg}</p>` : ''}
+    ${whoRow()}
+    ${CLOUD ? `<p class="note">${L('匿名记录成绩用来调难度；起了名字会存名字、最高酬劳、星级、无尽模式纪录和成就。', 'Anonymous stats tune difficulty. A name is stored with your best pay, stars, endless record and achievements.')}</p>` : ''}`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
