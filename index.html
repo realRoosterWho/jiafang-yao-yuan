@@ -1209,7 +1209,7 @@ let parts = [], frags = [], floats = [], stains = [];
    · 没做背景音乐：听不到效果之前不敢放一段一直响的东西。
    调音：控制台 __yuan.snd.MIX.ui = .4; __yuan.snd.apply()。__yuan.snd.log = [] 以后每次触发都记一条（被静音、防连发挡掉的也记，x 是原因）。
    __yuan.snd.render(秒, () => __yuan.snd.sfx.名字(...)) 离线渲染一遍，返回峰值和 50 毫秒窗口里最响的响度（dBFS），不用耳朵也能比大小、查爆音 */
-const MIX = { master: .6, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5, music: .18 };   // 各类音量（0…1），调音先改这里。master .6 = 以前的总音量
+const MIX = { master: .78, ui: .55, move: .5, impact: 1, feedback: .75, voice: .7, ambience: .5, music: .09 };   // 各类音量（0…1），调音先改这里。master 从 .6 调到 .78：音效整体大约响 2 dB；音乐同时从 .18 降到 .09，算上总音量大约轻了 4 dB
 let AC = null, OUT = null, BUS = {}, noiseBuf = null, muted = false;
 const SND = { cat: 'feedback', grp: '', voices: [], max: 32, last: {}, log: null, nogate: false, ran: false };   // nogate：render 离线渲染时开着（不防连发、不看在线的 AudioContext 状态）
 const PENT = [0, 2, 4, 7, 9], nt = i => 523.25 * Math.pow(2, (PENT[((i % 5) + 5) % 5] + 12 * Math.floor(i / 5)) / 12);
