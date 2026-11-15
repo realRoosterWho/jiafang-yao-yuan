@@ -19,7 +19,6 @@ const S = (name, ...a) => { try { const s = X.sfx || {}; if (s[name]) s[name](..
 const CONFIG = {
   video: '',            // 播片做好以后填文件名或完整网址（如 'intro.mp4'）。留空就放下面的占位动画
   placeholderMs: 7500,  // 三个镜头一共放多久（每个 2.5 秒；能跳过）
-  collectionAct: 'dex' // 「去收藏室看看」点了以后做什么。现在接的是图鉴（act('dex')）；订单簿藏起来了，是开发者入口
 };
 /* 新手关：一块只有一个凸起的石头。砸不碎、不计时。只教两件事，限制得很死：
    ① 手势：一根手指按住往上拎，另一根手指左右滑把凸起转到朝下（电脑上是 A / D），然后松手。
@@ -153,59 +152,67 @@ html[lang="en"] .fd-lead { text-indent: 0; }
 .fd-a, .fd-b { position: relative; min-height: 7.4em; }
 .fd-seal { position: absolute; left: 1.2em; top: 1.6em; width: 6.6em; height: 6.6em; transform: rotate(-9deg); opacity: .84; mix-blend-mode: multiply; pointer-events: none; }
 .fd-scrawl { position: absolute; left: 4.4em; top: 2.2em; width: 7em; height: 3.6em; opacity: .85; pointer-events: none; }
-.fd-line { position: relative; display: flex; align-items: flex-end; margin-top: .5em; border-bottom: 1.5px solid #2b2622; }
-.fd-line input {
-  flex: 1 1 0; min-width: 0; width: 100%; box-sizing: border-box; margin: 0; padding: .1em 3.1em 0 .25em; border: 0; border-radius: 0; background: transparent; outline: none;
-  font: 400 max(27px, 1.9em)/1.25 ${HAND}; color: #1d2c6e; caret-color: #1d2c6e; -webkit-user-select: text; user-select: text; -webkit-appearance: none; appearance: none;
-}
-.fd-line input::placeholder { font: 500 15px/2.2 ${SERIF}; color: #a39a8c; }
-.fd-line input:disabled { opacity: 1; -webkit-text-fill-color: #1d2c6e; }
-.fd-line:focus-within { border-bottom-color: #1d2c6e; box-shadow: 0 1.5px 0 #1d2c6e; }
-.fd-thumb { position: absolute; right: -.3em; bottom: -1.1em; width: 4.3em; height: 4.3em; padding: 0; border: 2px dashed #c0281c; border-radius: 50%; background: rgb(192 40 28 / .05); color: #b3261e; font: 700 .8em/1.25 ${SERIF}; cursor: pointer; transform: rotate(-8deg); }
-.fd-thumb:hover { background: rgb(192 40 28 / .13); }
-.fd-thumb:focus-visible { outline: 2px solid #1d2c6e; outline-offset: 3px; }
-.fd-thumb svg { display: none; width: 100%; height: 100%; }
-.fd-thumb.done { border-color: transparent; background: none; cursor: default; mix-blend-mode: multiply; }
-.fd-thumb.done span { display: none; } .fd-thumb.done svg { display: block; }
-.fd-flag { position: absolute; right: -1.1em; bottom: calc(100% + 12px); padding: .5em .75em 1.05em; font: 700 12.5px/1 ${BODY}; color: #5b2b00; background: #ffd35c; clip-path: polygon(0 0, 100% 0, 100% 68%, 62% 68%, 50% 100%, 38% 68%, 0 68%); filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); white-space: nowrap; animation: fdFlag 1s ease-in-out infinite alternate; pointer-events: none; }
-@keyframes fdFlag { to { transform: translateY(5px); } }
-.fd-msg { min-height: 1.5em; margin-top: 1.25em !important; font: 400 1.2em/1.25 ${HAND}; color: #b3261e; }
+.fd-line { position: relative; display: flex; align-items: flex-end; min-height: 2.7em; margin-top: .5em; border-bottom: 1.5px solid #2b2622; }
+/* 签名一笔一笔写出来：从左往右露出来 */
+.fd-sig { flex: 1 1 0; min-width: 0; padding: .1em 3.4em 0 .25em; font: 400 1.9em/1.25 ${HAND}; color: #1d2c6e; white-space: nowrap; clip-path: inset(-.3em 100% -.3em 0); }
+.fd-who { clip-path: inset(-.3em 100% -.3em 0); }
+.fd-sig.on, .fd-who.on { animation: fdWrite var(--wt, .9s) cubic-bezier(.45, .1, .55, .9) both; }
+@keyframes fdWrite { from { clip-path: inset(-.3em 100% -.3em 0); } to { clip-path: inset(-.3em 0 -.3em 0); } }
+.fd-thumb { position: absolute; right: -.3em; bottom: -1.1em; width: 4.3em; height: 4.3em; transform: rotate(-8deg); mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+.fd-thumb svg { display: block; width: 100%; height: 100%; }
+.fd-thumb.on { opacity: 1; animation: fdPress .3s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes fdPress { from { opacity: 0; transform: rotate(-8deg) scale(1.9); } }
 .fd-date { grid-column: 1 / -1; margin-top: .2em !important; text-align: right; font-size: .88em; color: #4a433c; }
 .fd-stamp { position: absolute; left: 50%; top: 43%; width: 8.6em; height: 8.6em; margin: -4.3em 0 0 -4.3em; display: grid; place-items: center; border: 4px solid #c0281c; border-radius: 50%; outline: 1.5px solid #c0281c; outline-offset: -9px; color: #c0281c; font: 700 1.75em/1.2 ${SERIF}; letter-spacing: .12em; text-align: center; transform: rotate(-14deg); opacity: .86; mix-blend-mode: multiply; pointer-events: none; animation: fdStamp .32s cubic-bezier(.2, 1.4, .4, 1) both; }
 html[lang="en"] .fd-stamp { font-size: 1.25em; letter-spacing: .08em; width: 11em; height: 11em; margin: -5.5em 0 0 -5.5em; }
 @keyframes fdStamp { from { transform: rotate(-14deg) scale(2.4); opacity: 0; } }
 .fd-hand { position: absolute; left: -64px; top: -50px; width: 120px; height: 104px; pointer-events: none; animation: fdHand .5s 1.15s ease-in both; }
 @keyframes fdHand { to { transform: translate(-90px, -70px); opacity: 0; } }
+#flow-deal { cursor: pointer; -webkit-tap-highlight-color: transparent; padding-bottom: 104px; }   /* 底下留给「点一下开工」 */
+/* 播完以后底下的「点一下开工」 */
+.fd-next { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); z-index: 9; transform: translateX(-50%); display: grid; gap: .3em; justify-items: center; width: max-content; max-width: calc(100vw - 32px); padding: .6em 1.3em .65em; border-radius: 999px; background: rgb(17 13 43 / .82); box-shadow: inset 0 0 0 1px #5143a0, 0 4px 14px rgb(0 0 0 / .4); color: #f4f0ff; text-align: center; pointer-events: none; opacity: 0; transition: opacity .3s; }
+.fd-next.on { opacity: 1; }
+.fd-next b { font: 400 19px/1.1 ${DISPLAY}; letter-spacing: .04em; animation: fdNext 1s ease-in-out infinite alternate; }
+@keyframes fdNext { to { opacity: .55; } }
+.fd-next small { font: 500 12px/1.35 ${BODY}; color: #a9a1d6; }
+.fd-next small:empty { display: none; }
+/* 横着拿手机：屏幕矮，纸放宽一点（行数少就不用缩那么小），底下的提示也收小 */
+@media (max-height: 520px) and (min-width: 561px) {
+  #flow-deal { padding-top: 8px; padding-bottom: 58px; }
+  .fd-paper { width: min(100%, 800px); padding: 18px 34px 16px; }
+  .fd-sub { padding: .4em 0 .6em; }
+  .fd-parties { margin: .6em 0 .3em; }
+  .fd-a, .fd-b { min-height: 5.6em; }
+  .fd-next { bottom: max(8px, env(safe-area-inset-bottom, 0px)); padding: .4em 1.1em .45em; gap: .15em; }
+  .fd-next b { font-size: 16px; }
+  .fd-next small { font-size: 11px; }
+}
+
+/* 签合同之前的起名字（游戏自己的卡片里） */
+.flow-name h2 { margin-top: .1em; }
+.flow-name .who-row input { flex: 1 1 auto; min-width: 0; font-size: max(16px, 1em); }
+.flow-name .fd-dice { flex: 0 0 auto; align-self: center; width: 2.7em; height: 2.7em; min-height: 0; padding: 0; font-size: 1.15em; line-height: 1; }
+.flow-name .fd-dice.roll { animation: fdRoll .35s ease-out; }
+@keyframes fdRoll { from { transform: rotate(-200deg) scale(.7); } }
+.flow-name .flow-go { margin-top: .5em; }
+.flow-name .flow-go .btn:not(.ghost) { flex: 1 1 10em; }
+.flow-name .err:empty { display: none; }
 .fd-shake { animation: fdShake .32s linear; }
 @keyframes fdShake { 20% { transform: translateX(-7px); } 45% { transform: translateX(6px); } 70% { transform: translateX(-4px); } 90% { transform: translateX(2px); } }
-.fd-more { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); z-index: 9; transform: translateX(-50%); padding: .5em 1.1em; border: 0; border-radius: 3px; background: #ffd35c; color: #5b2b00; font: 700 14px/1 ${BODY}; white-space: nowrap; box-shadow: 0 3px 10px rgb(0 0 0 / .45); cursor: pointer; }
-/* 签名下面两颗小按钮：随便起一个名字 / 不起名，先当访客 */
-.fd-alt { display: flex; flex-wrap: wrap; gap: .5em 1.1em; align-items: center; margin-top: 1.5em; }
-.fd-alt button { min-height: 40px; padding: .35em .2em; border: 0; background: none; color: #1d2c6e; font: 600 .9em/1.2 ${BODY}; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: .28em; -webkit-tap-highlight-color: transparent; }
-.fd-alt button:hover { color: #b3261e; }
-.fd-alt button:focus-visible { outline: 2px solid #1d2c6e; outline-offset: 2px; }
-.fd-alt button:disabled { opacity: .4; cursor: default; }
-.fd-alt .fd-dice::before { content: '🎲'; margin-right: .3em; text-decoration: none; display: inline-block; }
-.fd-alt .fd-dice.roll::before { animation: fdRoll .35s ease-out; }
-@keyframes fdRoll { from { transform: rotate(-200deg) scale(.6); } }
-.fd-alt .fd-guest { margin-left: auto; color: #6f655a; }
-.fd-msg:empty { margin-top: 0 !important; min-height: 0; }
 @media (max-width: 560px) {
   .fd-paper { padding: 22px 20px 20px; font-size: 14px; line-height: 1.62; transform: none; }   /* 手机上纸不歪：字更清楚 */
   .fd-title { font-size: 1.8em; }
   /* 签字那一栏占满整行，甲方的章挪到下面跟日期一排 */
   .fd-sign { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 1.1em; }
   .fd-b { order: 1; min-height: 0; }
-  .fd-a { order: 2; min-height: 6.4em; margin-top: .9em; }
+  .fd-a { order: 2; min-height: 6.4em; margin-top: 1.4em; }
   .fd-date { order: 3; margin-top: -1.7em !important; }
   .fd-seal { left: .2em; top: 1.2em; width: 5.4em; height: 5.4em; }
   .fd-scrawl { left: 2.6em; top: 1.9em; width: 5.4em; }
-  .fd-line input { font-size: max(28px, 2em); padding-right: 4em; }
-  .fd-thumb { width: 5em; height: 5em; bottom: -1.3em; }   /* 拇指好按 */
-  .fd-alt { margin-top: 1.9em; }
+  .fd-sig { font-size: 2em; }
   .fd-note { margin-left: .2em; }
 }
-@media (prefers-reduced-motion: reduce) { .fd-flag, .fd-stamp, .fd-hand, .fc-shot.on .pop, .fc-shot.on .bob, .fc-shot.on .rise, .fc-shot.on .spin, .fc-shot.on .beam, #flow-cut .tw, .fc-shot.on .fc-cap { animation: none; } .fd-hand { display: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-stamp, .fd-hand, .fd-next b, .fc-shot.on .pop, .fc-shot.on .bob, .fc-shot.on .rise, .fc-shot.on .spin, .fc-shot.on .beam, #flow-cut .tw, .fc-shot.on .fc-cap { animation: none; } .fd-hand { display: none; } }
 
 /* 签完以后的两个去处：下一关最大 */
 .flow-go { display: flex; flex-wrap: wrap; gap: .8em 1em; align-items: center; margin-top: .2em; }
@@ -632,12 +639,82 @@ const HANDSVG = `<svg class="fd-hand" viewBox="0 0 120 104" aria-hidden="true"><
 
 // 游戏顺序是「冒险模式 + 剩下的关卡」（index.html 里的 PARTS）；老版本没有 PARTS 时全算冒险模式
 const parts = () => { const p = X.PARTS && X.PARTS[0], n = Y.ORDER.length, a = p ? p.to - p.from : n; return { advN: a, restN: n - a }; };
+/* 签合同分两步：先在游戏自己的卡片里起名字（甲方在舷窗里问），再放合同的过场：纸飞进来，名字自己写上，按手印、盖章，点一下直接开工 */
 function openContract(round) {
+  phase = 'naming'; track('naming'); stage.classList.add('flow-lock');   // 起名字的时候不给回首页
+  G.mood = 'calm'; G.moodT = 0; S('alien', 'hi', .2);
+  G.bubble = { text: L('地球人，你叫什么？', 'Earthling, what is your name?'), t0: G.time, dur: 600, lines: null };
+  const name0 = X.NAME || FL.name || '';
+  X.setCard(`
+    <form class="who flow-name" autocomplete="off" novalidate>
+      <p class="eyebrow">${L('签合同之前', 'Before you sign')}</p>
+      <h2>${L('你叫什么名字？', 'What is your name?')}</h2>
+      <p class="note">${X.CLOUD ? L('名字就是存档名。换设备输同一个名字，就能接着玩。', 'Your name is your save. Use the same name on any device to continue.') : L('现在是离线打开，名字只记在这台设备上。', 'Running offline: your name is kept on this device only.')}</p>
+      <span class="who-row">
+        <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('你的名字', 'Your name')}" value="${escH(name0)}" aria-label="${L('你的名字', 'Your name')}">
+        <button class="btn ghost small fd-dice" type="button" title="${L('随便起一个', 'Random name')}" aria-label="${L('随便起一个', 'Random name')}">🎲</button>
+      </span>
+      <span class="note err" role="alert"></span>
+      <div class="flow-go">
+        <button class="btn" type="submit">${L('就叫这个', 'That’s me')}</button>
+        ${X.NAME ? '' : `<button class="btn ghost small fd-guest" type="button">${L('先当访客', 'Play as guest')}</button>`}
+      </div>
+    </form>`);
+  const form = card.querySelector('.flow-name'), input = form.querySelector('#fd-name'), msg = form.querySelector('.err');
+  const dice = form.querySelector('.fd-dice'), guest = form.querySelector('.fd-guest'), row = form.querySelector('.who-row');
+  const btns = [...form.querySelectorAll('button')];
+  const lock = on => { input.disabled = on; btns.forEach(b => { b.disabled = on; }); };
+  let busy = false, done = false;
+  if (!TOUCH) setTimeout(() => { if (phase === 'naming') try { input.focus({ preventScroll: true }); } catch (e) {} }, 350);   // 手机上不自动弹键盘
+  const refuse = text => {
+    S('nope'); msg.textContent = text; row.classList.remove('fd-shake'); void row.offsetWidth; row.classList.add('fd-shake');
+    try { input.focus(); } catch (e) {}
+  };
+  input.addEventListener('input', () => { msg.textContent = ''; });
+  dice.addEventListener('click', () => {
+    if (busy || done) return;
+    X.audioInit(); S('ui');
+    input.value = randomName(input.value); msg.textContent = '';
+    dice.classList.remove('roll'); void dice.offsetWidth; dice.classList.add('roll');
+    track('rndname');
+  });
+  const go = (name, how) => {
+    done = true; FL.signed = 1; FL.name = name; saveFL(); track('signed', { how });
+    G.bubble = null; S('ui', 'go'); stage.classList.remove('flow-lock');
+    card.innerHTML = ''; overlay.hidden = true;
+    playContract(round, name, how);
+  };
+  if (guest) guest.addEventListener('click', () => { if (busy || done) return; X.audioInit(); go('', 'guest'); });   // 访客：进度只记在这台设备上，首页随时可以再起名字
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); if (busy || done) return;
+    X.audioInit();
+    const name = cleanName(input.value);
+    if (!name) return refuse(guest ? L('起个名字，或者先当访客。', 'Pick a name, or play as guest.') : L('起个名字吧。', 'Pick a name.'));
+    if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).'));
+    if (!X.CLOUD) return go(name, 'offline');   // file:// 打开：没有云存档，名字只记在本机
+    busy = true; lock(true); msg.textContent = '';
+    const submit = form.querySelector('[type=submit]'), label = submit.textContent; submit.textContent = L('归档中…', 'Filing…');
+    X.WHO.err = '';
+    await Promise.race([X.setName(name), new Promise(r => setTimeout(r, 7000))]).catch(() => {});
+    busy = false; submit.textContent = label;
+    const err = X.WHO.err; X.WHO.err = '';
+    if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return go(X.NAME, 'cloud');
+    if (err && /16/.test(err)) { lock(false); return refuse(err); }   // 服务器说名字不合规
+    // 存档服务连不上：先在本机记下，名字留在 yuan.name 里，下次打开时游戏会自己补存
+    try { localStorage.setItem('yuan.name', name); } catch (e2) {}
+    go(name, 'later');
+  });
+}
+
+function playContract(round, name, how) {
   phase = 'contract'; track('contract');
-  const no = contractNo(), now = new Date(), orders = Y.ORDER.length, name0 = X.NAME || FL.name || '';
-  const { advN, restN } = parts();
+  const no = contractNo(), now = new Date(), shown = name || L('访客', 'Guest');
+  const { advN } = parts();
   const date = EN ? now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-  const trial = round ? L(`乙方试工圆度 ${pct(round)}，甲方决定雇用。`, `Trial order: ${pct(round)} round. The Client decided to hire.`) : L('乙方试工合格，甲方决定雇用。', 'The Artisan passed the trial. The Client decided to hire.');
+  const trial = round ? L(`乙方试工圆度 ${pct(round)}，甲方决定雇用。`, `Trial: ${pct(round)} round. Hired.`) : L('乙方试工合格，甲方决定雇用。', 'Trial passed. Hired.');
+  const note = how === 'later' ? L('存档服务这会儿连不上，名字先记在这台设备上，下次打开会自动补存。', 'The save server is unreachable. Your name is kept here and will sync next time.')
+    : how === 'offline' ? L('离线打开：名字只记在这台设备上。', 'Offline: your name is kept on this device only.')
+    : how === 'guest' ? L('访客的进度只存在这台设备上，回首页随时可以起名字。', 'Guest progress stays on this device. Pick a name on the home screen any time.') : '';
   const layer = document.createElement('div'); layer.id = 'flow-deal'; layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-labelledby', 'fd-title');
   layer.innerHTML = `
   <article class="fd-paper">
@@ -646,136 +723,79 @@ function openContract(round) {
     <h2 class="fd-title" id="fd-title">${L('劳务合同', 'Employment Contract')}</h2>
     <p class="fd-sub">${L('EMPLOYMENT CONTRACT', '劳 务 合 同')}</p>
     <div class="fd-parties">
-      <p><b>${L('甲方（雇主）：', 'Party A (the Client): ')}</b>${L('母星甲方', 'The Client, Homeworld')}</p>
-      <p><b>${L('乙方（工匠）：', 'Party B (the Artisan): ')}</b><span class="fd-who" data-who-mirror>${escH(name0) || '&nbsp;'}</span>${L('，地球', ', Earth')}</p>
+      <p><b>${L('甲方（雇主）：', 'Party A: ')}</b>${L('母星甲方', 'The Client')}</p>
+      <p><b>${L('乙方（工匠）：', 'Party B: ')}</b><span class="fd-who">${escH(shown)}</span>${L('，地球', ', Earth')}</p>
     </div>
     <p class="fd-lead">${trial}</p>
     <ol class="fd-terms">
-      <li><b>${L('第一条　工作', '1. Work.')}</b>${L(`甲方送来什么，乙方就做圆什么。先做冒险模式 ${advN} 单，之后加班到撑不住为止。`, `Make round whatever the Client sends: ${advN} adventure orders, then overtime until you give out.`)}</li>
-      <li><b>${L('第二条　酬劳', '2. Pay.')}</b>${L('耐心耗尽前达标就付 ◎，越圆越快给得越多。', 'Hit the target before patience runs out to get paid in ◎. Rounder and faster pays more.')}</li>
-      <li><b>${L('第三条　违约', '3. Breach.')}</b>${L('完不成的，<em>乙方本人被做成圆形</em>。', 'Fail, and <em>you will be made round</em>.')}<span class="fd-note">${L('← 认真的', '← we mean it')}</span></li>
-      <li><b>${L('第四条　档案', '4. Records.')}</b>${X.CLOUD
-        ? L('签名就是存档名，换设备签同一个名字接着干。', 'Your signature is your save name. Sign the same name on any device to continue.')
-        : L('签名就是存档名。现在是离线打开，只记在这台设备上。', 'Your signature is your save name. Offline: kept on this device only.')}</li>
+      <li><b>${L('第一条　工作', '1. Work.')}</b>${L(`甲方送来什么，乙方就做圆什么。先做冒险模式 ${advN} 单，之后加班到撑不住为止。`, `Make round whatever the Client sends. ${advN} orders, then overtime.`)}</li>
+      <li><b>${L('第二条　酬劳', '2. Pay.')}</b>${L('耐心耗尽前达标就付 ◎，越圆越快给得越多。', 'Hit the target in time, get paid in ◎.')}</li>
+      <li><b>${L('第三条　违约', '3. Breach.')}</b>${L('完不成的，<em>乙方本人被做成圆形</em>。', 'Fail, and <em>you get made round</em>.')}<span class="fd-note">${L('← 认真的', '← we mean it')}</span></li>
+      <li><b>${L('第四条　档案', '4. Records.')}</b>${L('签名就是存档名，换设备签同一个名字接着干。', 'Your signature is your save name.')}</li>
     </ol>
-    <p class="fd-fine">${L('签字即生效。乙方已在母星，无权拒签。', 'Effective on signature. You are already on the homeworld and may not decline.')}</p>
-    <form class="fd-sign" autocomplete="off" novalidate>
+    <p class="fd-fine">${L('签字即生效。乙方已在母星，无权拒签。', 'Effective on signature. No take-backs.')}</p>
+    <div class="fd-sign">
       <div class="fd-a"><span>${L('甲方（盖章）：', 'Party A (seal):')}</span>${SEAL()}${SCRAWL}</div>
       <div class="fd-b">
-        <label for="fd-name">${L('乙方（签字）：', 'Party B (signature):')}</label>
-        <div class="fd-line">
-          <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('在这里写下名字', 'Write your name here')}" value="${escH(name0)}">
-          <button class="fd-thumb" type="submit" aria-label="${L('按手印，签下合同', 'Press your thumbprint to sign')}"><span>${L('按<br>手印', 'thumb<br>print')}</span>${PRINT}</button>
-          <i class="fd-flag" aria-hidden="true">${L('签这里', 'Sign here')}</i>
-        </div>
-        <div class="fd-alt">
-          <button class="fd-dice" type="button">${L('随便起一个', 'Random name')}</button>
-          ${X.NAME ? '' : `<button class="fd-guest" type="button">${L('先不签名，当访客 →', 'Continue as guest →')}</button>`}
-        </div>
-        <p class="fd-msg" role="alert"></p>
+        <span>${L('乙方（签字）：', 'Party B (signature):')}</span>
+        <div class="fd-line"><span class="fd-sig">${escH(shown)}</span><span class="fd-thumb" aria-hidden="true">${PRINT}</span></div>
       </div>
-      <p class="fd-date">${L('签于母星 · ', 'Signed on the homeworld, ')}${date}</p>
-    </form>
-  </article>`;
+      <p class="fd-date">${L('签于母星 · ', 'Signed on the homeworld · ')}${date}</p>
+    </div>
+  </article>
+  <p class="fd-next" aria-live="polite"><b>${L('点一下，开工 ▸', 'Tap to start work ▸')}</b><small>${escH(note)}</small></p>`;
   document.body.appendChild(layer);
-  const paper = layer.querySelector('.fd-paper'), form = layer.querySelector('form'), input = layer.querySelector('#fd-name'), thumb = layer.querySelector('.fd-thumb');
-  const msg = layer.querySelector('.fd-msg'), mirror = layer.querySelector('[data-who-mirror]'), flag = layer.querySelector('.fd-flag'), line = layer.querySelector('.fd-line');
+  const paper = layer.querySelector('.fd-paper'), who = layer.querySelector('.fd-who'), sig = layer.querySelector('.fd-sig'), thumb = layer.querySelector('.fd-thumb'), next = layer.querySelector('.fd-next');
+  // 纸比屏幕高（横着拿手机）：整张按比例缩小，过场里不用滚
+  const fitPaper = () => { paper.style.zoom = ''; const cs = getComputedStyle(layer), h = paper.offsetHeight, room = innerHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 6; if (h > room) paper.style.zoom = String(Math.max(.5, room / h)); };
+  fitPaper(); addEventListener('resize', fitPaper);
+  // 名字越长写得越久
+  const wt = REDUCED ? .01 : clamp(.35 + [...shown].length * .07, .5, 1.3);
+  sig.style.setProperty('--wt', wt + 's'); who.style.setProperty('--wt', wt * .8 + 's');
   S('paper');
-  // 从甲方的舷窗里递出来
   const fly = (out) => {
     const a = alienPoint(), rc = paper.getBoundingClientRect(), dx = a.x - (rc.left + rc.width / 2), dy = a.y - (rc.top + rc.height * .4);
-    const far = { transform: `translate(${dx}px, ${dy}px) rotate(-34deg) scale(.05)`, opacity: .3 }, near = { transform: 'translate(0, 0) rotate(-.7deg) scale(1)', opacity: 1 };
+    const far = { transform: `translate(${dx}px, ${dy}px) rotate(-34deg) scale(.05)`, opacity: .3 }, near = { transform: getComputedStyle(paper).transform === 'none' ? 'none' : 'rotate(-.7deg)', opacity: 1 };
     try { return paper.animate(out ? [near, far] : [far, near], { duration: REDUCED ? 1 : out ? 520 : 760, easing: out ? 'cubic-bezier(.5,0,.9,.4)' : 'cubic-bezier(.16,.9,.3,1)', fill: out ? 'forwards' : 'none' }); } catch (e) { return null; }
   };
   fly(false);
-  // 纸比屏幕长的时候：底下一个小标签带人翻到签字的地方
-  let more = null;
-  const needMore = () => line.getBoundingClientRect().bottom > innerHeight - 22;
-  setTimeout(() => {
-    if (!layer.isConnected || !needMore()) return;
-    more = document.createElement('button'); more.type = 'button'; more.className = 'fd-more'; more.textContent = L('↓ 签字在最后', '↓ Signature at the end');
-    more.addEventListener('click', () => layer.scrollTo({ top: layer.scrollHeight, behavior: REDUCED ? 'auto' : 'smooth' }));
-    layer.appendChild(more);
-    layer.addEventListener('scroll', () => { if (more && !needMore()) { more.remove(); more = null; } }, { passive: true });
-  }, 900);
-  if (!TOUCH) setTimeout(() => { if (layer.isConnected && !busy && !signedOff) try { input.focus({ preventScroll: true }); const n = input.value.length; input.setSelectionRange(n, n); } catch (e) {} }, 820);   // 手机上不自动弹键盘，先让人看合同
-  // 名字长了就把字写小一点，别让开头被挤出横线（不小于 16px，免得 iOS 一聚焦就放大页面）
-  const fit = () => { input.style.fontSize = ''; let fs = parseFloat(getComputedStyle(input).fontSize) || 27; while (fs > 16 && input.scrollWidth > input.clientWidth + 1) { fs -= 1; input.style.fontSize = fs + 'px'; } };
-  fit();
-  input.addEventListener('input', () => { mirror.textContent = input.value.trim() || '\u00a0'; msg.textContent = ''; fit(); });
-  let busy = false, signedOff = false;
-  const refuse = (text) => {
-    msg.textContent = text; line.classList.remove('fd-shake'); void line.offsetWidth; line.classList.add('fd-shake');
-    try { input.focus(); } catch (e) {}
-  };
-  const dice = layer.querySelector('.fd-dice'), guest = layer.querySelector('.fd-guest');
-  const lock = on => { input.disabled = on; thumb.disabled = on; dice.disabled = on; if (guest) guest.disabled = on; };
-  dice.addEventListener('click', () => {
-    if (busy || signedOff) return;
-    X.audioInit(); S('ui');
-    input.value = randomName(input.value); mirror.textContent = input.value; msg.textContent = ''; fit();
-    dice.classList.remove('roll'); void dice.offsetWidth; dice.classList.add('roll');
-    track('rndname');
-  });
-  // 当访客：不起名字，进度只记在这台设备上（首页随时可以再起名字存到云端）
-  if (guest) guest.addEventListener('click', () => {
-    if (busy || signedOff) return;
+  // 过场的几拍：写名字 → 按手印 → 盖章 → 出「点一下」。点一下跳到最后，再点一下开工
+  const timers = [], at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  let step = 0;
+  const beats = [
+    () => { sig.classList.add('on'); who.classList.add('on'); S('ui'); },
+    () => { thumb.classList.add('on'); S('press'); },
+    () => { S('stamp'); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); },
+    () => { next.classList.add('on'); }
+  ];
+  const run = i => { while (step <= i && step < beats.length) beats[step++](); };
+  const t0 = REDUCED ? 300 : 1000, w = wt * 1000;
+  at(t0, () => run(0)); at(t0 + w + 250, () => run(1)); at(t0 + w + 750, () => run(2)); at(t0 + w + 1450, () => run(3));
+  let leavingDeal = false;
+  const advance = () => {
+    if (leavingDeal) return;
     X.audioInit();
-    finish('', 'guest');
-  });
-  // 手机上点输入框弹出键盘：把签字那块挪到看得见的地方
-  if (TOUCH) input.addEventListener('focus', () => setTimeout(() => { try { line.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); } catch (e) {} }, 320));
-  const finish = (name, how) => {
-    signedOff = true; FL.signed = 1; FL.name = name; saveFL(); track('signed', { how });
-    const shown = name || L('访客', 'Guest');
-    input.value = shown; mirror.textContent = shown; fit(); lock(true); thumb.classList.add('done'); flag.remove(); if (more) { more.remove(); more = null; }
-    msg.textContent = '';
-    S('press'); setTimeout(() => { S('stamp'); paper.insertAdjacentHTML('beforeend', `<div class="fd-stamp" aria-hidden="true">${L('合同<br>生效', 'IN<br>EFFECT')}</div>`); }, 380);
-    setTimeout(() => {
-      const an = fly(true); layer.classList.add('out'); S('paper', true);
-      const gone = () => { layer.remove(); showChoice(name, how, no); };
-      if (an && an.finished) an.finished.then(gone, gone); else setTimeout(gone, 480);
-    }, 1750);
+    if (step < beats.length) {   // 还在播：直接跳到盖好章
+      timers.forEach(clearTimeout);
+      if (step === 0) { sig.style.setProperty('--wt', '.01s'); who.style.setProperty('--wt', '.01s'); }
+      run(beats.length - 1); return;
+    }
+    leavingDeal = true; removeEventListener('resize', fitPaper);
+    const an = fly(true); layer.classList.add('out'); S('paper', true);
+    const gone = () => { layer.remove(); startWork(); };
+    if (an && an.finished) an.finished.then(gone, gone); else setTimeout(gone, 480);
   };
-  form.addEventListener('submit', async e => {
-    e.preventDefault(); if (busy || signedOff) return;
-    X.audioInit();
-    const name = cleanName(input.value);
-    if (!name) { S('nope'); return refuse(guest ? L('乙方无权拒签。签个名字，或者先当访客。', 'You may not decline. Sign a name, or continue as guest.') : L('乙方无权拒签。请签上名字。', 'The Artisan may not decline. Please sign.')); }
-    if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) { S('nope'); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
-    if (!X.CLOUD) return finish(name, 'offline');   // file:// 打开：没有云存档，签名只记在本机
-    busy = true; lock(true); msg.textContent = L('归档中…', 'Filing…');
-    X.WHO.err = '';
-    await Promise.race([X.setName(name), new Promise(r => setTimeout(r, 7000))]).catch(() => {});
-    busy = false;
-    const err = X.WHO.err; X.WHO.err = '';
-    if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return finish(X.NAME, 'cloud');
-    if (err && /16/.test(err)) { lock(false); S('nope'); return refuse(err); }   // 服务器说名字不合规
-    // 存档服务连不上：先在本机签了，名字留在 yuan.name 里，下次打开时游戏会自己补存
-    try { localStorage.setItem('yuan.name', name); } catch (e2) {}
-    finish(name, 'later');
-  });
+  layer.addEventListener('click', advance);
+  dealKey = advance;
 }
+let dealKey = null;   // 合同过场里按空格 / 回车 / Esc：跟点一下一样
 
-/* 签完：两个去处。下一关最大，排在第一个，所以空格 / 回车也是它 */
-function showChoice(name, how, no) {
-  phase = 'idle';
+/* 签完：直接接第一单（没交过的第一单） */
+function startWork() {
+  phase = 'idle'; dealKey = null;
   G.idx = 0; G.loop = 0; G.score = 0; G.done = 0; X.setupRound(); G.state = 'menu'; G.mood = 'happy'; G.moodT = G.time + 4;
-  const at = X.firstOpen(), mat = Y.MATS[Y.ORDER[at]];
-  const note = how === 'later' ? L('存档服务这会儿连不上，签名先记在这台设备上，下次打开会自动补存。', 'The save server is unreachable right now. Your signature is kept on this device and will sync next time you open the game.')
-    : how === 'offline' ? L('现在是离线打开，签名只记在这台设备上。', 'Running offline: your signature is kept on this device only.')
-    : how === 'guest' ? L('访客的进度只存在这台设备上。想换设备接着玩，回首页随时起个名字。', 'Guest progress stays on this device. Pick a name on the home screen any time to save it.') : '';
-  X.setCard(`
-    <p class="eyebrow">${L('合同生效 · 圆字第 ' + no + ' 号', 'Contract R-' + no + ' in effect')}</p>
-    <h2>${name ? L(`签好了，${escH(name)}。开工吧`, `Signed, ${escH(name)}. Get to work`) : L('访客，开工吧', 'Get to work, guest')}</h2>
-    <p>${(({ advN, restN }) => L(`冒险模式一共 <strong>${advN} 单</strong>，做完前 ${Y.ENDLESS.unlock} 单就解锁无尽模式。完不成会怎样，合同第三条写着。`, `Adventure mode is <strong>${advN} orders</strong>; finish the first ${Y.ENDLESS.unlock} to unlock endless mode. What happens if you fail is in clause 3.`))(parts())}</p>
-    <div class="flow-go">
-      <button class="btn flow-big" type="button" data-act="resume">${L('下一关', 'Next level')}<small>${L(`第 ${at + 1} 单 · ${mat ? mat.name : ''}`, `Order ${at + 1} · ${mat ? mat.name : ''}`)}</small></button>
-      <button class="btn ghost" type="button" data-act="${escH(CONFIG.collectionAct)}">${L('去收藏室看看', 'Collection room')}</button>
-    </div>
-    ${note ? `<p class="note">${note}</p>` : ''}`);
-  const go = card.querySelector('.flow-go');
-  if (go) go.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) track('choice', { act: b.dataset.act }); });
+  track('choice', { act: 'resume' });
+  Y.act('resume');
 }
 
 /* ---------- 开始 ---------- */
@@ -852,9 +872,7 @@ window.addEventListener('keydown', e => {
   }
   // handoff / contract：按键都不给游戏。合同里的输入框和按钮照常工作
   e.stopImmediatePropagation();
-  if (phase === 'contract' && (e.code === 'Enter' || e.code === 'Space') && !(e.target && /^(INPUT|BUTTON)$/.test(e.target.tagName))) {
-    const i = document.getElementById('fd-name'); if (i && !i.disabled) { e.preventDefault(); i.focus(); }
-  }
+  if (phase === 'contract' && dealKey && (e.code === 'Enter' || e.code === 'Space' || e.code === 'Escape')) { e.preventDefault(); if (!e.repeat) dealKey(); }
 }, true);
 window.addEventListener('keyup', e => {
   if (!T) return;
