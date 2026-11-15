@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -36,6 +37,8 @@ MAX_SAVE_BODY = 16384  # 云存档带着星级和成就，比事件大
 RATE = 120            # 每个来源每分钟最多这么多条（只在内存里按 IP 计数，不落盘）
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/flow.js": ("flow.js", "text/javascript; charset=utf-8")}   # 开场流程：播片、新手关、签合同
+# /assets/ 下是图片和字体，文件名里带内容哈希（改了图就换名字），所以可以让浏览器和 Cloudflare 缓存一年
+ASSET_TYPES = {".webp": "image/webp", ".png": "image/png", ".woff2": "font/woff2", ".woff": "font/woff"}
 
 _db_lock = threading.Lock()
 _hits: dict[str, deque] = defaultdict(deque)
@@ -201,6 +204,16 @@ class Handler(BaseHTTPRequestHandler):
                               {**self._cors(), "Cache-Control": "no-store"})
         if path == "/healthz":
             return self._send(200, b"ok")
+        if path.startswith("/assets/"):
+            name = path[len("/assets/"):]
+            ctype = ASSET_TYPES.get(Path(name).suffix)
+            if not ctype or "/" in name or name.startswith("."):
+                return self._send(404, b"not found")
+            try:
+                body = (PUBLIC / "assets" / name).read_bytes()
+            except OSError:
+                return self._send(404, b"not found")
+            return self._send(200, body, ctype, {"Cache-Control": "public, max-age=31536000, immutable"})
         hit = STATIC.get(path)
         if not hit:
             return self._send(404, b"not found")
@@ -209,7 +222,16 @@ class Handler(BaseHTTPRequestHandler):
             body = f.read_bytes()
         except OSError:
             return self._send(500, b"missing file")
-        self._send(200, body, hit[1], {"Cache-Control": "no-cache"})
+        # 页面每次都问一下服务器有没有新版（no-cache），没变就回 304，回头客不用把整页再下一遍
+        etag = '"%s"' % hashlib.sha256(body).hexdigest()[:16]
+        extra = {"Cache-Control": "no-cache", "ETag": etag}
+        if etag in (self.headers.get("If-None-Match") or ""):
+            self.send_response(304)
+            for k, v in extra.items():
+                self.send_header(k, v)
+            self.end_headers()
+            return
+        self._send(200, body, hit[1], extra)
 
     do_HEAD = do_GET
 

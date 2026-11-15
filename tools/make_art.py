@@ -6,10 +6,11 @@
     python tools/make_art.py art_img.js aLogo=title.png:1040
 
 Each source must have a transparent background. It is cropped to its painted area, scaled to the given width
-(about twice the width it is drawn at) and stored as a WebP data URI. Paste the resulting `const ART_IMG = {...};`
-over the one in index.html. Needs Pillow and numpy.
+(about twice the width it is drawn at) and saved as assets/<name>.<hash>.webp (the hash makes the server's one-year
+cache safe). Paste the resulting `const ART_IMG = {...};` over the one in index.html and delete the old files from
+assets/. Run it from the repo root. Needs Pillow and numpy.
 """
-import base64, io, sys
+import hashlib, io, os, sys
 import numpy as np
 from PIL import Image
 
@@ -31,7 +32,10 @@ for spec in sys.argv[2:]:
     im.save(buf, 'WEBP', quality=84, alpha_quality=90, method=6)
     data = buf.getvalue()
     total += len(data)
-    L.append("  %s: 'data:image/webp;base64,%s'," % (name, base64.b64encode(data).decode('ascii')))
+    fn = 'assets/%s.%s.webp' % (name, hashlib.sha256(data).hexdigest()[:10])
+    os.makedirs('assets', exist_ok=True)
+    open(fn, 'wb').write(data)
+    L.append("  %s: '%s'," % (name, fn))
     print('%-9s %4d x %-4d %6d bytes' % (name, im.width, im.height, len(data)))
 L.append('};')
 io.open(out, 'w', encoding='ascii', newline='\n').write('\n'.join(L) + '\n')

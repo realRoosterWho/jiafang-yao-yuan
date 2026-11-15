@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cut the two UI fonts down to what the game uses and write them out as CSS (@font-face with the font inlined as base64).
+"""Cut the two UI fonts down to what the game uses and save them as assets/<name>.<hash>.woff2 and write the matching @font-face CSS.
 
     python tools/subset_fonts.py <MaokenAssortedSans.ttf> <Chewy-Regular.ttf> [out.css]
 
@@ -11,7 +11,7 @@ a character that is not in the subset falls back to the next font in the stack a
 Chewy (Apache 2.0) is small and is kept whole. Needs fontTools (`pip install fonttools`); add `brotli` to get WOFF2 instead of WOFF.
 The source .ttf files are not in the repository (the Chinese one is 12 MB); get them from the fonts' own pages.
 """
-import base64, io, os, re, sys
+import hashlib, io, os, re, sys
 from fontTools import subset
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if os.path.basename(os.path.dirname(os.path.abspath(__file__))) == 'tools' else None
@@ -62,10 +62,13 @@ def main():
     css = []
     for family, path, text in (('Chewy', chewy, None), ('Maoken Assorted Sans', maoken, game_chars(root))):
         data, n = build(path, text, flavor)
-        b64 = base64.b64encode(data).decode('ascii')
+        # file name carries a content hash so the server can tell browsers to cache it for a year; delete the old file by hand
+        fn = 'assets/%s.%s.%s' % (family.split()[0].lower(), hashlib.sha256(data).hexdigest()[:10], flavor)
+        os.makedirs(os.path.join(root, 'assets'), exist_ok=True)
+        open(os.path.join(root, fn), 'wb').write(data)
         # one file covers every weight: without the range the browser fakes a bold by smearing the outline
-        css.append('@font-face { font-family: "%s"; font-weight: 100 900; font-display: swap; src: url(data:font/%s;base64,%s) format("%s"); }' % (family, flavor, b64, flavor))
-        print('%-22s %5d characters  %7d bytes as %s  (%d as base64)' % (family, n, len(data), flavor, len(b64)))
+        css.append('@font-face { font-family: "%s"; font-weight: 100 900; font-display: swap; src: url(%s) format("%s"); }' % (family, fn, flavor))
+        print('%-22s %5d characters  %7d bytes as %s  -> %s' % (family, n, len(data), flavor, fn))
     if out:
         io.open(out, 'w', encoding='ascii', newline='\n').write('\n'.join(css) + '\n')
         print('wrote', out)
