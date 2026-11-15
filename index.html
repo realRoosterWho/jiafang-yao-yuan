@@ -2677,19 +2677,24 @@ function tryGrab() {
 }
 function release() { rotId = null; const b = G.body; if (b && b.held) { if (G.state === 'play' && b.clear > (TOUCH ? 250 : 300)) achUnlock('falling_objects'); if (G.state === 'play') sfx.letgo(); b.held = false; b.primary = true; b.w = clamp(b.w, -8, 8); b.vx = clamp(b.vx, -VMAX, VMAX); b.vy = Math.max(b.vy, -VMAX); } }   // 触屏拎着能甩得更快，松手时速度收回原来的上限，别一甩飞老远。松手了摇杆也跟着没了
 /* 第一根手指拎材料；拎着的时候第二根手指落在哪，哪里就出一根横向的摇杆（只有左右一个轴）。
-   速率控制：钮推离中心越远转得越快，中间一小段是死区，推到头是 JOY_MAX 弧度/秒（A / D 是 2.4）；钮被限制在槽里。
+   位置控制：手指挪多远材料转多少（见 joyMove）；钮被限制在槽里，推出槽外槽跟着走。
    往右推 = 逆时针、往左推 = 顺时针（JOY_DIR = -1；试玩反馈说跟 D 键同向的那种是反的，改成 1 就回去）。这根手指抬起来、或者材料松手掉下去，摇杆就没了。
    尺寸按 CSS 像素算（槽的半长 ≈ 两个拇指宽），画的时候换成画面单位，所以不同屏幕上手感一样 */
 const JOY = { x0: 0, y: 0, x: 0, k: 0, s: 1, t0: 0 };   // 画面坐标：x0, y 摇杆中心，x 手指；k 推了多少（-1…1）；s = 画面单位 / CSS 像素；t0 出现的时刻
 const JOY_R = 80, JOY_KNOB = 24, JOY_DEAD = .14, JOY_MAX = 3, JOY_EXP = 1.5, JOY_DIR = -1;
 function joyAt(e) { const rc = cv.getBoundingClientRect(), s = VW / (rc.width || 1); return { x: (e.clientX - rc.left) * s + CAMX, y: (e.clientY - rc.top) * VH / (rc.height || 1) - TOP, s }; }
 function joyStart(e) { const p = joyAt(e); JOY.x0 = JOY.x = p.x; JOY.y = p.y; JOY.s = p.s; JOY.k = 0; JOY.t0 = G.time; sfx.joy(); }
-function joyMove(e) { JOY.x = joyAt(e).x; JOY.k = clamp((JOY.x - JOY.x0) / (JOY_R * JOY.s), -1, 1); }
-/* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
-function joyRate() {
-  const a = Math.abs(JOY.k); if (rotId === null || a <= JOY_DEAD) return 0;
-  return Math.sign(JOY.k) * JOY_DIR * JOY_MAX * Math.pow((a - JOY_DEAD) / (1 - JOY_DEAD), JOY_EXP);
+/* 按距离转：手指横着挪多少，材料就转多少（JOY_GAIN 弧度 / CSS 像素，挪满半个槽 ≈ 90°），手指停材料就停；
+   推出槽外时槽跟着手指走，所以一直往一边拖能一直转 */
+const JOY_GAIN = (Math.PI / 2) / JOY_R;
+function joyMove(e) {
+  const x = joyAt(e).x, dx = x - JOY.x; JOY.x = x;
+  const b = G.body; if (b && b.held && rotId !== null) b.userRot += JOY_DIR * JOY_GAIN * dx / JOY.s;
+  const R = JOY_R * JOY.s; JOY.x0 = clamp(JOY.x0, x - R, x + R);
+  JOY.k = clamp((x - JOY.x0) / R, -1, 1);
 }
+/* 现在的转速（弧度/秒，正 = 顺时针）：死区外按 JOY_EXP 次方往上走，推一点点能细调，推到头转得快 */
+function joyRate() { return 0; }   // 改成按距离转（见 joyMove），不再按推多远决定转速
 let grabId = null, rotId = null;
 cv.addEventListener('pointerdown', e => {
   if (G.state === 'cover') { e.preventDefault(); leaveCover(); return; }
