@@ -1,0 +1,8 @@
+{
+  "name": "yuan-tools",
+  "private": true,
+  "description": "部署时压缩 index.html / flow.js 用（tools/build.mjs）",
+  "devDependencies": {
+    "esbuild": "0.24.0"
+  }
+}

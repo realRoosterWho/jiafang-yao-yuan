@@ -18,4 +18,13 @@ rsync -az -e "${SSH[*]}" "$TMP" "$HOST:$DEST/public/flow.js"
 ATMP=$(mktemp -d); trap 'rm -f "$TMP"; rm -rf "$ATMP"' EXIT
 git archive HEAD assets | tar -x -C "$ATMP"
 rsync -az -e "${SSH[*]}" "$ATMP/assets/" "$HOST:$DEST/public/assets/"
+# 压缩版（去注释、去空白，预先压好 br / gzip）放 public/dist/，服务器优先发它。压缩失败就清空 dist，服务器自动退回发源文件
+BTMP=$(mktemp -d); trap 'rm -f "$TMP"; rm -rf "$ATMP" "$BTMP"' EXIT
+mkdir -p "$BTMP/src" "$BTMP/dist"
+git show HEAD:index.html > "$BTMP/src/index.html"; git show HEAD:flow.js > "$BTMP/src/flow.js"
+if ! { [ -d tools/node_modules/esbuild ] || npm ci --prefix tools --silent; } || ! node tools/build.mjs "$BTMP/src" "$BTMP/dist"; then
+  echo "⚠️ 压缩失败，这次发未压缩的源文件"; rm -rf "$BTMP/dist"; mkdir -p "$BTMP/dist"
+fi
+rsync -az --delete -e "${SSH[*]}" "$BTMP/dist/" "$HOST:$DEST/public/dist/"
+"${SSH[@]}" "$HOST" "chmod 755 $DEST/public/dist && find $DEST/public/dist -type f -exec chmod 644 {} +"
 "${SSH[@]}" "$HOST" "chmod 644 $DEST/public/index.html $DEST/public/flow.js && chmod 755 $DEST/public/assets && chmod 644 $DEST/public/assets/* && sudo systemctl restart fullcircle && sleep 1 && curl -fsS http://127.0.0.1:2504/healthz && echo ' deployed'"

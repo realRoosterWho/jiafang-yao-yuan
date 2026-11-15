@@ -25,6 +25,8 @@ const ART_IMG = {
 const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
+<!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
+<script src="flow.js?v=cut2" defer></script>
 <style>
 /* 布局：单屏游戏。16:10 舞台居中占满可用空间，操作说明压在舞台下方一行。只做深色一套外观。 */
 :root {
@@ -4501,7 +4503,7 @@ try { if (hot && hot.snapshot) hot.snapshot(() => (G.state === 'menu' || G.state
 if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
 })();
 </script>
-<script src="flow.js?v=cut2"></script>
+<!-- flow.js 的 <script> 在 <head> 里（defer：跟页面一起下载，等页面解析完、在这上面的脚本都跑完后才执行，跟放在这里效果一样） -->
 
 </body>
 </html>

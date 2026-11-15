@@ -228,7 +228,10 @@ class Handler(BaseHTTPRequestHandler):
         hit = STATIC.get(path)
         if not hit:
             return self._send(404, b"not found")
-        f = PUBLIC / hit[0]
+        # 部署时压缩过的版本（tools/build.mjs → public/dist/）优先，还带着预先压好的 .br / .gz；没有就发源文件
+        f = PUBLIC / "dist" / hit[0]
+        if not f.is_file():
+            f = PUBLIC / hit[0]
         try:
             body = f.read_bytes()
         except OSError:
@@ -245,7 +248,16 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header(k, v)
             self.end_headers()
             return
-        if "gzip" in (self.headers.get("Accept-Encoding") or ""):
+        enc = self.headers.get("Accept-Encoding") or ""
+        pre = next(((e, f.with_name(f.name + ext)) for e, ext in (("br", ".br"), ("gzip", ".gz"))
+                    if e in enc and f.with_name(f.name + ext).is_file()), None)
+        if pre:
+            try:
+                body = pre[1].read_bytes()
+                extra["Content-Encoding"] = pre[0]
+            except OSError:
+                pre = None
+        if not pre and "gzip" in enc:
             body = _gzipped(tag, body)
             extra["Content-Encoding"] = "gzip"
         self._send(200, body, hit[1], extra)
