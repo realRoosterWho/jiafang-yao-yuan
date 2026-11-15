@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=dial9" defer></script>
+<script src="flow.js?v=toast10" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
@@ -279,8 +279,8 @@ body {
 #toast .tl { flex: none; font: 500 .62em var(--body); letter-spacing: .14em; color: var(--coin); }
 #toast .tn { overflow: hidden; text-overflow: ellipsis; }
 #toast .td { display: none; }
-#stage.port #toast { left: 50%; bottom: auto; top: calc(var(--u) * 102); max-width: calc(var(--u) * 262); font-size: max(12px, calc(var(--u) * 16)); }
-#stage.port #toast .medal { width: 1.5em; height: 1.5em; }
+#stage.port #toast { left: 50%; bottom: auto; top: calc(var(--u) * 250); max-width: calc(var(--u) * 262); font-size: max(12px, calc(var(--u) * 16)); }
+#stage.port #toast .medal { width: 1.5em; height: 1.5em; }   /* 竖屏的成就条在顶栏和甲方气泡下面那片天上（top 250），不挡分数、耐心和气泡 */
 :lang(en) #stage.port #toast .tl { display: none; }
 /* 不在干活时：钉在页面顶上，多一行描述 */
 #stage #toast.menu, #stage.port #toast.menu { position: fixed; z-index: 6; top: max(12px, env(safe-area-inset-top, 0px)); bottom: auto; left: 50%;
@@ -4248,17 +4248,9 @@ function stuck() {
   if (G.round > G.hintBest + .005) { G.hintBest = G.round; G.hintAt = G.time; }
   return G.time - G.hintAt > (G.started ? STUCK_FLAT : STUCK_IDLE);
 }
-/* 触屏拎着材料、还没出摇杆、又卡住了时的提示：另一根手指按下去就是摇杆。摇杆出来以后它自己会说往哪推转哪边，这条就不画了 */
-function drawRotHint() {
-  const b = G.body; if (!TOUCH || G.state !== 'play' || !b || !b.held || b.id === 'tutor' || rotId !== null || !stuck()) return;   // 新手关（flow.js）自己画第二根手指的提示
-  const x = PORT ? midX() : 440, y = PORT ? 30 : 136, fs = PORT ? 18 : 15;   // 横屏：让到目标栏下面
-  const txt = L('另一根手指在空白处左右拨，就能转', 'Second finger on empty space: swipe ← → to turn');
-  ctx.font = `700 ${fs}px ${BODY}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const w = ctx.measureText(txt).width + 34, h = fs * 2.1;
-  ctx.globalAlpha = .75 + .25 * Math.sin(G.time * 4);
-  wellPanel(x - w / 2, y - h / 2, w, h);
-  ctx.fillStyle = '#fff'; ctx.fillText(txt, x, y + 1); ctx.globalAlpha = 1;
-}
+/* 触屏拎着材料、还没出第二根手指、又卡住了：底下那条提示改说「另一根手指拨」（跟其他提示同一个样子、同一个位置）。
+   第二根手指按下去以后拨点和弧形箭头自己会说往哪转，这条就不说了 */
+const rotHintNow = () => { const b = G.body; return TOUCH && G.state === 'play' && b && b.held && b.id !== 'tutor' && rotId === null; };
 /* 第二根手指的「拨点」：手指底下一个小光点 + 几条短刻度，拨的时候刻度跟着滑（off = 拨过的 CSS 像素），没有边界。
    x, y 手指（画面坐标），s 画面单位 / CSS 像素，a 不透明度。新手关（flow.js）也拿它画示范用的虚影 */
 function drawJoyAt(x, y, off, s, a) {
@@ -4299,7 +4291,7 @@ function drawHints() {
   if (!stuck()) return;   // 正式关卡里只有卡住了才放
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
   const old = G.idx >= 4 || G.mode === 'endless'; if (old && !G.started) return;   // TIPS[0] only for the first four orders
-  const i = !G.started ? 0 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];
+  const i = !G.started ? 0 : rotHintNow() ? 1 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];   // 拎着卡住了：固定说怎么转
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 ${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`;
   const iw = icons.length * 26, X0 = WALL_L + 170, X1 = WALL_L + VW - 8; let lines = [txt];   // 竖屏：两个按钮右边到屏幕右边
   if (PORT && ctx.measureText(txt).width + iw + 44 > X1 - X0) {   // 放不下就在最靠中间的空格或逗号处折成两行
@@ -4374,7 +4366,7 @@ function drawHudPort(t) {
   creamChip(8, sy, VW - 16, sh, sh / 2);
   hourglass(27 + (low && !REDUCED ? Math.sin(t * 14) * 1.5 : 0), cy, 15, frac, low ? UI.coral : UI.accent);
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `600 16px ${NUM}`; ctx.fillStyle = low ? UI.coral : UI.ink; ctx.fillText(L('甲方耐心 ', 'Patience ') + Math.ceil(Math.max(0, G.timeLeft)) + L(' 秒', 's'), 40, cy + 1);
-  ctx.textAlign = 'center'; ctx.font = `600 15px ${BODY}`; ctx.fillStyle = UI.ink; if (!toastInPlay()) ctx.fillText(orderTag() + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2 + 28, cy + 1);
+  ctx.textAlign = 'center'; ctx.font = `600 15px ${BODY}`; ctx.fillStyle = UI.ink; if (PORT || !toastInPlay()) ctx.fillText(orderTag() + (G.loop ? L(' · 加班', ' · OT') : ''), VW / 2 + 28, cy + 1);
   ctx.textAlign = 'right'; ctx.font = `700 19px ${NUM}`; const sc = String(G.score), sw = ctx.measureText(sc).width;
   ctx.fillStyle = UI.ink; ctx.fillText(sc, VW - 20, cy + 1); if (!kit('sCoin', VW - 20 - sw - 28, cy - 13, 26, 26)) ctx.fillText('◎', VW - 24 - sw, cy + 1);
   ctx.textBaseline = 'alphabetic';
@@ -4430,7 +4422,7 @@ function draw() {
   if (!PORT) drawAlien(t);
   if (G.body && !G.body.dead) { drawLiftLine(G.body); drawBody(G.body, t); drawTalk(G.body); }
   if (G.doom) drawDoom(G.doom);
-  drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); drawRotHint(); if (G.cele) drawCelebrate(t); ctx.restore();
+  drawFx(); if (SHOW_RING && G.body && !G.body.dead) drawForceRing(G.body); if (G.cele) drawCelebrate(t); ctx.restore();
   drawGauge(); drawHints();
   if (PORT) { ctx.setTransform(scale, 0, 0, scale, 0, 0); drawHudPort(t); drawGaugePort(); } else drawRoundBar();
   drawEdgeGlow(t);
