@@ -663,7 +663,8 @@ const MATS = {
     base: '#f2c230', outline: '#7a5200', chips: ['#ffe37a', '#f2c230', '#e23d4f', '#3fa7ff'], over: '砸瘪了！', dead: '皇冠被拍成了一个金盘子。', blurb: '把三个尖往下砸，金子会鼓进凹口。' },
   star: { name: '星星', unit: '颗', hard: 46, brittle: 70, loose: 1.1, plastic: 0, smooth: 0, passes: 0, value: 6, hp: 2, rest: .3, fric: .4, accel: 26000, jig: 0, target: .86, time: 110, snd: 'gem',
     base: '#ffd83c', outline: '#fff3b0', chips: ['#fffde0', '#ffd83c', '#ff9d2e'], over: '崩掉一角！', dead: '星星碎了。今晚的天上少了一颗。', blurb: '甲方从天上摘的。五个角，敲掉。' },
-  ufo: { name: '飞碟', unit: '架', hard: 44, brittle: 64, loose: .8, plastic: .5, smooth: .4, passes: 2, value: 8, hp: 2, rest: .15, fric: .6, accel: 14000, jig: .03, target: .9, time: 130,
+  ufo: { name: '飞碟', unit: '架', hard: 44, brittle: 72, loose: .8, plastic: .5, smooth: .4, passes: 2, value: 8, hp: 3,   // 紧跟在“抡起来砸”的老手机后面，原来窗口 20、只能失手 2 次，新玩家在这里碎得多：上限 64→72、失手 2→3 次，开工前加一句提醒
+    rest: .15, fric: .6, accel: 14000, jig: .03, target: .9, time: 130,
     base: '#b9bfcc', outline: '#2e3340', chips: ['#e3e7ee', '#8a90a0', '#7de8ff', '#ffd35c'], over: '警报响了！', dead: '飞碟炸了。这下你和甲方都回不去了。', blurb: '甲方的座驾，又大又沉。司机还在里面。' },
   /* 第五班：表里不一。外面一层壳、里面一层芯，各有各的力度窗口；哪一层朝下，力度表就按哪一层算 */
   coconut: { name: '椰子', unit: '个', hard: 12, brittle: 72, loose: 1.3, plastic: 0, smooth: 0, passes: 0, value: 6, hp: 3, rest: .25, fric: .5, accel: 24000, jig: 0, target: .9, time: 120, snd: 'wood', rough: 3,
@@ -850,7 +851,7 @@ const ADVENTURE = [
   ['record', ['甲方的收藏室', "The Client's Collection"], ['接下来几单是甲方的私人收藏，件件价值连城，砸坏哪件你都赔不起。', "The next few orders come from the Client's private collection. Every piece is priceless, and you can't afford to break any of them."]],
   ['gold', ['软金子', 'Soft Gold'], ['', '']],
   ['oldphone', ['小心地板', 'Mind the Floor'], ['这部老手机砸不坏。砸过头裂的是甲方的地板，地板裂到第三次就穿了。得抡起来砸。', "This old phone can't break. Hit too hard and it's the Client's floor that cracks, and the third crack goes right through. You'll need to swing it."]],
-  ['ufo', ['甲方的座驾', "The Client's Ride"], ['', '']],
+  ['ufo', ['甲方的座驾', "The Client's Ride"], ['这是甲方自己的座驾。别拿砸老手机那股劲：飞碟娇贵，力度表的绿区很窄，砸进红区三次就报废。看着力度表，宁可轻一点。', "This is the Client's own ride. Forget how you swung at the old phone: the saucer is delicate, the green zone is narrow, and three hits in the red wreck it. Watch the gauge and go lighter."]],
   // 表里不一
   ['coconut', ['表里不一', 'More Than Skin Deep'], ['从这一单开始，有的东西有两层：外面一层壳，里面一层芯，脾气不一样。壳砸穿了，力度表会跟着变成芯的。看清楚现在是哪一层朝下。', 'From here on, some things have two layers: a shell outside and a core inside, each with its own temper. Break through the shell and the force gauge switches to the core. Watch which layer is facing down.']],
   ['earth', ['老家', 'Home'], ['', '']],
