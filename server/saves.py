@@ -113,8 +113,14 @@ def load_endless(raw) -> dict[str, int]:
     return clean_endless(_extra(raw).get("endless"))
 
 
-def sync(con, raw_name, pid: str | None, raw_best, raw_stars=None, raw_ach=None, raw_endless=None) -> dict | None:
-    """把客户端的进度合并进这个名字的存档，返回合并后的 {name, best, stars, ach, endless}。名字不合法返回 None。"""
+class NameTaken(Exception):
+    """要一个新名字（随机起的名字），但这个名字已经有人用了。"""
+
+
+def sync(con, raw_name, pid: str | None, raw_best, raw_stars=None, raw_ach=None, raw_endless=None,
+         fresh: bool = False) -> dict | None:
+    """把客户端的进度合并进这个名字的存档，返回合并后的 {name, best, stars, ach, endless}。名字不合法返回 None。
+    fresh=True：只接受没人用过的名字（随机起的名字），已经有存档就抛 NameTaken，免得两个陌生人合并成一份存档。"""
     nk = clean_name(raw_name)
     if not nk:
         return None
@@ -122,6 +128,8 @@ def sync(con, raw_name, pid: str | None, raw_best, raw_stars=None, raw_ach=None,
     incoming, now = clean_best(raw_best), time.time()
     in_stars, in_ach, in_end = clean_stars(raw_stars), clean_ach(raw_ach), clean_endless(raw_endless)
     row = con.execute("SELECT name, best, extra FROM saves WHERE key = ?", (key,)).fetchone()
+    if row and fresh:
+        raise NameTaken(name)
     if row:
         name, best = row[0], json.loads(row[1])
         stars, ach = load_extra(row[2])

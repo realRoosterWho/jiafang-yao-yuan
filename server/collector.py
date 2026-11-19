@@ -328,9 +328,13 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, AssertionError):
             self._note = "save-bad-json"
             return self._send(400, b"bad json", extra=self._cors())
-        with _db_lock:
-            out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"),
-                             msg.get("stars"), msg.get("ach"), msg.get("endless"))
+        try:
+            with _db_lock:
+                out = saves.sync(CON, msg.get("name"), clean_id(msg.get("pid")), msg.get("best"),
+                                 msg.get("stars"), msg.get("ach"), msg.get("endless"), fresh=msg.get("new") is True)
+        except saves.NameTaken:
+            self._note = "save-name-taken"
+            return self._send(409, json.dumps({"error": "taken"}).encode(), "application/json", self._cors())
         if out is None:
             self._note = "save-bad-name"
             return self._send(422, json.dumps({"error": "bad-name"}).encode(), "application/json", self._cors())

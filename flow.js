@@ -682,14 +682,14 @@ function openContract(round) {
       <span class="note err" role="alert"></span>
       <div class="flow-go">
         <button class="btn" type="submit">${L('就叫这个', 'That’s me')}</button>
-        ${X.NAME ? '' : `<button class="btn ghost small fd-guest" type="button">${L('先当访客', 'Play as guest')}</button>`}
+        <button class="btn ghost small fd-auto" type="button">${L('帮我起一个', 'Pick one for me')}</button>
       </div>
     </form>`);
   const form = card.querySelector('.flow-name'), input = form.querySelector('#fd-name'), msg = form.querySelector('.err');
-  const dice = form.querySelector('.fd-dice'), guest = form.querySelector('.fd-guest'), row = form.querySelector('.who-row');
+  const dice = form.querySelector('.fd-dice'), auto = form.querySelector('.fd-auto'), row = form.querySelector('.who-row');
   const btns = [...form.querySelectorAll('button')];
   const lock = on => { input.disabled = on; btns.forEach(b => { b.disabled = on; }); };
-  let busy = false, done = false;
+  let busy = false, done = false, rolled = '';   // rolled：骰子刚掷出来的名字，原样提交就当新名字认领（不能跟别人的存档合并）
   if (!TOUCH) setTimeout(() => { if (phase === 'naming') try { input.focus({ preventScroll: true }); } catch (e) {} }, 350);   // 手机上不自动弹键盘
   const refuse = text => {
     S('nope'); msg.textContent = text; row.classList.remove('fd-shake'); void row.offsetWidth; row.classList.add('fd-shake');
@@ -699,7 +699,7 @@ function openContract(round) {
   dice.addEventListener('click', () => {
     if (busy || done) return;
     X.audioInit(); S('ui');
-    input.value = randomName(input.value); msg.textContent = '';
+    input.value = rolled = randomName(input.value); msg.textContent = '';
     dice.classList.remove('roll'); void dice.offsetWidth; dice.classList.add('roll');
     track('rndname');
   });
@@ -709,22 +709,50 @@ function openContract(round) {
     card.innerHTML = ''; overlay.hidden = true;
     playContract(round, name, how);
   };
-  if (guest) guest.addEventListener('click', () => { if (busy || done) return; X.audioInit(); go('', 'guest'); });   // 访客：进度只记在这台设备上，首页随时可以再起名字
+  // 不再有访客：不想起名字就随机发一个，而且只发没人用过的（服务器查重，被占了就再掷，最多 6 次）
+  const claim = async (name, fresh) => {
+    X.WHO.err = ''; X.WHO.code = '';
+    await Promise.race([X.setName(name, fresh), new Promise(r => setTimeout(r, 7000))]).catch(() => {});
+    const code = X.WHO.code; X.WHO.err = ''; X.WHO.code = '';
+    if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return 'ok';
+    return code || 'net';
+  };
+  auto.addEventListener('click', async () => {
+    if (busy || done) return;
+    X.audioInit(); S('ui'); track('rndname', { auto: 1 });
+    let name = randomName(input.value);
+    if (!X.CLOUD) { input.value = name; return go(name, 'random'); }
+    busy = true; lock(true); msg.textContent = '';
+    const label = auto.textContent; auto.textContent = L('起名中…', 'Picking…');
+    let res = 'net';
+    for (let i = 0; i < 6; i++) {
+      input.value = name;
+      res = await claim(name, true);
+      if (res !== 'taken') break;
+      name = randomName(name);
+    }
+    busy = false; auto.textContent = label;
+    if (res === 'ok') return go(X.NAME, 'random');
+    if (res === 'taken') { lock(false); return refuse(L('一连几个名字都被人用了，再点一次试试。', 'Those names were all taken. Try again.')); }
+    // 存档服务连不上：名字先记在本机，下次打开时游戏会自己补存
+    try { localStorage.setItem('yuan.name', name); } catch (e2) {}
+    go(name, 'later');
+  });
   form.addEventListener('submit', async e => {
     e.preventDefault(); if (busy || done) return;
     X.audioInit();
     const name = cleanName(input.value);
-    if (!name) return refuse(guest ? L('起个名字，或者先当访客。', 'Pick a name, or play as guest.') : L('起个名字吧。', 'Pick a name.'));
+    if (!name) return refuse(L('起个名字，或者点「帮我起一个」。', 'Pick a name, or tap “Pick one for me”.'));
     if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).'));
-    if (!X.CLOUD) return go(name, 'offline');   // file:// 打开：没有云存档，名字只记在本机
+    const fresh = !!rolled && name === rolled;
+    if (!X.CLOUD) return go(name, fresh ? 'random' : 'offline');   // file:// 打开：没有云存档，名字只记在本机
     busy = true; lock(true); msg.textContent = '';
     const submit = form.querySelector('[type=submit]'), label = submit.textContent; submit.textContent = L('归档中…', 'Filing…');
-    X.WHO.err = '';
-    await Promise.race([X.setName(name), new Promise(r => setTimeout(r, 7000))]).catch(() => {});
+    const res = await claim(name, fresh);
     busy = false; submit.textContent = label;
-    const err = X.WHO.err; X.WHO.err = '';
-    if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return go(X.NAME, 'cloud');
-    if (err && /16/.test(err)) { lock(false); return refuse(err); }   // 服务器说名字不合规
+    if (res === 'ok') return go(X.NAME, fresh ? 'random' : 'cloud');
+    if (res === 'bad-name') { lock(false); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
+    if (res === 'taken') { lock(false); input.value = rolled = randomName(name); return refuse(L('这个名字刚被人用了，给你换了一个。', 'That one was just taken. Here is another.')); }
     // 存档服务连不上：先在本机记下，名字留在 yuan.name 里，下次打开时游戏会自己补存
     try { localStorage.setItem('yuan.name', name); } catch (e2) {}
     go(name, 'later');
@@ -739,7 +767,7 @@ function playContract(round, name, how) {
   const trial = round ? L(`乙方试工圆度 ${pct(round)}，甲方决定雇用。`, `Trial: ${pct(round)} round. Hired.`) : L('乙方试工合格，甲方决定雇用。', 'Trial passed. Hired.');
   const note = how === 'later' ? L('存档服务这会儿连不上，名字先记在这台设备上，下次打开会自动补存。', 'The save server is unreachable. Your name is kept here and will sync next time.')
     : how === 'offline' ? L('离线打开：名字只记在这台设备上。', 'Offline: your name is kept on this device only.')
-    : how === 'guest' ? L('访客的进度只存在这台设备上，回首页随时可以起名字。', 'Guest progress stays on this device. Pick a name on the home screen any time.') : '';
+    : how === 'random' ? L('名字是随机起的，回首页随时可以换。', 'Your name was picked at random. Change it on the home screen any time.') : '';
   const layer = document.createElement('div'); layer.id = 'flow-deal'; layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-labelledby', 'fd-title');
   layer.innerHTML = `
   <article class="fd-paper">

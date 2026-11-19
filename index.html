@@ -1912,7 +1912,7 @@ const CLOUD = (() => {
   const h = location.hostname;
   return h === 'fullcircle.roosterwho.com' || /^(localhost|127\.|\[::1\])/.test(h) ? '/api/save' : 'https://fullcircle.roosterwho.com/api/save';
 })();
-const WHO = { busy: false, err: '' };
+const WHO = { busy: false, err: '', code: '', renaming: false };   // code：上次 setName 失败的原因（bad-name / taken / net）；renaming：首页正在换名字
 const escH = v => String(v).replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
 function mergeBest(d) {
   let changed = false; const best = d.best || {}, stars = d.stars || {};
@@ -1926,24 +1926,31 @@ function mergeBest(d) {
   if (achMerge(d.ach) + achCheck(true)) changed = true;
   return changed;
 }
-async function cloudSync(name) {
+async function cloudSync(name, fresh) {
   if (!CLOUD || !name) return null;
-  // 字符串 body = text/plain，跨域也不用预检
-  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best, stars: SAVE.stars, endless: SAVE.endless, ach: Object.keys(A.got) }), keepalive: true });
+  // 字符串 body = text/plain，跨域也不用预检；fresh = 随机起的名字，只要没人用过的（服务器回 409 就是被占了）
+  const r = await fetch(CLOUD, { method: 'POST', body: JSON.stringify({ name, pid: PID, best: SAVE.best, stars: SAVE.stars, endless: SAVE.endless, ach: Object.keys(A.got), ...(fresh ? { new: true } : {}) }), keepalive: true });
   if (r.status === 422) throw new Error('bad-name');
+  if (r.status === 409) throw new Error('taken');
   if (!r.ok) throw new Error('http ' + r.status);
   const d = await r.json(); mergeBest(d); return d;
 }
 function refreshCard() { if (G.state === 'cover') { startSync(); return; } if (G.state === 'menu' && card.querySelector('.how')) showMenu(); else if (card.querySelector('.grid')) showBook(); }
-async function setName(raw) {
+async function setName(raw, fresh) {
   const name = String(raw || '').trim().replace(/\s+/g, ' ');
   if (!name || WHO.busy) return;
-  WHO.busy = true; WHO.err = ''; refreshCard();
+  WHO.busy = true; WHO.err = ''; WHO.code = ''; refreshCard();
+  clearTimeout(achSyncT);   // 旧名字还没发出去的成就同步别发到新名字上
   const prev = NAME;
   // 切到这个名字自己的存档（新名字就是空的），再跟云端合并；访客进度留在访客那份里
   NAME = name; loadSave(); loadAch();
-  try { const d = await cloudSync(name); if (d.name !== NAME) { NAME = d.name; persist(); achSave(); } try { localStorage.setItem('yuan.name', NAME); } catch (e) {} achUnlock('name_tag'); }
-  catch (e) { NAME = prev; loadSave(); loadAch(); WHO.err = e.message === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).') : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.'); }
+  try { const d = await cloudSync(name, fresh); if (d.name !== NAME) { NAME = d.name; persist(); achSave(); } try { localStorage.setItem('yuan.name', NAME); } catch (e) {} WHO.renaming = false; achUnlock('name_tag'); }
+  catch (e) {
+    NAME = prev; loadSave(); loadAch(); WHO.code = e.message === 'bad-name' || e.message === 'taken' ? e.message : 'net';
+    WHO.err = WHO.code === 'bad-name' ? L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')
+      : WHO.code === 'taken' ? L('这个名字已经有人用了，换一个吧。', 'That name is taken. Try another.')
+      : L('存档服务连不上，过一会儿再试。', 'Could not reach the save server. Try again in a bit.');
+  }
   WHO.busy = false; refreshCard();
 }
 /* ---------- 成就 ----------
@@ -2227,7 +2234,14 @@ function showBoard(refetch = true) {
 }
 function whoRow() {
   if (!CLOUD) return '';
-  if (NAME) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字 / 用访客玩', 'Switch name / play as guest')}</button></p>`;
+  if (NAME && !WHO.renaming) return `<p class="note" data-who>${L('存档：', 'Saved as ')}<strong>${escH(NAME)}</strong>${L('。换设备输同名就能接着玩。', '. Same name on any device continues.')} <button class="link" type="button" data-act="rename">${L('换个名字', 'Change name')}</button></p>`;
+  // 换名字时不再退回访客：新名字存档成功才换过去，取消就还是原来的名字
+  if (NAME) return `<form class="who" data-who autocomplete="off">
+      <label class="note" for="who-name">${L('换个名字（现在是 ', 'New name (now ')}<strong>${escH(NAME)}</strong>${L('）', ')')}</label>
+      <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('新名字', 'New name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('换', 'Switch')}</button></span>
+      ${WHO.err ? `<span class="note err" role="alert">${WHO.err}</span>` : ''}
+      <span class="note">${L('输以前用过的名字就接着那份存档玩，原来的存档还在。', 'Use an old name to continue that save. Your current save stays.')} <button class="link" type="button" data-act="rename-cancel">${L('不换了', 'Cancel')}</button></span>
+    </form>`;
   return `<form class="who" data-who autocomplete="off">
       <label class="note" for="who-name">${L('起个名字存档（可不填）', 'Name to save (optional)')}</label>
       <span class="who-row"><input id="who-name" name="who" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="${L('你的名字', 'Your name')}"${WHO.busy ? ' disabled' : ''}><button class="btn ghost small" type="submit"${WHO.busy ? ' disabled' : ''}>${WHO.busy ? L('存档中…', 'Saving…') : L('存档', 'Save')}</button></span>
@@ -2720,7 +2734,8 @@ function act(a) {
     try { localStorage.removeItem('yuan.save.v2'); localStorage.removeItem('yuan.ach.v1'); } catch (e) {}
     loadSave(); loadAch(); persist(); achSave(); showMenu();
   }
-  else if (a === 'rename') { clearTimeout(achSyncT); NAME = ''; WHO.err = ''; try { localStorage.removeItem('yuan.name'); } catch (e) {} loadSave(); loadAch(); showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
+  else if (a === 'rename') { WHO.renaming = true; WHO.err = ''; showMenu(); const i = card.querySelector('#who-name'); if (i) i.focus(); }
+  else if (a === 'rename-cancel') { WHO.renaming = false; WHO.err = ''; showMenu(); }
   else if (a === 'again') { G.loop++; G.idx = 0; G.slips = 0; showOrder(); }
   else if (a === 'ach') showAch();
 }
