@@ -611,7 +611,7 @@ const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
    一种材料就是一单。要加新的一单：这里加一条，SHAPES 里加起始形状，ART 里加贴图，再把名字排进 ORDER。
    可选：snd 借用别的敲击声，wet 溅汁水，rough 轮廓毛糙，rnd 随机形状可接受的起始圆度范围 */
 const MATS = {
-  wood: { name: '木头', unit: '块', hard: 22, brittle: 80, loose: 1.0, plastic: 0, smooth: 0, passes: 0, value: 1.0, hp: 3, rest: .28, fric: .7, accel: 30000, jig: .04, target: .76, time: 150,   // 第 1 单：要让人赢。线上首轮只有 45% 交得了货，达标线 .80→.76、限时 90→150
+  wood: { name: '木头', unit: '块', hard: 22, brittle: 80, loose: 1.0, plastic: 0, smooth: 0, passes: 0, value: 1.0, hp: 3, rest: .28, fric: .7, accel: 30000, jig: .04, target: .76, time: 150,   // 第 1 单：要让人赢。线上首轮只有 45% 交得了货，达标线 .80→.76、限时 90→150；形状从方木块换成树墩截面（起始圆度 .536→.60）
     base: '#b9824a', outline: '#4f2e12', chips: ['#c99355', '#8a5a2b', '#e3ba82'], over: '劈裂了！', dead: '木头被砸成了一堆柴火。', blurb: '脾气最好，窗口很宽，拿来热身。' },
   stone: { name: '石头', unit: '块', hard: 42, brittle: 86, loose: .8, plastic: 0, smooth: 0, passes: 0, value: 1.5, hp: 3, rest: .2, fric: .8, accel: 17000, jig: 0, target: .82, time: 90, rnd: [.5, .66], rough: 1.3,
     base: '#8c9099', outline: '#3a3d44', chips: ['#9aa0a8', '#6d7178', '#c4c8ce'], over: '崩掉一块！', dead: '石头碎成了渣。', blurb: '不抡起来没反应，抡太狠会崩。' },
@@ -907,7 +907,8 @@ const tinePts = (deg, len, w, bend, s) => { const A = [], B = []; for (let k = 0
 const palmPts = s => { const [a0, a1, R] = ANTLER_PALM, p = []; for (let k = 0; k <= 12; k++) { const a = (a0 + (a1 - a0) * k / 12) * Math.PI / 180 * s, r = R - 14 * Math.abs(k / 12 - .45); p.push([Math.sin(a) * r, -Math.cos(a) * r]); } for (let k = 12; k >= 0; k--) { const a = (a0 + (a1 - a0) * k / 12) * Math.PI / 180 * s; p.push([Math.sin(a) * 30, -Math.cos(a) * 30]); } return p; };
 const rectPts = (hw, hh) => [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
 const SHAPES = {
-  wood: () => rectPts(96, 78),
+  // 第 1 单：一截树墩的横截面，带年轮，整体接近圆、有几处鼓包（起始圆度约 .60）。原来是方木块（.536），新玩家一看要把方块砸圆就觉得难
+  wood: () => { const p = []; for (let k = 0; k < 90; k++) { const a = k / 90 * TAU, rr = 96 * (1 + .14 * Math.cos(2 * (a - .3)) + .07 * Math.cos(3 * a + 1.1) + .04 * Math.cos(5 * a + .4)); p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; },
   stone: () => { const n = 6, off = rand(0, TAU), p = []; for (let k = 0; k < n; k++) { const a = off + (k + rand(-.28, .28)) / n * TAU, rr = rand(66, 116); p.push([Math.cos(a) * rr, Math.sin(a) * rr * .86]); } return p; },
   meat: () => { const p = [], ph = rand(0, TAU); for (let k = 0; k < 90; k++) { const a = k / 90 * TAU, rr = 82 * (1 + .3 * Math.cos(2 * (a - .3)) + .11 * Math.cos(3 * a + ph) + .04 * Math.cos(5 * a + 1)); p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; },
   can: () => rectPts(58, 90),
@@ -2981,17 +2982,17 @@ function rr(c, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 const ART = {
-  wood(c) {
-    c.fillStyle = '#b9824a'; c.fillRect(-150, -130, 300, 260); c.lineWidth = 2;
-    for (let y = -124, k = 0; y <= 124; y += 11, k++) {
-      c.strokeStyle = k % 3 ? 'rgba(84,46,16,.22)' : 'rgba(84,46,16,.42)'; c.beginPath(); c.moveTo(-150, y);
-      for (let x = -150; x <= 150; x += 15) c.lineTo(x, y + Math.sin(x * .03 + k * 1.7) * 3.2); c.stroke();
+  wood(c) {   // 树墩横截面：浅木色底，一圈圈年轮跟着外形一起偏，中间深色髓心，一道从中心裂出去的干裂纹
+    c.fillStyle = '#d6a466'; c.fillRect(-180, -180, 360, 360);
+    const g = c.createRadialGradient(0, 0, 4, 0, 0, 160); g.addColorStop(0, 'rgba(255,236,200,.35)'); g.addColorStop(1, 'rgba(120,70,30,.2)'); c.fillStyle = g; c.fillRect(-180, -180, 360, 360);
+    c.lineWidth = 2;
+    for (let k = 1; k <= 17; k++) {
+      const R = k * 10; c.strokeStyle = k % 4 ? 'rgba(110,62,24,.3)' : 'rgba(110,62,24,.5)'; c.beginPath();
+      for (let q = 0; q <= 64; q++) { const a = q / 64 * TAU, rr = R * (1 + .07 * Math.cos(2 * (a - .3)) + .03 * Math.sin(3 * a + k * .7)), x = Math.cos(a) * rr, y = Math.sin(a) * rr; if (q) c.lineTo(x, y); else c.moveTo(x, y); }
+      c.closePath(); c.stroke();
     }
-    for (const [x, y, s] of [[-40, 12, 1], [56, -30, .7]]) {
-      c.strokeStyle = 'rgba(70,36,12,.5)'; for (let q = 3; q >= 1; q--) { c.beginPath(); c.ellipse(x, y, 7 * q * s, 4.2 * q * s, .1, 0, TAU); c.stroke(); }
-      c.beginPath(); c.ellipse(x, y, 4 * s, 2.6 * s, .1, 0, TAU); c.fillStyle = '#5a3415'; c.fill();
-    }
-    c.fillStyle = 'rgba(255,230,190,.12)'; c.fillRect(-150, -130, 300, 62);
+    c.fillStyle = '#7a4a1e'; c.beginPath(); c.ellipse(0, 0, 5, 4, .3, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(70,36,12,.55)'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(4, -2); c.lineTo(30, -16); c.lineTo(46, -14); c.lineTo(74, -32); c.stroke();
   },
   stone(c, b) {
     const g = c.createLinearGradient(-110, -110, 110, 110); g.addColorStop(0, '#a9aeb7'); g.addColorStop(1, '#62666e'); c.fillStyle = g; c.fillRect(-170, -170, 340, 340);
