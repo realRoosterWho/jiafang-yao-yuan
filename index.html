@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <!-- 开始界面的背景和中文字体最先要用，先开始下载 -->
 <link rel="preload" href="assets/bg-cover.e63bd97aab.webp" as="image">
-<link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/maoken.f2c338a40c.woff2" as="font" type="font/woff2" crossorigin>
 <script>
 /* 语言（zh / en）：网址里的 ?lang= 优先，其次是存下的选择，再看浏览器。放在最前面，开始界面的图好按语言先下 */
 /* 平台：小红书小工具版（tools/build-xhs.mjs 打包，bootstrap.js 先设 window.YUAN_PLATFORM）不联网、不换语言、存档走容器 Storage；网页版照旧 */
@@ -41,7 +41,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=start1" defer></script>
+<script src="flow.js?v=font2" defer></script>
 <script>
 /* yuan-web-only：小红书版打包时整段删掉 */
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
@@ -362,7 +362,7 @@ body {
 /* 字体：英文和数字用 Chewy，中文用猫啃什锦黑（Maoken Assorted Sans）。这三个变量 flow.js 也在用，意思没变（标题字 / 正文字 / 数字字），只是换了字体。
    紧跟着的两条 @font-face 指向裁好的 assets/*.woff2（由 tools/subset_fonts.py 生成，别手改）；字不在裁出来的那一份里时，会退到后面的字体（站酷快乐体、系统黑体）。 */
 @font-face { font-family: "Chewy"; font-weight: 100 900; font-display: swap; src: url(assets/chewy.cef39331e5.woff2) format("woff2"); }
-@font-face { font-family: "Maoken Assorted Sans"; font-weight: 100 900; font-display: swap; src: url(assets/maoken.c040c37bd8.woff2) format("woff2"); }
+@font-face { font-family: "Maoken Assorted Sans"; font-weight: 100 900; font-display: swap; src: url(assets/maoken.f2c338a40c.woff2) format("woff2"); }
 :root { --display: "Chewy", "Maoken Assorted Sans", "ZCOOL KuaiLe", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --body: "Maoken Assorted Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
   --num: "Chewy", "Maoken Assorted Sans", "PingFang SC", "Microsoft YaHei", sans-serif;

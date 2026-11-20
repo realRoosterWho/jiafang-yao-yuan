@@ -152,6 +152,7 @@ for (const f of fs.readdirSync(path.join(ROOT, 'assets'))) {
   fs.copyFileSync(path.join(ROOT, 'assets', f), path.join(OUT, 'res', f));
   copied.push(f);
 }
+fs.copyFileSync(path.join(ROOT, 'tools', 'xhs', 'share-bg.webp'), path.join(OUT, 'res', 'share-bg.webp'));   // 晒成绩的底图（只有小红书版用）
 // 颜色的新写法 rgb(255 211 92 / .55) Chrome 61 不认（整条声明会被丢掉），换成 rgba(255,211,92,.55)；只认纯数字的，模板插值不碰
 let colorFixes = 0;
 const pct = x => x.endsWith('%') ? String(parseFloat(x) / 100) : x;

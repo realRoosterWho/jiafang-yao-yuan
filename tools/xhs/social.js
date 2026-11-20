@@ -1,11 +1,13 @@
-/* 甲方要圆 · 小红书小工具版专用：晒笔记、分享、去评论区、关注作者、无尽模式排行榜（内测）
+/* 甲方要圆 · 小红书小工具版专用：晒笔记、分享、去评论区、关注作者、赞赏（内测）、无尽模式排行榜（内测）
    只有 tools/build-xhs.mjs 打的包里有这个文件，最后一个加载。游戏在几个时刻调 window.__yuanXhs(事件, 数据)（index.html 里的 XHOOK）：
      result  交货结算卡出来了      → 卡片底下加一行「晒到笔记」「分享给朋友」
-     endless 无尽模式收工          → 提交成绩到排行榜；加「晒到笔记」「分享」「去评论区报成绩」「关注作者」
+     endless 无尽模式收工          → 提交成绩到排行榜；加「晒到笔记」「分享」「去评论区报成绩」「关注作者」「赞赏一下作者」
      win     冒险模式通关          → 同上（不提交成绩）
      board   点了「排行榜」        → 小红书排行榜卡片（本周 / 总榜）
    每个能力先看客户端版本和方法在不在（bootstrap.js 的 YUAN_XHS.can），不在就不显示按钮；调用失败给一句提示，不影响游戏。
-   能力说明见小工具在线文档 §3.3 发布笔记、§3.5 临时文件、§3.9 发布评论、§3.15 关注作者、§3.17 排行榜、§3.18 分享 */
+   赞赏：客户端 9.53.3+ 才显示；开没开通只能在创作者平台的发布配置里看，页面查不到，所以点了失败一次就本次不再显示。
+   关闭挽留（关掉小工具时客户端可能弹赞赏）只在玩家真玩进去以后才打开：这次交了 3 单、通关或无尽收工。
+   能力说明见小工具在线文档 §3.3 发布笔记、§3.5 临时文件、§3.9 发布评论、§3.15 关注作者、§3.17 排行榜、§3.18 分享、§3.19 赞赏、§3.20 赞赏挽留 */
 (function () {
   'use strict';
   const Y = window.__yuan, X = window.__yuanFlow, XS = window.YUAN_XHS;
@@ -17,6 +19,8 @@
     share: XS.can(9530, ['share']),
     comment: XS.can(9490, ['writeTempFile', 'interactionOpenApi']),
     follow: XS.can(9510, ['followAuthor', 'getFollowStatus']),
+    reward: XS.can(9533, ['rewardAuthor']),
+    retention: XS.can(9533, ['setCloseRetentionEnabled']),
   };
   const say = t => XS.note(t);
   const sfx = k => { try { X.sfx.ui(k); } catch (e) {} };
@@ -24,22 +28,31 @@
   const nameOf = id => (Y.MATS[id] && Y.MATS[id].name) || '';
   const errCode = e => e && (e.errCode !== undefined ? e.errCode : e.code);
 
-  /* ---------- 成绩图：游戏画面 + 三行字，3:4 ---------- */
+  /* ---------- 成绩图：底图（Codex 画的，tools/xhs/share-bg.webp，打包进 res/）+ 框里放游戏画面 + 三行字，900×1200 ---------- */
+  const BG = new Image(); let bgOk = false;
+  BG.onload = () => { bgOk = true; }; BG.src = 'res/share-bg.webp';
+  const FRAME = { x: 51, y: 90, w: 798, h: 744, r: 34 };   // 底图里圆角框的内部（量出来的）
+  const bgReady = () => bgOk ? Promise.resolve() : new Promise(r => { BG.addEventListener('load', r); BG.addEventListener('error', r); setTimeout(r, 1500); });
   function shotDataUrl(line1, line2) {
     const src = document.getElementById('cv'), W = 900, H = 1200;
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d');
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#2d2468'); bg.addColorStop(1, '#110d2b');
-    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    if (bgOk) g.drawImage(BG, 0, 0, W, H);
+    else { const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#2d2468'); bg.addColorStop(1, '#110d2b'); g.fillStyle = bg; g.fillRect(0, 0, W, H); }
     if (src && src.width && src.height) {
-      const box = 840, s = Math.min((W - 60) / src.width, box / src.height), w = src.width * s, h = src.height * s;
-      try { g.drawImage(src, (W - w) / 2, 30 + (box - h) / 2, w, h); } catch (e) {}
+      const f = FRAME, s = Math.min(f.w / src.width, f.h / src.height), w = src.width * s, h = src.height * s;
+      g.save();
+      g.beginPath();   // 圆角裁一下，画面不压到框的圆角外面
+      g.moveTo(f.x + f.r, f.y); g.arcTo(f.x + f.w, f.y, f.x + f.w, f.y + f.h, f.r); g.arcTo(f.x + f.w, f.y + f.h, f.x, f.y + f.h, f.r);
+      g.arcTo(f.x, f.y + f.h, f.x, f.y, f.r); g.arcTo(f.x, f.y, f.x + f.w, f.y, f.r); g.closePath(); g.clip();
+      try { g.drawImage(src, f.x + (f.w - w) / 2, f.y + (f.h - h) / 2, w, h); } catch (e) {}
+      g.restore();
     }
     const font = 'system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = '#ffd35c'; g.font = `bold 58px ${font}`; g.fillText(line1, W / 2, 960, W - 60);
-    g.fillStyle = '#fff7e3'; g.font = `40px ${font}`; g.fillText(line2, W / 2, 1040, W - 60);
-    g.fillStyle = '#a9a1d6'; g.font = `32px ${font}`; g.fillText('小红书小工具「甲方要圆」· 外星甲方只要圆的', W / 2, 1130, W - 60);
+    g.fillStyle = '#ffd35c'; g.font = `bold 58px ${font}`; g.fillText(line1, W / 2, 945, W - 80);
+    g.fillStyle = '#fff7e3'; g.font = `40px ${font}`; g.fillText(line2, W / 2, 1015, W - 80);
+    g.fillStyle = '#a9a1d6'; g.font = `30px ${font}`; g.fillText('小红书小工具「甲方要圆」· 外星甲方只要圆的', W / 2, 1080, W - 160);
     return c.toDataURL('image/jpeg', .88);
   }
   async function tempFile(dataUrl) {
@@ -88,6 +101,7 @@
     if (CAN.share) b.push(['share', '分享给朋友']);
     if (big && CAN.comment) b.push(['comment', '去评论区报成绩']);
     if (big && CAN.follow && followState === 0) b.push(['follow', '关注作者']);
+    if (big && CAN.reward) b.push(['reward', '赞赏一下作者']);
     if (!b.length) return;
     card.insertAdjacentHTML('beforeend', `<div class="row xhs-social">${b.map(([k, t]) => `<button class="btn ghost small" type="button" data-xhs="${k}">${t}</button>`).join('')}</div>`);
   }
@@ -100,15 +114,18 @@
     busy = true; sfx('open');
     try {
       if (k === 'note') {
-        const filePath = await tempFile(shotDataUrl(last.line1, last.line2));
+        await bgReady(); const filePath = await tempFile(shotDataUrl(last.line1, last.line2));
         await mt().postNote({ title: last.title, content: last.content, pageType: 'photo_publish', mediaInfo: { image_resources: [{ url: filePath }] } });
       } else if (k === 'share') {
         await mt().share({ type: 'card' });
       } else if (k === 'comment') {
         if (!confirm('去评论区会关掉小工具，进度已经存好了。现在去吗？')) { busy = false; return; }
-        const filePath = await tempFile(shotDataUrl(last.line1, last.line2));
+        await bgReady(); const filePath = await tempFile(shotDataUrl(last.line1, last.line2));
         await XS.flush();
         await mt().interactionOpenApi({ payload: { action: 'post_comment', content: last.comment, media_bean: [{ media_type: 'image', cover_image_url: filePath }] }, saveToAlbum: false });
+      } else if (k === 'reward') {
+        // 旧客户端可能不理这个调用、一直不回：最多等 15 秒，别把按钮卡死
+        await Promise.race([mt().rewardAuthor(), new Promise((_, no) => setTimeout(() => no({ errCode: 'timeout' }), 15000))]);
       } else if (k === 'follow') {
         const r = await mt().followAuthor();
         followState = r ? r.follow_status : -1;
@@ -117,6 +134,7 @@
     } catch (err) {
       const c = errCode(err);
       if (c === 20002) {}   // 用户自己关掉了
+      else if (k === 'reward') { CAN.reward = false; t.remove(); if (c !== 'timeout') say('赞赏暂时用不了。'); }
       else if (k === 'share' && c === 15502) say('现在这个模式分享不了，全屏打开小工具再试试。');
       else if (k === 'share' && c === 15503) say('今天分享次数用完了，明天再来。');
       else if (k === 'follow' && c === 15404) say('今天关注提示弹得太多了，明天再试。');
@@ -184,8 +202,19 @@
     });
   }
 
+  /* ---------- 关闭挽留：玩进去了才打开 ---------- */
+  let delivered = 0, retained = false;
+  function retainSoon(ev) {
+    if (retained || !CAN.retention || !CAN.reward) return;
+    if (ev === 'result') delivered++;
+    if (ev === 'result' && delivered < 3) return;
+    retained = true;
+    Promise.resolve(mt().setCloseRetentionEnabled({ enabled: true })).catch(() => { retained = false; });
+  }
+
   /* ---------- 游戏的钩子 ---------- */
   window.__yuanXhs = (ev, d) => {
+    if (ev === 'result' || ev === 'endless' || ev === 'win') retainSoon(ev);
     if (ev === 'board') { showBoard('week'); return; }
     if (ev === 'endless') submit(d.score);
     if (ev === 'result' || ev === 'endless' || ev === 'win') { last = story(ev, d); addRow(ev); }
