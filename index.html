@@ -41,7 +41,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=name2" defer></script>
+<script src="flow.js?v=perf1" defer></script>
 <script>
 /* yuan-web-only：小红书版打包时整段删掉 */
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
@@ -482,6 +482,7 @@ body {
     var(--k-sPopupC) 1.95em 2.4em / calc(100% - 3.9em) calc(100% - 4.55em) no-repeat;
 }
 #card { animation: cardpop .34s var(--pop) both; }
+#card.long { filter: none; }   /* 比屏幕还长的卡片（成就、图鉴）不要整张的 drop-shadow：手机上滚动时整张卡都要重新过一遍滤镜，会卡 */
 @keyframes cardpop { from { transform: scale(.86) translateY(.8em); opacity: 0; } }
 /* 第一行小标题做成一块金色的标题牌，骑在弹窗的上沿（素材包的示例里那儿是三颗星） */
 #card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
@@ -1864,7 +1865,7 @@ function floatText(x, y, text, color, size) { if (G.tutUI) return;   // 新手�
 /* ---------- 回合流程 ---------- */
 const stage = document.getElementById('stage'), wrap = document.getElementById('wrap'), cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay'), card = document.getElementById('card'), deliverBtn = document.getElementById('deliver'), muteBtn = document.getElementById('mute'), homeBtn = document.getElementById('home'), replayBtn = document.getElementById('replay');
-function setCard(html) { const opening = overlay.hidden; sndHush('card'); stage.classList.remove('cover'); card.classList.remove('win'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; if (opening) setTimeout(() => sfx.pop(), 0); }   // 上一张卡片排好的声音掐掉；卡片从无到有时“啵”一声（换卡片、云存档回来重画不响；紧跟着按钮声的不响，所以等这一下点击处理完再看）
+function setCard(html) { const opening = overlay.hidden; sndHush('card'); stage.classList.remove('cover'); card.classList.remove('win'); card.innerHTML = html; overlay.hidden = false; overlay.scrollTop = 0; deliverBtn.hidden = true; card.classList.toggle('long', card.scrollHeight > overlay.clientHeight); if (opening) setTimeout(() => sfx.pop(), 0); }   // 上一张卡片排好的声音掐掉；卡片从无到有时“啵”一声（换卡片、云存档回来重画不响；紧跟着按钮声的不响，所以等这一下点击处理完再看）
 /* 星级：★★★ 就是达标线；★★、★ 各往下让 3、6 个点，拿一星就能交货。
    起始圆度离达标线很近的单（晶洞、铜块）让得少，让出来的不超过「起始到达标」这段的 35%，免得一接单就能交 */
 function starLines(target, r0) {
@@ -4564,7 +4565,13 @@ if (EN) {
 }
 try { if (document.fonts && document.fonts.load) { document.fonts.load(`20px 'Maoken Assorted Sans'`, ORDER.map(id => MATS[id].name + MATS[id].over).join('') + '圆形程度力太轻磨好重击汽切皆足金舞曲烫急嗬疼0123456789%！'); document.fonts.load('700 20px Chewy', '0123456789'); } } catch (e) {}
 let last = 0;
-function frame(now) { const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw(); requestAnimationFrame(frame); }
+let frameSkip = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  // 菜单卡片（成就、图鉴、排行榜、怎么玩）盖着的时候，后面压暗的画面每 6 帧画一次就够了：手机上把力气留给卡片滚动（成就页很长，滚起来会卡）
+  if (G.state === 'menu' && !overlay.hidden && (frameSkip = (frameSkip + 1) % 6)) return;
+  const dt = Math.min(.034, Math.max(0, (now - last) / 1000)); last = now; update(dt); draw();
+}
 
 /* 调试与平衡用：模拟“每次都砸最凸的地方”要多少下 */
 function sim(id, t, hits, aimErr) {
