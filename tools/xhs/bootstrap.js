@@ -301,6 +301,7 @@
       get storage() { return mode; },
       get cloud() { return cloudOn; },
       rankOn: at(9510, ['submitScore', 'getRankList', 'getMyRank']),   // 排行榜（内测）；没授权时 social.js 会关掉
+      rewardOn: at(9533, ['rewardAuthor']),   // 赞赏（内测）；没开通时第一次调用会失败，social.js 会关掉、首页按钮也收起
       can: at,
       note: function (text) { note('x' + Date.now(), text); },
       flush: function () { cloudSchedule(true); return withTimeout(flushNow(), 1500).catch(function () {}); },

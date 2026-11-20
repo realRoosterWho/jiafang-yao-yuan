@@ -41,7 +41,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=perf1" defer></script>
+<script src="flow.js?v=tip1" defer></script>
 <script>
 /* yuan-web-only：小红书版打包时整段删掉 */
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
@@ -456,6 +456,9 @@ body {
 #stage.port .start-more { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 12) calc(var(--u) * 10); width: 74%; }
 #stage.port #startui .start-more .btn { width: calc(50% - var(--u) * 6); padding-left: .4em; padding-right: .4em; font-size: max(13px, calc(var(--u) * 25)); }
 #stage.port #startui .start-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 10 + var(--ib) / 2); font-size: max(10px, calc(var(--u) * 15)); }
+/* 小红书版右下角的「赞赏作者」（占换语言的位置）：比语言按钮大一号、带点粉色，首页一眼看得到 */
+#startui .start-reward { font-size: max(12px, calc(var(--u) * 17)); background: linear-gradient(#fff4f8, #ffd3e2); color: #8a2d52; }
+#stage.port #startui .start-reward { font-size: max(14px, calc(var(--u) * 23)); }
 #stage.cover.port #mute { left: calc(var(--u) * 8); bottom: calc(var(--u) * 10); }
 /* 竖着拿的平板（.short，比手机矮一截）：大按钮和下面四颗都小一号、挨紧一点，不然最后一排会压到右下角的换语言 */
 #stage.port.short .start-main { top: 47%; gap: calc(var(--u) * 11); }
@@ -599,6 +602,7 @@ const mq = q => !!(window.matchMedia && matchMedia(q).matches);
 /* 小红书版的钩子：结算、无尽收工、通关、排行榜这几个时刻通知 tools/xhs/social.js（加分享 / 晒笔记 / 关注 / 排行榜），网页版里 XHS 为假，什么都不做 */
 const XHOOK = (ev, d) => { if (!XHS || typeof window.__yuanXhs !== 'function') return; try { window.__yuanXhs(ev, d || {}); } catch (e) { console.error('[xhs]', e); } };
 const XRANK = () => !!(XHS && window.YUAN_XHS && window.YUAN_XHS.rankOn);   // 小红书排行榜（内测）能用
+const XREWARD = () => !!(XHS && window.YUAN_XHS && window.YUAN_XHS.rewardOn);   // 小红书赞赏（内测，9.53.3+）能用
 const TOUCH = XHS || mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
@@ -2420,6 +2424,7 @@ const SICO = (() => { const k = 'stroke="#33246e" stroke-width="2" stroke-linejo
     endless: svg(`<path d="M12 12c-2-3-3.4-4.4-5.4-4.4a4.4 4.4 0 0 0 0 8.8c2 0 3.4-1.4 5.4-4.4s3.4-4.4 5.4-4.4a4.4 4.4 0 0 1 0 8.8c-2 0-3.4-1.4-5.4-4.4z" fill="none" stroke="#33246e" stroke-width="2.6" stroke-linejoin="round"/>`),
     ach: svg(`<path d="M12 2.8l2.7 5.7 6.2.8-4.5 4.3 1.1 6.2L12 16.9l-5.5 2.9 1.1-6.2-4.5-4.3 6.2-.8z" fill="#ffd93c" ${k}/>`),
     menu: svg(`<path d="M7.5 7.5h9a5.5 5.5 0 0 1 5.5 5.5v2.6a2.6 2.6 0 0 1-4.9 1.2l-.8-1.6H7.7l-.8 1.6A2.6 2.6 0 0 1 2 15.6V13a5.5 5.5 0 0 1 5.5-5.5z" fill="#ffd93c" ${k}/><path d="M7.4 10.6v3.2M5.8 12.2H9" fill="none" ${k}/><circle cx="15.6" cy="11.2" r="1.15" fill="#33246e"/><circle cx="18" cy="13.4" r="1.15" fill="#33246e"/>`),
+    reward: svg(`<path d="M12 20.2s-7.6-4.6-7.6-10.2a4.2 4.2 0 0 1 7.6-2.5 4.2 4.2 0 0 1 7.6 2.5c0 5.6-7.6 10.2-7.6 10.2z" fill="#ff8fb1" ${k}/>`),
     lang: svg(`<circle cx="12" cy="12" r="8.8" fill="#fff" ${k}/><path d="M3.4 12h17.2M12 3.2c-3.6 3.4-3.6 14.200 0 17.600M12 3.2c3.600 3.4 3.600 14.200 0 17.600" fill="none" ${k}/>`) }; })();
 function startSync() {
   const at = firstOpen(), won = advDone(), eo = endlessOpen(), b = (cls, a, label, ex, more) => `<button class="btn ${cls}" type="button" data-start="${a}"${ex || ''}>${SICO[a]}<span>${label}</span>${more || ''}</button>`;
@@ -2430,7 +2435,7 @@ function startSync() {
     ${eo && !won ? b('ghost start-endless', 'endless', L('无尽模式', 'Endless')) : ''}
     <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD || XRANK() ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
   </div>
-  ${XHS ? '' : b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
+  ${XHS ? (XREWARD() ? b('ghost start-lang start-reward', 'reward', '赞赏作者') : '') : b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
 }
 startUI.addEventListener('click', e => {
   const t = e.target && e.target.closest ? e.target.closest('[data-start]') : null; if (!t || G.state !== 'cover' || WIPE.on) return;
@@ -2438,6 +2443,7 @@ startUI.addEventListener('click', e => {
   if (a === 'go') cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
   else if (a === 'menu') leaveCover(true);
   else if (a === 'lang') act('lang');
+  else if (a === 'reward') { audioInit(); sfx.ui('open'); XHOOK('reward', { from: 'cover' }); }
   else if (a === 'endless') { audioInit(); sfx.ui('go'); wipe(() => startEndless()); }
   else { showMenu(); act(a); }   // 先把首页的那一局摆好（卡片后面要画场景），再开对应的卡片
 });

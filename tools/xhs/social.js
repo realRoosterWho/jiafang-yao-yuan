@@ -19,7 +19,7 @@
     share: XS.can(9530, ['share']),
     comment: XS.can(9490, ['writeTempFile', 'interactionOpenApi']),
     follow: XS.can(9510, ['followAuthor', 'getFollowStatus']),
-    reward: XS.can(9533, ['rewardAuthor']),
+    reward: !!XS.rewardOn,
     retention: XS.can(9533, ['setCloseRetentionEnabled']),
   };
   const say = t => XS.note(t);
@@ -172,6 +172,19 @@
     };
   }
 
+  /* ---------- 赞赏（首页右下角、通关 / 无尽收工卡片都走这里） ---------- */
+  function rewardOff() { CAN.reward = false; XS.rewardOn = false; document.querySelectorAll('[data-start="reward"], [data-xhs="reward"]').forEach(el => el.remove()); }
+  async function reward() {
+    try {
+      // 旧客户端可能不理这个调用、一直不回：最多等 15 秒，别把按钮卡死
+      await Promise.race([mt().rewardAuthor(), new Promise((_, no) => setTimeout(() => no({ errCode: 'timeout' }), 15000))]);
+    } catch (err) {
+      const c = errCode(err);
+      if (c === 20002) return;   // 用户自己关掉了
+      rewardOff(); if (c !== 'timeout') say('赞赏暂时用不了。');
+    }
+  }
+
   /* ---------- 按钮 ---------- */
   let followState = -1;
   if (CAN.follow) Promise.resolve(mt().getFollowStatus()).then(r => { followState = r ? r.follow_status : -1; }, () => {});
@@ -206,8 +219,7 @@
         await XS.flush();
         await mt().interactionOpenApi({ payload: { action: 'post_comment', content: last.comment, media_bean: [{ media_type: 'image', cover_image_url: filePath }] }, saveToAlbum: false });
       } else if (k === 'reward') {
-        // 旧客户端可能不理这个调用、一直不回：最多等 15 秒，别把按钮卡死
-        await Promise.race([mt().rewardAuthor(), new Promise((_, no) => setTimeout(() => no({ errCode: 'timeout' }), 15000))]);
+        await reward();
       } else if (k === 'follow') {
         const r = await mt().followAuthor();
         followState = r ? r.follow_status : -1;
@@ -216,7 +228,6 @@
     } catch (err) {
       const c = errCode(err);
       if (c === 20002) {}   // 用户自己关掉了
-      else if (k === 'reward') { CAN.reward = false; t.remove(); if (c !== 'timeout') say('赞赏暂时用不了。'); }
       else if (k === 'share' && c === 15502) say('现在这个模式分享不了，全屏打开小工具再试试。');
       else if (k === 'share' && c === 15503) say('今天分享次数用完了，明天再来。');
       else if (k === 'follow' && c === 15404) say('今天关注提示弹得太多了，明天再试。');
@@ -299,6 +310,7 @@
     if (ev === 'result' || ev === 'endless' || ev === 'win') retainSoon(ev);
     if (ev === 'result' && d.mode === 'endless') lastEndlessId = d.id;
     if (ev === 'board') { showBoard('week'); return; }
+    if (ev === 'reward') { if (!busy) { busy = true; reward().then(() => { busy = false; }); } return; }
     if (ev === 'endless') submit(d.score);
     if (ev === 'result' || ev === 'endless' || ev === 'win') { last = story(ev, d); addRow(ev); }
   };
