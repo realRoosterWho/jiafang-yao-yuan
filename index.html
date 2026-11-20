@@ -2323,6 +2323,23 @@ function showBook() {
 }
 /* 图鉴：全部物品按游戏顺序排，没交付过的是黑剪影 + ？？？。缩略图用游戏里的形状和贴图画一张，画过就缓存 */
 const DEX_IMG = {};
+/* 画一件东西到一张新画布（小红书版晒成绩用）：S 是边长像素，round 为真时画成正圆（砸完交货的样子），跟图鉴缩略图同一套画法 */
+function itemCanvas(id, S, round) {
+  const cv2 = document.createElement('canvas'); cv2.width = cv2.height = S; const c = cv2.getContext('2d'), m = MATS[id];
+  let b; try { b = makeBody(id); } catch (e) { return null; }
+  if (round) { let mr = 0; for (let i = 0; i < N; i++) mr += b.r[i]; mr /= N; for (let i = 0; i < N; i++) b.r[i] = mr; }
+  const R = Math.max(...b.r) * (OVER[id] ? 1.22 : 1.04), k = S * .48 / R;
+  c.translate(S / 2, S / 2); c.scale(k, k); c.lineJoin = 'round';
+  const path = () => { c.beginPath(); for (let i = 0; i < N; i++) { const x = b.r[i] * COS[i], y = b.r[i] * SIN[i]; if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.closePath(); };
+  try {
+    path(); c.fillStyle = m.base; c.fill(); c.save(); c.clip();
+    c.save(); c.translate(b.artX, b.artY); if (b.artM) { const M = b.artM; c.transform(M[0], M[1], M[2], M[3], 0, 0); } ART[id](c, b, 0); c.restore();
+    if (m.rim) { path(); c.strokeStyle = m.rim; c.lineWidth = 14; c.stroke(); }
+    c.restore(); path(); c.strokeStyle = m.outline; c.lineWidth = 3; c.stroke();
+    if (OVER[id]) { const st = G.time; OVER[id](c, b, 0); G.time = st; }
+  } catch (e) {}
+  return cv2;
+}
 function dexImg(id, lit) {
   const key = id + (lit ? '' : '~'); if (DEX_IMG[key]) return DEX_IMG[key];
   const S = 96, px = 2, cv2 = document.createElement('canvas'); cv2.width = cv2.height = S * px; const c = cv2.getContext('2d'), m = MATS[id];
@@ -4560,7 +4577,7 @@ function sim(id, t, hits, aimErr) {
   }
   return { curve: out, keep: Math.round(b.area / b.area0 * 100) };
 }
-window.__yuan = { G, MATS, ORDER, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, snd: SNDAPI, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
+window.__yuan = { G, MATS, ORDER, ADV_IDS, itemCanvas, P, TUNE, SAVE, ENDLESS, endlessOpen, ctx, makeBody, deform, sim, faceMat, act, startAt, tryGrab, release, deliver, update, draw, drawBody, roundness, updateRoundness, impact, starLines, A, ACH, achUnlock, showAch, snd: SNDAPI, tick(dt, n) { for (let k = 0; k < (n || 1); k++) update(dt); draw(); } };
 /* 开场流程（播片 → 新手关 → 签合同）整个在 flow.js 里，这里只把它要用的东西递出去。删掉这一行或 flow.js 没加载，游戏就按原来的流程走 */
 window.__yuanFlow = { SHAPES, ART, CHAPS, PARTS, kit, sfx, audioInit, sndHush, setCard, setupRound, setName, firstOpen, WHO, CLOUD, TRACK, get NAME() { return NAME; }, get view() { return { scale, VW, VH, CAMX, TOP, BOT, PORT }; },
   joyDraw: drawJoyAt, turnArc: drawTurnArc, JOY_R, JOY_KNOB, JOY_DEAD, JOY_DIR, get joy() { return rotId !== null && G.body && G.body.held ? { x: JOY.x, y: JOY.y, off: JOY.off, s: JOY.s, sg: JOY.sg, dir: G.time - JOY.tm < .25 ? JOY.dir : 0 } : null; } };
