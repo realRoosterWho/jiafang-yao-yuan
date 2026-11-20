@@ -882,7 +882,7 @@ function pickLang(then) {
   }));
 }
 function begin(replay) {
-  // 不再先弹语言选择：开场直接跟着开始界面的语言放（默认英文，开始界面右下角能换成中文）。pickLang 留着没删
+  // 不再先弹语言选择：开场直接跟着开始界面的语言放（没选过就跟浏览器语言：中文浏览器用中文、其他英文；封面「开始」下面能换）。pickLang 留着没删
   try { if (!langChosen()) localStorage.setItem('yuan.lang', EN ? 'en' : 'zh'); } catch (e) {}
   ran = true; replaying = replay ? 1 : 0;
   X.audioInit(); S('ui', 'go');

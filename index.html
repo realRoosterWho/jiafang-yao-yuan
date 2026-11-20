@@ -12,7 +12,9 @@
 <link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
 <script>
 /* 语言（zh / en）：网址里的 ?lang= 优先，其次是存下的选择，再看浏览器。放在最前面，开始界面的图好按语言先下 */
-const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {} return 'en'; })();   // 没指定过就是英文（不看浏览器语言）；开始界面右下角可以换成中文
+const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {}
+  try { if (/^zh/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '')) return 'zh'; } catch (e) {}
+  return 'en'; })();   // 没选过：手机 / 浏览器是中文就用中文（朋友圈点进来的人大多没去换语言），其他一律英文；封面「开始」下面随时能换
 /* 开始界面的贴纸图：标题两张（aLogo 英文、aLogoZh 中文）、发光的台子（aPed）、裂开的球（aBall），用户给的，抠好边、存成带透明的 WebP 放在 assets/，这里只写路径。
    由 tools/make_art.py 生成，别手改；下面马上就开始下载（ART_EARLY），kitBoot 等它们解码好放进 KIT，drawCover 拿来画。
    标题只下当前语言那张：换语言都会重新加载页面 */
@@ -26,7 +28,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=lang1" defer></script>
+<script src="flow.js?v=lang2" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
