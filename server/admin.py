@@ -196,11 +196,12 @@ def intro_funnel(con, where: str = "1=1", args: tuple = ()) -> dict:
 
 
 def source_table(q, order, n_adv) -> list[dict]:
-    """按来源标记（链接里的 ?from=）拆开看玩家走多远。来源 = 这个玩家在所选时间里第一次打开时带的标记，没带算「没标记」。
+    """按来源标记（链接里的 ?from=）拆开看玩家走多远。来源 = 这个玩家在所选时间里第一次打开时带的标记；
+    没带标记但浏览器给了来源网站（itch 页面里玩的都是 roosterwho.itch.io）就按网站算，都没有算「没标记」。
     玩过 = 冒险模式交过至少一单；10 分钟 = 每次打开的时长加起来；通关 = 交了冒险模式最后一单；回来 = 在两个不同的日子玩过。"""
     src: dict[str, str] = {}
-    for pid, f in q("SELECT pid, json_extract(data,'$.from') FROM events WHERE {W} AND ev='open' ORDER BY id"):
-        src.setdefault(pid, f or "")
+    for pid, f, ref in q("SELECT pid, json_extract(data,'$.from'), json_extract(data,'$.ref') FROM events WHERE {W} AND ev='open' ORDER BY id"):
+        src.setdefault(pid, f or (f"网站 {ref}" if ref else ""))
     for (pid,) in q("SELECT DISTINCT pid FROM events WHERE {W}"):
         src.setdefault(pid, "")   # 这段时间里没有 open（从更早一直开着）：也算没标记
     played = {r[0] for r in q("SELECT DISTINCT pid FROM events WHERE {W} AND ev='deliver' AND json_extract(data,'$.mode') IS NULL")}
