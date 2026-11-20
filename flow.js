@@ -31,6 +31,7 @@ const TUT = { R: 84, bump: 34, width: .22, hard: 20, brittle: 150, accel: 24000,
 
 const G = Y.G, EN = document.documentElement.lang === 'en', L = (zh, en) => EN ? en : zh;
 const TOUCH = document.documentElement.classList.contains('touch');
+const XHS = window.YUAN_PLATFORM === 'xhs';   // 小红书小工具版：不联网、不换语言（见 index.html 的 XHS）
 const REDUCED = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const $ = id => document.getElementById(id);
 const stage = $('stage'), cv = $('cv'), overlay = $('overlay'), card = $('card'), deliverBtn = $('deliver'), muteBtn = $('mute');
@@ -686,7 +687,7 @@ function openContract(round) {
     <form class="who flow-name" autocomplete="off" novalidate>
       <p class="eyebrow">${L('签合同之前', 'Before you sign')}</p>
       <h2>${L('你叫什么名字？', 'What is your name?')}</h2>
-      <p class="note">${X.CLOUD ? L('名字就是存档名。换设备输同一个名字，就能接着玩。', 'Your name is your save. Use the same name on any device to continue.') : L('现在是离线打开，名字只记在这台设备上。', 'Running offline: your name is kept on this device only.')}</p>
+      <p class="note">${X.CLOUD ? L('名字就是存档名。换设备输同一个名字，就能接着玩。', 'Your name is your save. Use the same name on any device to continue.') : (XHS ? L('名字只记在这台手机的小红书里。', 'Your name is kept in Xiaohongshu on this phone.') : L('现在是离线打开，名字只记在这台设备上。', 'Running offline: your name is kept on this device only.'))}</p>
       <span class="who-row">
         <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('你的名字', 'Your name')}" value="${escH(name0)}" aria-label="${L('你的名字', 'Your name')}">
         <button class="btn ghost small fd-dice" type="button" title="${L('随便起一个', 'Random name')}" aria-label="${L('随便起一个', 'Random name')}">🎲</button>
@@ -969,7 +970,8 @@ addReplayLink();
 
 // 新玩家要签完合同才见得到首页，语言切换先在封面上放一个
 let langBtn = null;
-if (wantIntro()) {
+if (wantIntro()) stage.classList.add('flow-new');   // 新玩家的封面：只留「开始」（index.html 的样式看这个 class，旧内核不认 :has）
+if (wantIntro() && !XHS) {   // 小红书版固定中文，不放换语言
   langBtn = document.createElement('div'); langBtn.id = 'flow-lang'; langBtn.setAttribute('role', 'group'); langBtn.setAttribute('aria-label', 'Language · 语言');
   langBtn.innerHTML = [['en', 'English'], ['zh', '中文']].map(([v, t]) => `<button type="button" lang="${v}" data-to="${v}" aria-pressed="${(v === 'en') === EN}">${t}</button>`).join('');
   langBtn.addEventListener('click', e => {   // 点现在用的那颗不动；点另一颗就换（页面重新加载，回到封面）

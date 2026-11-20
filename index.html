@@ -23,7 +23,9 @@
 <link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
 <script>
 /* 语言（zh / en）：网址里的 ?lang= 优先，其次是存下的选择，再看浏览器。放在最前面，开始界面的图好按语言先下 */
-const LANG = (() => { try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {}
+/* 平台：小红书小工具版（tools/build-xhs.mjs 打包，bootstrap.js 先设 window.YUAN_PLATFORM）不联网、不换语言、存档走容器 Storage；网页版照旧 */
+const XHS = window.YUAN_PLATFORM === 'xhs';
+const LANG = (() => { if (XHS) return 'zh'; try { const q = new URLSearchParams(location.search).get('lang'); if (q === 'en' || q === 'zh') return q; const v = localStorage.getItem('yuan.lang'); if (v === 'en' || v === 'zh') return v; } catch (e) {}
   try { if (/^zh/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '')) return 'zh'; } catch (e) {}
   return 'en'; })();   // 没选过：手机 / 浏览器是中文就用中文（朋友圈点进来的人大多没去换语言），其他一律英文；封面「开始」下面随时能换
 /* 开始界面的贴纸图：标题两张（aLogo 英文、aLogoZh 中文）、发光的台子（aPed）、裂开的球（aBall），用户给的，抠好边、存成带透明的 WebP 放在 assets/，这里只写路径。
@@ -39,13 +41,14 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=og1" defer></script>
+<script src="flow.js?v=start1" defer></script>
 <script>
+/* yuan-web-only：小红书版打包时整段删掉 */
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
    不一样、而且玩家还停在开始界面，就换个网址参数刷新一次拿新版；已经在玩就不打断，下次打开再换。一分钟内最多刷一次，免得来回刷 */
 (() => {
-  if (location.protocol === 'file:' || !window.fetch) return;
+  if (XHS || location.protocol === 'file:' || !window.fetch) return;
   const el = document.querySelector('script[src*="flow.js?v="]'), cur = el ? el.getAttribute('src') : '';
   if (!cur) return;
   fetch(location.pathname, { cache: 'no-cache', credentials: 'same-origin' }).then(r => r.ok ? r.text() : '').then(t => {
@@ -434,15 +437,15 @@ body {
 #startui .start-more .btn { width: 76%; font-size: max(13px, calc(var(--u) * 23)); }
 /* 无尽模式解锁以后（冒险模式还没通关）：大按钮下面多一颗金色的，比大按钮小一号 */
 #startui .start-endless { width: 86%; font-size: max(14px, calc(var(--u) * 22)); padding: .5em .6em .56em; color: #8a4310; }
-.start-main:has(.start-endless) { top: 7%; gap: calc(var(--u) * 12); }   /* 多了一颗，整列往上提、收紧，不压到右下角的换语言 */
-.start-main:has(.start-endless) .start-more { gap: calc(var(--u) * 9); }
+.start-main.with-endless { top: 7%; gap: calc(var(--u) * 12); }   /* 多了一颗，整列往上提、收紧，不压到右下角的换语言 */
+.start-main.with-endless .start-more { gap: calc(var(--u) * 9); }
 #stage.port #startui .start-endless { width: 70%; font-size: max(15px, calc(var(--u) * 30)); }
-#stage.port .start-main:has(.start-endless) { top: 44%; gap: calc(var(--u) * 14); }
+#stage.port .start-main.with-endless { top: 44%; gap: calc(var(--u) * 14); }
 #startui .start-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 16 + var(--ib) / 2); translate: 0 50%; font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
 /* flow.js 给新玩家在封面「开始」下面放了一排 English | 中文（样式在 flow.js 里）；这时候我们自己的换语言和四颗小按钮都收起来（新玩家先看开场、签合同） */
-#stage:not(.seen):has(#flow-lang) .start-more, #stage:not(.seen):has(#flow-lang) .start-lang { display: none; }
-#stage:not(.seen):not(.port):has(#flow-lang) .start-main { top: 50%; translate: 0 -50%; }
-#stage.port:not(.seen):has(#flow-lang) .start-main { top: 62%; }   /* 新玩家竖屏只有一颗「开始」：往下放一些，离标题远一点 */   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
+#stage.flow-new:not(.seen) .start-more, #stage.flow-new:not(.seen) .start-lang { display: none; }
+#stage.flow-new:not(.seen):not(.port) .start-main { top: 50%; -webkit-transform: translateY(-50%); transform: translateY(-50%); }
+#stage.flow-new.port:not(.seen) .start-main { top: 62%; }   /* 新玩家竖屏只有一颗「开始」：往下放一些，离标题远一点 */   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
 #stage.seen #flow-lang { display: none; }   /* 这一次打开以后已经离开过开始界面（.seen，showCover 第二次起加上）：开场流程走过了，按钮全给，换语言用我们自己的 */
 /* 封面上的声音按钮跟效果图一样大一号，往里收一点 */
 #stage.cover { --ib: max(44px, calc(var(--u) * 70)); }
@@ -1277,7 +1280,7 @@ function audioInit() {
 /* BGM: one looping track (assets/bgm.*.mp3, mono 80 kbps, about 1 MB), kept well under the sound effects (MIX.music).
    Fetched after the first tap or key press, decoded once and looped through the same bus as everything else, so the mute button,
    the limiter and the pause when the tab is hidden all apply to it. Not fetched while muted; if it cannot load, the game just has no music. */
-const BGM = { url: 'assets/bgm.b98819cfe3.mp3', buf: null, src: null, req: false, dead: false };
+const BGM = { url: 'assets/bgm.b98819cfe3.mp3', buf: null, src: null, req: false, dead: XHS };   // 小红书版：包里只许图片 / 字体 / 脚本，没有背景音乐
 function bgmStart() {
   if (!AC || !BUS.music || BGM.src || BGM.dead || muted || SND.nogate || !BGM.ok) return;   // ok：已经正式开工过一单（sndWatch 里置上）。开始界面、开场动画、新手关、合同都不放音乐
   if (BGM.buf) { try { const s = AC.createBufferSource(); s.buffer = BGM.buf; s.loop = true; s.connect(BUS.music); s.start(0); BGM.src = s; } catch (e) { BGM.dead = true; } return; }
@@ -1475,7 +1478,7 @@ const BUZZ = {
   deliver: () => [20, 50, 20, 50, 40],
   clear: () => [15, 40, 15, 40, 15, 40, 50],
 };
-const BZ = { last: {}, ios: null, can: TOUCH && typeof navigator.vibrate === 'function' };
+const BZ = { last: {}, ios: null, can: !XHS && TOUCH && typeof navigator.vibrate === 'function' };
 function iosTick() {
   if (!BZ.ios) {
     const lb = document.createElement('label'), ip = document.createElement('input');
@@ -1489,6 +1492,12 @@ function buzz(name, args) {
   const f = BUZZ[name]; if (!f || !TOUCH || muted || document.hidden) return;
   const now = performance.now(), l = BZ.last[name]; if (l !== undefined && now - l < (name === 'turn' ? 40 : 90)) return; BZ.last[name] = now;
   const pat = f(...args);
+  if (XHS) {   // 小红书容器：只有轻 / 中 / 重三档短振，按最长那一下选；拨轮那种连续的不振（太密）
+    if (name === 'turn') return;
+    const ms = Math.max(...[].concat(pat)), x = window.YUAN_XHS;
+    if (x && x.buzz) x.buzz(ms <= 10 ? 'light' : ms <= 30 ? 'medium' : 'heavy');
+    return;
+  }
   if (BZ.can) { try { navigator.vibrate(pat); } catch (e) {} } else iosTick();
 }
 const sfx = {}; for (const k in SFX) sfx[k] = (...a) => { sndPlay(k, SFX[k], a); buzz(k, a); };
@@ -1919,7 +1928,7 @@ const orderTag = (after = false) => G.mode === 'endless' ? L(`无尽模式 · �
 const rid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 const PID = (() => { try { let p = localStorage.getItem('yuan.pid'); if (!p) { p = rid(); localStorage.setItem('yuan.pid', p); } return p; } catch (e) { return rid(); } })();
 const TRACK = (() => {
-  const host = location.hostname, off = !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host);
+  const host = location.hostname, off = XHS || !/^https?:$/.test(location.protocol) || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(host) || /\.local$/.test(host);
   if (off) return () => {};
   const URL_ = 'https://fullcircle.roosterwho.com/api/event', pid = PID;
   const sid = rid(), t0 = performance.now(); let seq = 0;
@@ -1933,7 +1942,7 @@ const TRACK = (() => {
 /* 云存档：起个名字，进度（每单最高酬劳）就存到服务器，换设备输同一个名字就能接着玩。
    没有密码：服务器按“每单取较大值”合并，同名的人只能让成绩变高、抹不掉进度。file:// 打开时没有这个功能。 */
 const CLOUD = (() => {
-  if (!/^https?:$/.test(location.protocol)) return null;
+  if (XHS || !/^https?:$/.test(location.protocol)) return null;   // 小红书版不能联网：名字只记在本机，没有排行榜
   const h = location.hostname;
   return h === 'fullcircle.roosterwho.com' || /^(localhost|127\.|\[::1\])/.test(h) ? '/api/save' : 'https://fullcircle.roosterwho.com/api/save';
 })();
@@ -2371,7 +2380,7 @@ function showChapter() {
 }
 /* 封面：一块方料边弹边变圆，标题，点一下才进说明卡 */
 function showCover() { sndHush('card'); G.coverT = 0; G.state = 'cover'; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); if (showCover.n) stage.classList.add('seen'); showCover.n = 1; G.glowOn = false; G.glowK = 0; stage.classList.remove('star3'); startSync(); }
-function leaveCover(menu) { if (WIPE.on) return; audioInit(); sfx.ui(menu === true ? 'open' : 'go'); const at = firstOpen(); if (menu === true || !(at || ORDER.some(id => SAVE.best[id]))) showMenu(); else if (advDone() && endlessOpen()) wipe(() => startEndless()); else wipe(() => startAt(at)); }
+function leaveCover(menu) { if (WIPE.on) return; audioInit(); sfx.ui(menu === true ? 'open' : 'go'); const at = firstOpen(); if (menu === true) showMenu(); /* 一单没交过的（签了合同就走了、第一单没做完）也直接去第 1 单：原来这里进「怎么玩」卡片，卡片上只有「返回」，回来的人开不了工 */ else if (advDone() && endlessOpen()) wipe(() => startEndless()); else wipe(() => startAt(at)); }
 /* ---------- 开始界面 ----------
    画布上只画背景和一张标题图（drawCover）。按钮是页面元素（#startui，样式在上面「开始界面」那一段），电脑上在右边排成一列，手机上排在标题下面：
    · 最上面一颗大的绿色按钮：没做过单是「开始」，做过了是「接着做第 N / 冒险单数 单」，冒险模式通关以后是「无尽模式」；
@@ -2379,7 +2388,7 @@ function leaveCover(menu) { if (WIPE.on) return; audioInit(); sfx.ui(menu === tr
    · 下面四颗奶油色的小一号，各带一个小图标：图鉴、排行榜、成就、玩法和存档（就是原来那张首页卡片）。订单簿是开发者入口，不放在这里；
    · 右下角换语言，左下角声音。
    点大按钮跟点画面空白处、按回车走的是同一条路（leaveCover）：新玩家由 flow.js 接手去看开场和新手关（它在捕获阶段拦画布上的按下，所以这里把点击转成画布上的一次按下）；
-   老玩家先过一段星星过场（wipe），再到该做的那一单。新玩家还没签合同之前只留大按钮和换语言（flow.js 自己在封面上放的 #flow-lang），其余几个按钮在样式里收起来 */
+   老玩家先过一段星星过场（wipe），再到该做的那一单。新玩家还没签合同之前只留大按钮和换语言（flow.js 给 #stage 加 .flow-new、在封面上放 #flow-lang），其余几个按钮在样式里收起来 */
 const startUI = document.createElement('div'); startUI.id = 'startui'; stage.appendChild(startUI);
 /* 按钮上的小图标：深紫描边的贴纸画法，自己画的，24 × 24 */
 const SICO = (() => { const k = 'stroke="#33246e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"', svg = b => `<svg viewBox="0 0 24 24" aria-hidden="true">${b}</svg>`;
@@ -2395,12 +2404,12 @@ function startSync() {
   const at = firstOpen(), won = advDone(), eo = endlessOpen(), b = (cls, a, label, ex, more) => `<button class="btn ${cls}" type="button" data-start="${a}"${ex || ''}>${SICO[a]}<span>${label}</span>${more || ''}</button>`;
   // 大按钮右上角三道黄色的小闪光（ui-crispkit）
   const ticks = '<svg class="s-ticks" viewBox="0 0 40 32" aria-hidden="true"><g fill="none" stroke-linecap="round"><path d="M9 27 4 9M20 22 22 4M31 27 37 13" stroke="#33246e" stroke-width="8.5"/><path d="M9 27 4 9M20 22 22 4M31 27 37 13" stroke="#ffd93c" stroke-width="4.6"/></g></svg>';
-  startUI.innerHTML = `<div class="start-main">
+  startUI.innerHTML = `<div class="start-main${eo && !won ? ' with-endless' : ''}">
     ${b('start-go', 'go', won && eo ? L('无尽模式', 'Endless') : at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开始', 'Start'), '', ticks)}
     ${eo && !won ? b('ghost start-endless', 'endless', L('无尽模式', 'Endless')) : ''}
     <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
   </div>
-  ${b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
+  ${XHS ? '' : b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
 }
 startUI.addEventListener('click', e => {
   const t = e.target && e.target.closest ? e.target.closest('[data-start]') : null; if (!t || G.state !== 'cover' || WIPE.on) return;
@@ -2473,7 +2482,7 @@ function drawCover(t) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   coverBg(0, 0, VW, VH, PORT ? 1 : .5, BG2); skyFx(0, 0, VW, VH * .62, t, !PORT);
   const k = (EN ? KIT.aLogo : KIT.aLogoZh) || KIT.aLogo; if (!k) return;
-  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * (!stage.classList.contains("seen") && document.getElementById("flow-lang") ? .32 : .255)) : 372 - h / 2;
+  const ct = G.coverT || 0, w = PORT ? 490 : 470, h = w * k.h / k.w, x = PORT ? VW / 2 : 322, y = PORT ? Math.max(h / 2 + 14, VH * (!stage.classList.contains("seen") && stage.classList.contains("flow-new") ? .32 : .255)) : 372 - h / 2;
   // 电脑上标题下面：一个发光的台子（aPed），上面一颗裂开的球（aBall）。两张都画在标题后面，球的上半截可以被标题挡住。
   // 台子先出来，球晚一点砸下来弹两下，之后轻轻一压一弹。手机竖屏只放标题
   const q = KIT.aBall, pd = KIT.aPed;
