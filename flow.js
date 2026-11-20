@@ -27,7 +27,7 @@ const CONFIG = {
    变形量不走石头原本的数值，而是每一帧按“朝下那一面凸出来多少”现算（见 tuneStone）：
    凸起朝下、从虚线以上掉下去，一下基本就平了；砸在圆的那一面只蹭掉一点点，所以不会越砸越糟。
    lift = 要拎到多高（石头最低点离地板），从这个高度掉下去力度大约 55。 */
-const TUT = { R: 84, bump: 34, width: .22, hard: 20, brittle: 150, accel: 24000, target: .85, weak: .65, over: 1.3, aim: .33, lift: 200 };
+const TUT = { R: 84, bump: 34, width: .22, hard: 20, brittle: 150, accel: 24000, target: .85, weak: .65, over: 1.3, aim: .33, lift: 200, nudge: 4 };   // nudge：够圆了几秒还没点交货就提醒
 
 const G = Y.G, EN = document.documentElement.lang === 'en', L = (zh, en) => EN ? en : zh;
 const TOUCH = document.documentElement.classList.contains('touch');
@@ -273,7 +273,7 @@ function newStone() {
   const b = G.body; let armed = !!b.armed;
   Object.defineProperty(b, 'armed', { configurable: true, enumerable: true, get() { return armed && !this.held; }, set(v) { armed = !!v && !this.held; } });
   T = { grabbed: false, hit: null, before: G.round, note: null, keyL: false, keyR: false,
-    held: false, holdT0: 0, preHeld: false, prevVy: 0, prevClear: 0, slamT: -9, high: false, stage: '', introUntil: 0 };
+    held: false, holdT0: 0, preHeld: false, prevVy: 0, prevClear: 0, slamT: -9, high: false, stage: '', introUntil: 0, readyT: -1 };
 }
 const note = text => { T.note = { text, t: G.time }; };
 function startTutorial() {
@@ -285,7 +285,7 @@ function startTutorial() {
   cancelAnimationFrame(raf); raf = requestAnimationFrame(tutFrame); addTutSkip();
   try { document.fonts.load(`600 17px 'Maoken Assorted Sans'`, HINT_TEXT); } catch (e) {}
 }
-function stopTutorial() { cancelAnimationFrame(raf); raf = 0; G.tutUI = false; document.documentElement.classList.remove('flow-tut-on'); stage.classList.remove('flow-tut', 'flow-lock'); const k = $('flow-tskip'); if (k) k.remove(); }
+function stopTutorial() { cancelAnimationFrame(raf); raf = 0; G.tutUI = false; deliverBtn.classList.remove('nudge'); document.documentElement.classList.remove('flow-tut-on'); stage.classList.remove('flow-tut', 'flow-lock'); const k = $('flow-tskip'); if (k) k.remove(); }
 /* 新手关右上角的「跳过教程」：算过了新手关。没签合同的接着去签，签过的直接开工；重看的时候回首页 */
 function addTutSkip() {
   if ($('flow-tskip')) return;
@@ -318,12 +318,14 @@ function tryFinish() {
 }
 
 /* 提示文字：玩家嫌字多看不懂，每一步只留一句几个字的话，别的都靠光和摇杆示范。
-   这句话由甲方在左上角的气泡里说（新界面的奶油色气泡）：手机上底部那条会被两个大拇指挡住，顶上没人挡。够圆了不说话，交货按钮自己会发光 */
+   这句话由甲方在左上角的气泡里说（新界面的奶油色气泡）：手机上底部那条会被两个大拇指挡住，顶上没人挡。
+   够圆了先不说话，交货按钮自己会发光；过了 TUT.nudge 秒还没点（后台看到有人在这儿愣一两分钟），甲方才说一句、按钮放大闪 */
 const TXT = {
   grab: L('按住，往上拎', 'Hold & lift'),
   lift: L('往上拎', 'Lift it up'),
   turn: L('把凸起转到下面', 'Turn the bump down'),
   drop: L('松手！', 'Let go!'),
+  deliver: L('够圆了！点「交货」', TOUCH ? 'Round enough! Tap Deliver' : 'Round enough! Click Deliver'),
   slam: L('松手，让它自己掉', 'Let go, let it fall'),
   early: L('先转好再松手', 'Turn it first'),
   low: L('再拎高一点', 'Lift higher'),
@@ -482,9 +484,13 @@ function tutFrame() {
     if (st === 'drop' && T.stage !== 'drop') S('aim'); else if (T.rose && st) S('line');   // 转好了可以松手：一声；只是拎够高了：另一声
     T.rose = false;
     if (st !== T.stage) { T.stage = st; if (st && st !== 'press') tutOnce('tut_' + st); else if (!st) tutOnce('tut_ready'); }
-    // 甲方的气泡说这一步该干嘛（游戏自己插的话会被盖掉，新手关里只听这一句）；够圆了不说话，新界面的交货按钮自己会发光
+    // 甲方的气泡说这一步该干嘛（游戏自己插的话会被盖掉，新手关里只听这一句）；够圆了先不说话（交货按钮自己会发光），过几秒还没点才提醒
+    if (!ready) T.readyT = -1; else if (T.readyT < 0) T.readyT = G.time;
+    const late = ready && G.time - T.readyT > TUT.nudge;   // 够圆了好几秒还没点交货
+    if (deliverBtn.classList.contains('nudge') !== late) deliverBtn.classList.toggle('nudge', late);
+    if (late) tutOnce('tut_nudge');
     const flash = T.note && G.time - T.note.t < 2.6 ? T.note.text : '';
-    const line = ready ? '' : flash || (st === 'press' ? TXT.grab : st === 'lift' ? TXT.lift : st === 'turn' ? TXT.turn : TXT.drop);
+    const line = ready ? (late ? TXT.deliver : '') : flash || (st === 'press' ? TXT.grab : st === 'lift' ? TXT.lift : st === 'turn' ? TXT.turn : TXT.drop);
     if (line && (T.grabbed || G.time > T.introUntil)) { if (!G.bubble || G.bubble.text !== line) G.bubble = { text: line, t0: G.time, dur: 900, lines: null, tut: 1 }; }
     else if (!line && G.bubble && G.bubble.tut) G.bubble = null;
     tuneStone(b, g); drawHints(b, g, ready);
