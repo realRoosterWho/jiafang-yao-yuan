@@ -779,6 +779,9 @@ const MATS = {
     } },
 };
 const ORDER = ['wood', 'meat', 'can', 'stone', 'brick', 'pc', 'dough', 'cheese', 'melon', 'carrot', 'ice', 'egg', 'cone', 'gold', 'gear', 'bottle', 'phone', 'ingot', 'record', 'cube', 'crown', 'gem', 'star', 'ufo', 'coconut', 'parcel', 'walnut', 'geode', 'bonbon', 'earth', 'butter', 'copper', 'jelly', 'rebar', 'slime', 'weight', 'clay', 'sandbag', 'choco', 'piggy', 'candle', 'honey', 'santa', 'salmiak', 'sauna', 'aalto', 'reindeer', 'oldphone', 'gpu', 'octobear'];
+/* 小红书版：去掉要授权才能商用的两样（阿尔托大学的 A! 立牌、Games Now! 的吉祥物章鱼熊）。冒险模式少两关，图鉴、无尽模式、成就分组里也都没有；网页版不变 */
+const XHS_CUT = XHS ? ['aalto', 'octobear'] : [];
+if (XHS_CUT.length) ORDER.splice(0, ORDER.length, ...ORDER.filter(id => !XHS_CUT.includes(id)));
 const PER = 6;   // 原来每班六单。现在只有成就里「某组交齐」还按原来的分组算（见 MAIN_ORDER、SHIFT_ACH）
 const CHAPS = [
   { name: '试用期', intro: '' },
@@ -897,8 +900,8 @@ const ADVENTURE = [
 ];
 /* ORDER 原地重排成：冒险模式 + 剩下的关卡。CHAPS 换成「章」：冒险模式每站一章，剩下的关卡算一章（开头一张过渡卡）。
    订单簿按 PARTS 分两档。原来的顺序和班数留在 MAIN_ORDER / MAIN_SHIFTS，只给成就用。 */
-const MAIN_ORDER = ORDER.slice(), MAIN_SHIFTS = CHAPS.length;
-const ADV_LIST = ADVENTURE.filter(a => MATS[a[0]]), ADV_N = ADV_LIST.length;
+const MAIN_ORDER = ORDER.slice(), MAIN_SHIFTS = Math.min(CHAPS.length, Math.ceil(MAIN_ORDER.length / PER));   // 小红书版少两样，最后一组（只有显卡和章鱼熊）就空了，不要
+const ADV_LIST = ADVENTURE.filter(a => MATS[a[0]] && !XHS_CUT.includes(a[0])), ADV_N = ADV_LIST.length;
 ORDER.splice(0, ORDER.length, ...ADV_LIST.map(a => a[0]), ...MAIN_ORDER.filter(id => !ADV_LIST.some(a => a[0] === id)));
 const REST_N = ORDER.length - ADV_N;
 CHAPS.splice(0, CHAPS.length, ...ADV_LIST.map(([, n, t], i) => ({ name: L(n[0], n[1]), intro: L(t[0], t[1]), from: i, to: i + 1, adv: true })));
@@ -2098,6 +2101,7 @@ const ACH = [
   { id: 'stealth', g: 'odd', hid: 1, t: ['上班摸鱼', '关着声音交了一单。上班时间玩的吧？甲方也是。', '旁边有人的时候，你会怎么干活？'], e: ['Stealth Mode', 'Delivered with the sound off. Playing at work? So is the Client.', 'How do you work when someone is nearby?'] },
   { id: 'mesmerised', g: 'odd', hid: 1, t: ['看呆了', '盯着封面看了一分钟。那块木头圆了又方，方了又圆。你看懂了：这就是上班。', '开工之前，先看看那块木头是怎么干活的。'], e: ['Mesmerised', 'Watched the title screen for a minute. Round, square, round again. You get it now: that is the job.', 'Before you start, watch how the block does it.'] },
 ];
+if (XHS_CUT.includes('octobear')) ACH.splice(ACH.findIndex(a => a.id === 'gentle_octo'), 1);   // 小红书版没有章鱼熊，这个成就拿不到，不列
 const ACH_BY = {}; for (const a of ACH) ACH_BY[a.id] = a;
 const achOn = a => !a.cloud || !!CLOUD;
 const achText = a => EN ? a.e : a.t;
