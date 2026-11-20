@@ -15,7 +15,8 @@ import { fileURLToPath } from 'url';
 import * as esbuild from 'esbuild';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'build', 'xhs');
+const FINAL = path.join(ROOT, 'build', 'xhs');
+const OUT = FINAL + '.tmp';   // 先在这里做完、自查通过再换成 build/xhs：模拟器盯着那个目录，别让它读到做了一半的
 const ZIP = path.join(ROOT, 'build', 'fullcircle-xhs.zip');
 const RES = 'res/';
 const TARGET = ['es2017', 'chrome61'];
@@ -156,7 +157,8 @@ const lowerColors = t => t.replace(/\brgba?\(\s*([\d.]+%?)\s+([\d.]+%?)\s+([\d.]
 for (const f of fs.readdirSync(OUT).filter(f => /\.(html|js)$/.test(f))) {
   const p = path.join(OUT, f);
   let t = lowerColors(fs.readFileSync(p, 'utf8'));
-  t = t.replace(/assets\/[\w.-]+\.(mp3|jpg)/g, '').replace(/(["'(`=\s,])(?:\.\/)?assets\//g, `$1${RES}`);
+  t = t.replace(/https:\/\/fullcircle\.roosterwho\.com[^'"`\s)]*/g, '')   // 网页版的埋点 / 存档接口地址：小工具里用不上，也别让审核看到外部地址
+    .replace(/assets\/[\w.-]+\.(mp3|jpg)/g, '').replace(/(["'(`=\s,])(?:\.\/)?assets\//g, `$1${RES}`);
   fs.writeFileSync(p, t);
 }
 
@@ -189,11 +191,14 @@ for (const [re, what] of [[/:has\(/, ':has()'], [/[;{]translate:/, 'translate �
 }
 
 /* ---------- 打包 ---------- */
-execFileSync('zip', ['-r', '-X', '-q', ZIP, '.', '-x', '*.DS_Store'], { cwd: OUT });
+if (problems.length) { for (const p of problems) console.log('  ✗ ' + p); process.exit(1); }
+fs.rmSync(FINAL, { recursive: true, force: true });
+fs.renameSync(OUT, FINAL);
+execFileSync('zip', ['-r', '-X', '-q', ZIP, '.', '-x', '*.DS_Store'], { cwd: FINAL });
 const size = f => fs.statSync(f).size;
 const dirSize = d => fs.readdirSync(d, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? dirSize(path.join(d, e.name)) : size(path.join(d, e.name))), 0);
 console.log(`版本 ${build}`);
-console.log(`目录 ${path.relative(ROOT, OUT)}：${(dirSize(OUT) / 1024).toFixed(0)} KB；zip ${path.relative(ROOT, ZIP)}：${(size(ZIP) / 1024).toFixed(0)} KB`);
+console.log(`目录 ${path.relative(ROOT, FINAL)}：${(dirSize(FINAL) / 1024).toFixed(0)} KB；zip ${path.relative(ROOT, ZIP)}：${(size(ZIP) / 1024).toFixed(0)} KB`);
 console.log(`脚本（按顺序）：${names.join(' → ')}；素材 ${copied.length} 个（不带 mp3 / jpg）`);
 console.log(`CSS 回退：max/min/clamp ${stats.fn} 处，inset ${stats.inset} 处；颜色写法改写 ${colorFixes} 处`);
 for (const n of notes) console.log('  注意 ' + n);

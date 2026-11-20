@@ -182,12 +182,15 @@
     root.style.setProperty('--xhs-bottom', Math.max(12, bottom) + 'px');
     if (root.className.indexOf('xhs-win') < 0) root.className += ' xhs-win';
   }
+  var canWindow = false, winTimer = 0;
+  function measureWindow() { if (canWindow) withTimeout(miniTool().getWindowInfo(), 3000).then(applyWindowInfo, function () {}); }
   function prepareWindow(buildVersion) {
     var lo = window.xhs && window.xhs.launchOptions, env = lo && lo.miniToolEnv;
-    if (env && env.windowInfo) applyWindowInfo(env.windowInfo);   // 启动快照：先用它排第一帧
+    if (env && env.windowInfo) applyWindowInfo(env.windowInfo);   // 启动快照：先用它排第一帧（胶囊可能还没排好，页面好了再量）
     var client = clientOf(buildVersion);
-    if (client === null || client < 9490 || !hasMethods(['getWindowInfo'])) return;
-    withTimeout(miniTool().getWindowInfo(), 3000).then(applyWindowInfo, function () {});
+    canWindow = client !== null && client >= 9490 && hasMethods(['getWindowInfo']);
+    measureWindow();
+    window.addEventListener('resize', function () { clearTimeout(winTimer); winTimer = setTimeout(measureWindow, 200); });
   }
 
   /* ---------- 振动 ---------- */
@@ -227,6 +230,7 @@
     var boot = document.getElementById('xhs-boot');
     if (!boot) return;
     boot.setAttribute('aria-busy', 'false');
+    measureWindow();
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       boot.className += ' gone';
       setTimeout(function () { if (boot.parentNode) boot.parentNode.removeChild(boot); }, 400);

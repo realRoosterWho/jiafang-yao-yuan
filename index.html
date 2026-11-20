@@ -2526,7 +2526,8 @@ function showMenu(msg) {
     <div class="row"><button class="btn" type="button" data-act="home">${L('返回', 'Back')}</button>${DEV ? `<button class="btn ghost" type="button" data-act="book">${L('订单簿', 'Order book')}</button>` : ''}</div>
     ${msg ? `<p class="note" role="status">${msg}</p>` : ''}
     ${whoRow()}
-    ${CLOUD ? `<p class="note">${L('匿名记录成绩，用来调难度。', 'Anonymous stats help tune difficulty.')}</p>` : ''}`);
+    ${CLOUD ? `<p class="note">${L('匿名记录成绩，用来调难度。', 'Anonymous stats help tune difficulty.')}</p>` : ''}
+    ${XHS && window.YUAN_XHS ? `<p class="note">小红书版 ${String(window.YUAN_XHS.build).slice(0, 7)} · 存档：${({ xhs: '小红书本地存储', legacy: '浏览器存储（小红书版本较旧）', memory: '这次不保存', readfail: '读取失败，这次不保存' })[window.YUAN_XHS.storage] || '?'}${window.YUAN_XHS.client ? ' · 客户端 ' + window.YUAN_XHS.client : ''}</p>` : ''}`);
 }
 function showOrder() {
   setupRound(); G.state = 'order'; const m = G.mat, best = SAVE.best[ORDER[G.idx]] || 0, got = SAVE.stars[ORDER[G.idx]] || 0;
