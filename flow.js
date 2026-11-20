@@ -69,11 +69,17 @@ const SERIF = `"Noto Serif SC", "Songti SC", "STSong", "SimSun", "Source Han Ser
 const NOISE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .18 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")`;
 const style = document.createElement('style');
 style.textContent = `
-#flow-lang { position: absolute; right: 1.6%; bottom: 2.6%; font: 500 max(10px, calc(var(--u) * 13))/1 var(--body); padding: .5em .9em; border: 0; border-radius: 999px; background: transparent; color: var(--dim); box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer; }
-#flow-lang:hover { color: var(--ink); }
-#flow-lang:focus-visible { outline: 3px solid var(--coin); outline-offset: 3px; }
+/* 新玩家封面上的语言选择：「开始」正下方一排两颗，English | 中文，各用自己的语言写，现在用的那颗是亮的。
+   以前只在右下角放一颗小「中文」，后台看到中国来的玩家大多没发现、一直在玩英文版 */
+#stage #flow-lang { position: absolute; right: 3.6%; width: 33.2%; top: calc(50% + var(--u) * 78); display: flex; justify-content: center; gap: calc(var(--u) * 12); z-index: 3; }
 #stage:not(.cover) #flow-lang { display: none; }
-#stage.port #flow-lang { font-size: max(11px, calc(var(--u) * 17)); bottom: calc(var(--u) * (var(--bot) + 10)); }   /* 竖屏跟声音按钮排在同一行 */
+#stage #flow-lang button { font: 400 max(14px, calc(var(--u) * 21))/1 var(--display); padding: .55em 1.1em .62em; min-width: 5.6em; border-radius: 999px; cursor: pointer;
+  border: .12em solid rgb(255 255 255 / .55); background: rgb(28 18 92 / .5); color: #f1eaff; transition: transform .18s, background .15s; }
+#stage #flow-lang button:hover { transform: translateY(-.08em); background: rgb(48 34 130 / .65); }
+#stage #flow-lang button[aria-pressed="true"] { background: linear-gradient(#fff8e0, #ffe3aa); border-color: #fff; color: #33246e; box-shadow: 0 .18em 0 rgb(58 42 140 / .6); cursor: default; transform: none; }
+#stage #flow-lang button:focus-visible { outline: 3px solid var(--coin); outline-offset: 3px; }
+#stage.port #flow-lang { left: 0; right: 0; width: auto; top: calc(62% + var(--u) * 150); gap: calc(var(--u) * 16); }
+#stage.port #flow-lang button { font-size: max(15px, calc(var(--u) * 27)); }
 #stage.flow-lock #home { display: none !important; }
 .flow-tut-on #help, .flow-tut-on #replay { visibility: hidden !important; }   /* 新手关：页面底下那行说明和「重来」都收起来 */
 
@@ -909,7 +915,7 @@ window.addEventListener('pointerdown', () => {
 window.addEventListener('keydown', e => {
   if (phase === 'idle') {
     if (G.state !== 'cover' || !wantIntro() || e.metaKey || e.ctrlKey || e.altKey || document.activeElement === muteBtn) return;
-    if (document.activeElement === langBtn) { e.stopImmediatePropagation(); return; }   // 焦点在语言按钮上：让按钮自己响应
+    if (langBtn && langBtn.contains(document.activeElement)) { e.stopImmediatePropagation(); return; }   // 焦点在语言按钮上：让按钮自己响应
     e.preventDefault(); e.stopImmediatePropagation(); begin(false); return;
   }
   if (phase === 'cutscene') {
@@ -964,8 +970,12 @@ addReplayLink();
 // 新玩家要签完合同才见得到首页，语言切换先在封面上放一个
 let langBtn = null;
 if (wantIntro()) {
-  langBtn = document.createElement('button'); langBtn.id = 'flow-lang'; langBtn.type = 'button'; langBtn.lang = EN ? 'zh' : 'en'; langBtn.textContent = EN ? '中文' : 'English';
-  langBtn.addEventListener('click', () => Y.act('lang'));
+  langBtn = document.createElement('div'); langBtn.id = 'flow-lang'; langBtn.setAttribute('role', 'group'); langBtn.setAttribute('aria-label', 'Language · 语言');
+  langBtn.innerHTML = [['en', 'English'], ['zh', '中文']].map(([v, t]) => `<button type="button" lang="${v}" data-to="${v}" aria-pressed="${(v === 'en') === EN}">${t}</button>`).join('');
+  langBtn.addEventListener('click', e => {   // 点现在用的那颗不动；点另一颗就换（页面重新加载，回到封面）
+    const b = e.target && e.target.closest ? e.target.closest('[data-to]') : null; if (!b || (b.dataset.to === 'en') === EN) return;
+    S('ui', 'go'); leaving = true; Y.act('lang');
+  });
   stage.appendChild(langBtn);
   // 刚切完语言回来时游戏会直接开首页；新玩家退回封面，从点一下开始（声音和播片都要这一下）
   if (G.state === 'menu') { G.state = 'cover'; card.innerHTML = ''; overlay.hidden = true; deliverBtn.hidden = true; stage.classList.add('cover'); }

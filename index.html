@@ -26,7 +26,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=nudge1" defer></script>
+<script src="flow.js?v=lang1" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
@@ -356,7 +356,7 @@ body {
 #stage.port { --ib: max(44px, calc(var(--u) * 72)); }
 /* 按钮：素材包的胶囊按钮。绿 = 往前走（接单、下一单、交货），金 = 其他，粉 = 回首页，蓝 = 重来。碰一下往上弹，按下去往里缩。
    图切成左头、右头、中段三层背景（见 kitBoot）：两头按按钮的高等比放，中段横着拉、往两头底下多伸一点，不露缝 */
-.btn, #deliver, #stage #flow-lang, #card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
+.btn, #deliver, #card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
   border: 0; border-radius: .9em; box-shadow: none; padding: .68em 1.3em .74em;
   background: var(--k-sBtnGreenL) left / auto 100% no-repeat, var(--k-sBtnGreenR) right / auto 100% no-repeat, var(--k-sBtnGreenM) center / calc(100% - 1.8em) 100% no-repeat;
   color: #2c6a20; text-shadow: 0 .06em 0 rgb(255 255 255 / .55); transition: transform .18s var(--pop), filter .15s;
@@ -367,7 +367,7 @@ body {
 #card .btn.ghost.small { font-size: .95em; }
 .btn:hover { transform: translateY(-.12em) scale(1.05); filter: brightness(1.07); }
 .btn:active { transform: translateY(.1em) scale(.96); filter: brightness(.95); }
-.btn.ghost, #stage #flow-lang, #card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
+.btn.ghost, #card > .eyebrow:first-child, #card > .result:first-child > .eyebrow:first-child {
   background: var(--k-sBtnGoldL) left / auto 100% no-repeat, var(--k-sBtnGoldR) right / auto 100% no-repeat, var(--k-sBtnGoldM) center / calc(100% - 1.8em) 100% no-repeat; color: #96490f; box-shadow: none; }
 .btn:disabled { background-image: var(--k-sBtnOffL), var(--k-sBtnOffR), var(--k-sBtnOffM); color: #777397; text-shadow: none; transform: none; filter: none; opacity: 1; }
 .btn .cnt { opacity: .8; }
@@ -414,7 +414,7 @@ body {
 #startui .start-go svg { width: 1.1em; height: 1.1em; margin: 0; }
 @keyframes startpulse { to { transform: scale(1.05); filter: brightness(1.05) drop-shadow(0 0 calc(var(--u) * 10) rgb(170 255 120 / .65)); } }
 .start-more { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 11); width: 100%; }
-#startui .start-more .btn, #startui .start-lang, #stage #flow-lang {
+#startui .start-more .btn, #startui .start-lang {
   background: linear-gradient(#fff8e0, #ffe3aa); border: .13em solid #fff; border-radius: 999px; padding: .6em 1em .66em;
   box-shadow: 0 .2em 0 rgb(58 42 140 / .6), 0 .45em .7em rgb(16 12 70 / .35); color: #33246e; text-shadow: none;
 }
@@ -425,9 +425,8 @@ body {
 .start-main:has(.start-endless) .start-more { gap: calc(var(--u) * 9); }
 #stage.port #startui .start-endless { width: 70%; font-size: max(15px, calc(var(--u) * 30)); }
 #stage.port .start-main:has(.start-endless) { top: 44%; gap: calc(var(--u) * 14); }
-#startui .start-lang, #stage #flow-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 16 + var(--ib) / 2); translate: 0 50%; font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
-/* flow.js 给新玩家放在封面上的换语言按钮：换成一样的皮；这时候我们自己的那个和四颗小按钮都收起来（新玩家先看开场、签合同） */
-#stage #flow-lang { font-family: var(--display); font-weight: 400; line-height: 1; }
+#startui .start-lang { position: absolute; right: calc(var(--u) * 26); bottom: calc(var(--u) * 16 + var(--ib) / 2); translate: 0 50%; font-size: max(10px, calc(var(--u) * 13)); background: linear-gradient(#f7eeff, #dccaff); }
+/* flow.js 给新玩家在封面「开始」下面放了一排 English | 中文（样式在 flow.js 里）；这时候我们自己的换语言和四颗小按钮都收起来（新玩家先看开场、签合同） */
 #stage:not(.seen):has(#flow-lang) .start-more, #stage:not(.seen):has(#flow-lang) .start-lang { display: none; }
 #stage:not(.seen):not(.port):has(#flow-lang) .start-main { top: 50%; translate: 0 -50%; }
 #stage.port:not(.seen):has(#flow-lang) .start-main { top: 62%; }   /* 新玩家竖屏只有一颗「开始」：往下放一些，离标题远一点 */   /* 新玩家横屏只有一颗「开始」：放在右边那一栏的上下正中，不贴在顶上 */
@@ -440,7 +439,7 @@ body {
 #stage.port #startui .start-go { width: 80%; font-size: max(18px, calc(var(--u) * 40)); }
 #stage.port .start-more { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 12) calc(var(--u) * 10); width: 74%; }
 #stage.port #startui .start-more .btn { width: calc(50% - var(--u) * 6); padding-left: .4em; padding-right: .4em; font-size: max(13px, calc(var(--u) * 25)); }
-#stage.port #startui .start-lang, #stage.cover.port #flow-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 10 + var(--ib) / 2); font-size: max(10px, calc(var(--u) * 15)); }
+#stage.port #startui .start-lang { right: calc(var(--u) * 10); bottom: calc(var(--u) * 10 + var(--ib) / 2); font-size: max(10px, calc(var(--u) * 15)); }
 #stage.cover.port #mute { left: calc(var(--u) * 8); bottom: calc(var(--u) * 10); }
 /* 竖着拿的平板（.short，比手机矮一截）：大按钮和下面四颗都小一号、挨紧一点，不然最后一排会压到右下角的换语言 */
 #stage.port.short .start-main { top: 47%; gap: calc(var(--u) * 11); }
