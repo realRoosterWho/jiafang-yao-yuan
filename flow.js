@@ -682,28 +682,29 @@ function openContract(round) {
   phase = 'naming'; track('naming'); stage.classList.add('flow-lock');   // 起名字的时候不给回首页
   G.mood = 'calm'; G.moodT = 0; S('alien', 'hi', .2);
   G.bubble = { text: L('地球人，你叫什么？', 'Earthling, what is your name?'), t0: G.time, dur: 600, lines: null };
-  const name0 = X.NAME || FL.name || '';
+  // 没起过名字的：输入框里先放一个随机名字（原来的「帮我起一个」跟骰子重复，合成这一个）。懒得想就直接点「就叫这个」，想换点骰子或者直接改
+  const name0 = X.NAME || FL.name || '', pre = name0 || randomName('');
   X.setCard(`
     <form class="who flow-name" autocomplete="off" novalidate>
       <p class="eyebrow">${L('签合同之前', 'Before you sign')}</p>
       <h2>${L('你叫什么名字？', 'What is your name?')}</h2>
       <p class="note">${X.CLOUD ? L('名字就是存档名。换设备输同一个名字，就能接着玩。', 'Your name is your save. Use the same name on any device to continue.') : (XHS ? L('名字只记在这台手机的小红书里。', 'Your name is kept in Xiaohongshu on this phone.') : L('现在是离线打开，名字只记在这台设备上。', 'Running offline: your name is kept on this device only.'))}</p>
       <span class="who-row">
-        <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('你的名字', 'Your name')}" value="${escH(name0)}" aria-label="${L('你的名字', 'Your name')}">
+        <input id="fd-name" name="sign" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" autocapitalize="off" placeholder="${L('你的名字', 'Your name')}" value="${escH(pre)}" aria-label="${L('你的名字', 'Your name')}">
         <button class="btn ghost small fd-dice" type="button" title="${L('随便起一个', 'Random name')}" aria-label="${L('随便起一个', 'Random name')}">🎲</button>
       </span>
+      ${name0 ? '' : `<p class="note fd-hint">${L('先帮你起了一个，点 🎲 换，或者直接改。', 'Here’s one to start with. Tap 🎲 to reroll, or type your own.')}</p>`}
       <span class="note err" role="alert"></span>
       <div class="flow-go">
         <button class="btn" type="submit">${L('就叫这个', 'That’s me')}</button>
-        <button class="btn ghost small fd-auto" type="button">${L('帮我起一个', 'Pick one for me')}</button>
       </div>
     </form>`);
   const form = card.querySelector('.flow-name'), input = form.querySelector('#fd-name'), msg = form.querySelector('.err');
-  const dice = form.querySelector('.fd-dice'), auto = form.querySelector('.fd-auto'), row = form.querySelector('.who-row');
+  const dice = form.querySelector('.fd-dice'), row = form.querySelector('.who-row');
   const btns = [...form.querySelectorAll('button')];
   const lock = on => { input.disabled = on; btns.forEach(b => { b.disabled = on; }); };
-  let busy = false, done = false, rolled = '';   // rolled：骰子刚掷出来的名字，原样提交就当新名字认领（不能跟别人的存档合并）
-  if (!TOUCH) setTimeout(() => { if (phase === 'naming') try { input.focus({ preventScroll: true }); } catch (e) {} }, 350);   // 手机上不自动弹键盘
+  let busy = false, done = false, rolled = name0 ? '' : pre;   // rolled：随机出来的名字（预填的或骰子掷的），原样提交就当新名字认领（不能跟别人的存档合并）
+  if (!TOUCH) setTimeout(() => { if (phase === 'naming') try { input.focus({ preventScroll: true }); input.select(); } catch (e) {} }, 350);   // 手机上不自动弹键盘；电脑上全选，直接打字就换掉
   const refuse = text => {
     S('nope'); msg.textContent = text; row.classList.remove('fd-shake'); void row.offsetWidth; row.classList.add('fd-shake');
     try { input.focus(); } catch (e) {}
@@ -730,45 +731,26 @@ function openContract(round) {
     if (X.NAME && X.NAME.toLowerCase() === name.toLowerCase()) return 'ok';
     return code || 'net';
   };
-  auto.addEventListener('click', async () => {
-    if (busy || done) return;
-    X.audioInit(); S('ui'); track('rndname', { auto: 1 });
-    let name = randomName(input.value);
-    if (!X.CLOUD) { input.value = name; return go(name, 'random'); }
-    busy = true; lock(true); msg.textContent = '';
-    const label = auto.textContent; auto.textContent = L('起名中…', 'Picking…');
-    let res = 'net';
-    for (let i = 0; i < 6; i++) {
-      input.value = name;
-      res = await claim(name, true);
-      if (res !== 'taken') break;
-      name = randomName(name);
-    }
-    busy = false; auto.textContent = label;
-    if (res === 'ok') return go(X.NAME, 'random');
-    if (res === 'taken') { lock(false); return refuse(L('一连几个名字都被人用了，再点一次试试。', 'Those names were all taken. Try again.')); }
-    // 存档服务连不上：名字先记在本机，下次打开时游戏会自己补存
-    try { localStorage.setItem('yuan.name', name); } catch (e2) {}
-    go(name, 'later');
-  });
   form.addEventListener('submit', async e => {
     e.preventDefault(); if (busy || done) return;
     X.audioInit();
     const name = cleanName(input.value);
-    if (!name) return refuse(L('起个名字，或者点「帮我起一个」。', 'Pick a name, or tap “Pick one for me”.'));
+    if (!name) return refuse(L('起个名字，或者点 🎲 随机一个。', 'Pick a name, or tap 🎲 for a random one.'));
     if ([...name].length > 16 || (NAME_OK && !NAME_OK.test(name))) return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).'));
     const fresh = !!rolled && name === rolled;
     if (!X.CLOUD) return go(name, fresh ? 'random' : 'offline');   // file:// 打开：没有云存档，名字只记在本机
     busy = true; lock(true); msg.textContent = '';
     const submit = form.querySelector('[type=submit]'), label = submit.textContent; submit.textContent = L('归档中…', 'Filing…');
-    const res = await claim(name, fresh);
+    let res = await claim(name, fresh), final = name;
+    // 随机的名字被别人占了：自己再掷、再认领（最多再试 5 次），不让玩家多点一下
+    for (let i = 0; fresh && res === 'taken' && i < 5; i++) { final = rolled = randomName(final); input.value = final; res = await claim(final, true); }
     busy = false; submit.textContent = label;
     if (res === 'ok') return go(X.NAME, fresh ? 'random' : 'cloud');
     if (res === 'bad-name') { lock(false); return refuse(L('名字只能用文字、数字、空格和 - _ · .，最多 16 个字。', 'Names can use letters, numbers, spaces and - _ · . (16 max).')); }
-    if (res === 'taken') { lock(false); input.value = rolled = randomName(name); return refuse(L('这个名字刚被人用了，给你换了一个。', 'That one was just taken. Here is another.')); }
+    if (res === 'taken') { lock(false); if (!fresh) input.value = rolled = randomName(name); return refuse(fresh ? L('一连几个名字都被人用了，再点一次试试。', 'Those names were all taken. Try again.') : L('这个名字刚被人用了，给你换了一个。', 'That one was just taken. Here is another.')); }
     // 存档服务连不上：先在本机记下，名字留在 yuan.name 里，下次打开时游戏会自己补存
-    try { localStorage.setItem('yuan.name', name); } catch (e2) {}
-    go(name, 'later');
+    try { localStorage.setItem('yuan.name', final); } catch (e2) {}
+    go(final, 'later');
   });
 }
 
