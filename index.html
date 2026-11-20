@@ -740,9 +740,10 @@ const MATS = {
   gpu: { name: '显卡', unit: '张', hard: 32, brittle: 60, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 13, hp: 2, rest: .15, fric: .6, accel: 20000, jig: 0, target: .84, time: 150, hot: 2,
     base: '#262a33', outline: '#0e1014', chips: ['#3a3f4a', '#f2c230', '#1f6e3a', '#7de8ff'], over: '显存爆了！', dead: '显卡碎了。做这个游戏的 AI 就是在它上面跑的，没有它，你现在玩的这个游戏根本不存在。续集也没了。', blurb: '做这个游戏的 AI 就跑在它上面。刚陪 AI 熬完夜，<strong>烫手</strong>。只能失手一次。' },
   /* 第九班：特邀嘉宾。Games Now!（阿尔托大学的游戏社区）的吉祥物章鱼熊。像一块软肉：一碰就变形、不掉料，最后拍成一个圆滚滚的球。
-     太难了降过一次：达标 .93→.88（.93 时随便砸圆度卡在 90～93 上不去），疼的力度 52→60，每下多抹两遍（passes 6→8），限时 100→120。
+     降过一次难度：疼的力度 52→60、每下多抹两遍（passes 6→8）。达标和限时试过降到 .88 / 120 又改回来了：玩家数据里交货的人大多 .85～.87 拿 1 星就交了，
+     失败的不是差一点够不着，而是不转方向、落地哪面砸哪面，越砸越扁（47 下好球圆度从 .68 掉到 .53）。这个靠“圆度一直往下掉”的提醒解决。
      活的（flee），快圆了放在地上会自己滚正、脸朝前（upright：圆度到多少开始）。会说话：talk 里每种场合几句 [中文, 英文]，头顶冒自己的小气泡；glow 是轮廓外的一圈光 */
-  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 60, loose: 1, plastic: 1, smooth: .5, passes: 8, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .88, time: 120, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
+  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 60, loose: 1, plastic: 1, smooth: .5, passes: 8, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .93, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
     base: '#76dcd0', outline: '#4cbcae', chips: ['#8ce7dd', '#76dcd0', '#6ce8a8'], over: '章鱼熊疼哭了！', dead: '章鱼熊委屈地爬回 Games Now! 去了，说以后只给 game jam 当吉祥物。', blurb: '<strong>Games Now!</strong> 的吉祥物，戴着耳机来的。软得像肉：拍哪鼓哪，不掉料，最后拍成一个球。耳机不用管。会说话，也会疼。',
     talk: {
       start: [['大家好，我是 Games Now! 的章鱼熊！', "Hi! I'm the Games Now! octo-bear!"], ['听说要把我弄圆？轻一点哦。', 'I hear you want me round? Be gentle.']],
@@ -1526,6 +1527,7 @@ const LINES = {
   light: () => EN ? ['Are you tickling it?', 'Are all Earthlings this weak?', 'Harder.'] : ['你在给它挠痒痒吗？', '地球人都这么没力气？', '用点力。'],
   good: () => EN ? ['Hm. A little rounder.', 'Keep going.', 'Yes. That corner.', 'Not round enough.'] : ['嗯，圆了一点。', '继续。', '对，就砸那个角。', '还不够圆。'],
   worse: () => EN ? ['You flattened it.', 'You call that round?', "It's getting less round!"] : ['你把它砸扁了。', '这也叫圆？', '越砸越不圆了！'],
+  flatter: () => EN ? ["It's getting flatter and flatter! Turn the bulging side to the bottom first, then drop it.", 'Stop hitting the flat side! Turn it so a bump faces down.'] : ['越砸越扁了！先把鼓出来的那面转到下面，再松手砸。', '别老砸平的那面！转一转，让凸起来的地方朝下。'],
   over: () => EN ? ['Gently! That is mine!', 'Break it again and the round one is you.', 'Can you pay for that?'] : ['轻点！那是我的东西！', '再碎一次，圆的就是你。', '你赔得起吗？'],
   ready: () => EN ? ['…Barely round. You may deliver.', 'One star. Polish it more and I pay more.'] : ['……勉强算圆。可以交货了。', '一星。再磨一磨，酬劳更高。'],
   ready3: () => EN ? ['Now THAT is round.', 'Perfect. This goes on my nightstand.'] : ['这才叫圆。', '完美。我要把它摆在床头。'],
@@ -1684,7 +1686,7 @@ function impact(b, F, cx) {
     const word = res.t < .3 ? L('轻磨', 'Graze') : res.t < .75 ? L('好', 'Good') : L('重击', 'Smash');
     floatText(cx, FLOOR - 50, word + ' ' + Math.round(F), gain >= 0 ? C.alien : C.coin, 22);
     if (G.tier === G.readyBefore) sfx.judge(res.t < .3 ? 'graze' : res.t < .75 ? 'good' : 'smash', gain);   // 这一下刚好升 / 掉了一星：那边的声音盖过它
-    if (gain < -.012) say('worse'); else if (Math.random() < .3) say('good');
+    if (!flatWarn()) { if (gain < -.012) say('worse'); else if (Math.random() < .3 && G.round > G.peak - FLAT_DROP) say('good'); }   // 已经比最高掉了一截就别夸了
     if (Math.random() < .55) talk('good');
   }
 }
@@ -1699,6 +1701,14 @@ function updateRoundness(by) {
   }
   G.tier = t; deliverBtn.hidden = !(t && play);
   if (deliverBtn.dataset.t !== String(t)) { deliverBtn.dataset.t = t; const s = deliverBtn.querySelector('.st'); if (s) s.textContent = starStr(t); }
+}
+/* 越砸越扁：这一单的圆度比本单最高掉了 FLAT_DROP 以上，甲方直接说该怎么办（把凸起转到下面再砸），底下的提示也固定说怎么转 FLAT_TIP 秒。
+   玩家数据里失败的人多半是这样：不转方向、落地哪面砸哪面，几十下好球圆度反而一路往下掉。每单最多说 3 次，两次之间至少隔 12 秒 */
+const FLAT_DROP = .06, FLAT_TIP = 8;
+function flatWarn() {
+  if (G.state !== 'play' || G.tutUI || G.round > G.peak - FLAT_DROP || G.flatN >= 3 || G.time - G.flatAt < 12) return false;
+  G.flatN++; G.flatAt = G.time; G.bubble = { text: pick(LINES.flatter()), t0: G.time, dur: 7, lines: null }; mood('angry', 2);
+  return true;
 }
 /* 本来就圆的那一单（唱片）：一接单就够三星。甲方直接说别砸，交货按钮放大闪；一拎起来再喊一次 */
 function alreadyRound() {
@@ -1847,7 +1857,7 @@ function setupRound() {
   G.target = Math.min(.95, Math.round((m.target - easy.target + G.loop * .04) * 100) / 100); G.timeLeft = G.timeMax = G.mode === 'endless' ? Math.max(ENDLESS.minTime, Math.round(m.time * endlessPace(G.done))) : Math.round(m.time * easy.time); G.hp = m.hp;
   G.stats = { good: 0, over: 0, light: 0, held: 0 }; G.acc = { good: 0, over: 0, light: 0 }; G.newAch = []; G.round = G.shown = roundness(G.body.r); G.started = false; G.lastHit = null; G.doom = null;
   G.lines = starLines(G.target, G.round); G.tier = 0; G.cele = null; G.resultT = 0; G.res = null;
-  G.round0 = G.peak = G.round; G.lastUp = ''; G.readyBefore = 0; G.nudged = false; G.ext = 0; deliverBtn.classList.remove('nudge');   // 成就用：接单时的圆度、本单最高圆度、最后一次升星是砸的还是塌的
+  G.round0 = G.peak = G.round; G.flatN = 0; G.flatAt = -99; G.lastUp = ''; G.readyBefore = 0; G.nudged = false; G.ext = 0; deliverBtn.classList.remove('nudge');   // 成就用：接单时的圆度、本单最高圆度、最后一次升星是砸的还是塌的
   G.warned = false; G.startScore = G.score; G.bubble = null; G.talk = null; G.mood = 'calm'; G.moodT = 0;
   parts = []; frags = []; floats = []; stains = [];
 }
@@ -4314,10 +4324,11 @@ function drawJoy() {   // 画在最上层（竖屏底部的力度表也压不住
    手机竖屏排在左下角两个图标按钮的右边，放不下就折成两行 */
 function drawHints() {
   if (G.state !== 'play' || G.tutUI || (!PORT && toastInPlay())) return;   // 新手关里不放底下这行轮换的提示
-  if (!stuck()) return;   // 正式关卡里只有卡住了才放
+  const flat = G.started && G.time - G.flatAt < FLAT_TIP;   // 刚提醒过越砸越扁：固定说怎么转
+  if (!stuck() && !flat) return;   // 正式关卡里只有卡住了才放
   if (PORT && !deliverBtn.hidden) return;   // 竖屏时交货按钮占了这块地方
   const old = G.idx >= 4 || G.mode === 'endless'; if (old && !G.started) return;   // TIPS[0] only for the first four orders
-  const i = !G.started ? 0 : rotHintNow() ? 1 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];   // 拎着卡住了：固定说怎么转
+  const i = !G.started ? 0 : rotHintNow() || flat ? 1 : old ? 1 + Math.floor(G.time / 6) % (TIPS.length - 1) : Math.floor(G.time / 6) % TIPS.length, txt = TIPS[i], icons = TOUCH ? [] : i === 0 ? ['mouse'] : i === 1 ? ['keyA', 'keyD'] : [];   // 拎着卡住了：固定说怎么转
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = `700 ${PORT ? (EN ? 15 : 17) : 15}px ${BODY}`;
   const iw = icons.length * 26, X0 = WALL_L + 170, X1 = WALL_L + VW - 8; let lines = [txt];   // 竖屏：两个按钮右边到屏幕右边
   if (PORT && ctx.measureText(txt).width + iw + 44 > X1 - X0) {   // 放不下就在最靠中间的空格或逗号处折成两行
