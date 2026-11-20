@@ -3,10 +3,21 @@
 <head>
 <meta charset="utf-8">
 <title>甲方要圆</title>
-<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西砸成圆的。49 单敲击小游戏。">
+<meta name="description" content="你是被外星甲方绑走的地球工匠：把所有东西弄圆。22 单冒险加无尽模式，免费，手机就能玩。">
 <meta name="theme-color" content="#110d2b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2393e85a' stroke='%231e1747' stroke-width='3'/%3E%3C/svg%3E">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 链接预览（Reddit、领英、X、Discord 这些贴链接时显示的卡片）：爬虫不跑脚本，只看这几行，所以写死英文；中文朋友在微信里看到的是上面的 <title> -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Client Wants It Round">
+<meta property="og:title" content="The Client Wants It Round">
+<meta property="og:description" content="Lift, turn and drop lumpy things until they're perfectly round, for a very picky alien client. Free browser game, no download, works on phone.">
+<meta property="og:url" content="https://fullcircle.roosterwho.com/">
+<meta property="og:image" content="https://fullcircle.roosterwho.com/assets/og.c320a3edbc.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Client Wants It Round: a green alien with a clipboard and a hammer next to a lumpy orange ball">
+<meta name="twitter:card" content="summary_large_image">
 <!-- 开始界面的背景和中文字体最先要用，先开始下载 -->
 <link rel="preload" href="assets/bg-cover.e63bd97aab.webp" as="image">
 <link rel="preload" href="assets/maoken.c040c37bd8.woff2" as="font" type="font/woff2" crossorigin>
@@ -28,7 +39,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=from1" defer></script>
+<script src="flow.js?v=og1" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
@@ -4510,7 +4521,7 @@ fit();
 if (TOUCH) { document.documentElement.classList.add('touch'); document.getElementById('help').textContent = '一指拎高、松手让它掉 · 二指左右拨来转'; }
 if (EN) {
   document.documentElement.lang = 'en'; document.title = 'The Client Wants It Round';
-  document.querySelector('meta[name="description"]').content = 'You are an Earth artisan abducted by an alien client: smash everything round. A 49-order whacking game.';
+  document.querySelector('meta[name="description"]').content = 'Lift, turn and drop lumpy things until they are perfectly round, for a very picky alien client. 22 orders plus an endless mode.';
   document.getElementById('help').textContent = TOUCH
     ? 'Lift with one finger, let go to drop · swipe a 2nd finger to turn'
     : 'Hold to lift, let go to drop · A / D to turn · Space delivers';
