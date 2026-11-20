@@ -153,6 +153,12 @@ details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-
   <div style="height:16px"></div>
 
   <section class="card">
+    <h2>按来源标记看玩家走多远</h2>
+    <p class="desc">来源 = 链接里的 <code>?from=</code>（每个渠道发不同的链接），按玩家第一次打开算；没带标记的（朋友转发、直接输网址、标记上线前来的）算「没标记」。百分比都是占这一行的玩家数。「回来」= 在两个不同的日子玩过。</p>
+    <div class="scroll"><table id="t-src"></table></div>
+  </section>
+
+  <section class="card">
     <h2>玩家从哪来、用什么玩</h2>
     <p class="desc">按不重复玩家计。国家来自 Cloudflare，只有两位代码。</p>
     <div class="splits" id="splits"></div>
@@ -366,6 +372,12 @@ function render() {
       + `<p class="desc">播片被跳过 ${I.cut_skips} 次。${I.leave.length ? '中途关掉页面时停在：' + I.leave.map(x => `${esc(x.k)} ${x.n}`).join('，') + '。' : ''}${d.extend && d.extend.n ? ` 超时后求甲方再等 20 秒：${d.extend.n} 次（${d.extend.players} 人），之后交上货 ${d.extend.delivered || 0} 次。` : ''}</p>`;
   } else $('#c-intro').innerHTML = '<p class="muted">还没有开场流程的数据（新版上线以后才开始记）。</p>';
 
+  // 按来源标记
+  const SRC = d.sources || [], cell = (n, of) => `<td>${n}<span class="muted"> · ${pct(n, of)}</span></td>`;
+  $('#t-src').innerHTML = '<tr><th class="l">来源</th><th>玩家</th><th>交过一单</th><th>玩了 10 分钟以上</th><th>通关</th><th>玩过无尽</th><th>回来</th></tr>' +
+    (SRC.length ? SRC.map(r => `<tr><td class="l">${esc(r.k)}</td><td>${r.players}</td>${cell(r.played, r.players)}${cell(r.ten, r.players)}${cell(r.cleared, r.players)}${cell(r.endless, r.players)}${cell(r.back, r.players)}</tr>`).join('')
+      : '<tr><td class="l muted" colspan="7">还没有数据</td></tr>');
+
   // 来源与设备
   const S = d.devices, groups = [['输入方式', S.input], ['屏幕方向', S.orient], ['语言', S.lang], ['国家/地区', S.country], ['来源网站', S.ref]];
   $('#splits').innerHTML = groups.map(([t, arr]) => {
@@ -377,7 +389,7 @@ function render() {
   const evDesc = e => {
     const x = e.data || {}, nm = x.order ? (d.orders.find(o => o.order === x.order) || {}).name || x.order : '';
     if (e.ev === 'intro') return [x.s, x.at, x.st, x.how, x.act, x.skip ? '跳过' : '', x.sec != null ? x.sec + ' 秒' : '', x.replay ? '重看' : ''].filter(Boolean).join(' · ');
-    if (e.ev === 'open') return [x.touch ? '触屏' : '鼠标', x.port ? '竖屏' : '横屏', x.lang, x.ref ? '来自 ' + x.ref : ''].filter(Boolean).join(' · ');
+    if (e.ev === 'open') return [x.touch ? '触屏' : '鼠标', x.port ? '竖屏' : '横屏', x.lang, x.from ? '标记 ' + x.from : '', x.ref ? '来自 ' + x.ref : ''].filter(Boolean).join(' · ');
     if (e.ev === 'win') return `酬劳 ◎ ${x.score ?? '–'}${x.loop ? ' · 加班第 ' + x.loop + ' 轮' : ''}`;
     const parts = [`第 ${(x.idx ?? 0) + 1} 单 ${nm}`];
     if (x.round != null && e.ev !== 'start') parts.push(`圆度 ${(x.round * 100).toFixed(1)}%`);

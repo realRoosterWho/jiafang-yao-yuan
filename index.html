@@ -28,7 +28,7 @@ const ART_EARLY = {};
 for (const n in ART_IMG) { if (n === (LANG === 'en' ? 'aLogoZh' : 'aLogo')) continue; const img = new Image(); img.decoding = 'async'; img.src = ART_IMG[n]; ART_EARLY[n] = img; }
 </script>
 <!-- 开场流程（flow.js）：放在这里让它跟页面一起开始下载；defer 保证它还是在页面的脚本跑完之后才执行。改了 flow.js 记得换 ?v= -->
-<script src="flow.js?v=lang2" defer></script>
+<script src="flow.js?v=from1" defer></script>
 <script>
 /* 手机（尤其微信里）会把页面缓存好一阵：GitHub Pages 给 10 分钟，微信更久，玩家就看到旧版。
    打开后在后台向服务器要一次最新的页面（带 ETag 验证，没变就只回 304），比一比上面 flow.js 的 ?v=：
@@ -4535,8 +4535,16 @@ function boot(data) {
   else showCover();
   requestAnimationFrame(now => { last = now; frame(now); });
   let ref = ''; try { const r = document.referrer && new URL(document.referrer).hostname; if (r && r !== location.hostname) ref = r; } catch (e) {}
+  // 来源标记：每个渠道发不同的链接（?from=xhs、?from=itch…）。第一次带着标记来的记下来，以后每次打开都报这个（后台按玩家第一次打开算来源）。
+  // 读完就从地址栏去掉：玩家把网址转给别人时不带标记，转发来的人在后台算「没标记」，不会算到原来的渠道头上
+  let from = ''; try {
+    const u = new URL(location.href), f = (u.searchParams.get('from') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24), kept = localStorage.getItem('yuan.from') || '';
+    if (f && !kept) localStorage.setItem('yuan.from', f);
+    from = f || kept;
+    if (u.searchParams.has('from')) { u.searchParams.delete('from'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); }
+  } catch (e) {}
   if (NAME) cloudSync(NAME).then(refreshCard).catch(() => {});
-  TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, delivered: Object.keys(SAVE.best).length, stars: starTotal(), achN: Object.keys(A.got).length });
+  TRACK('open', { lang: LANG, touch: TOUCH, port: PORT, w: innerWidth, h: innerHeight, dpr: devicePixelRatio || 1, ref, from, delivered: Object.keys(SAVE.best).length, stars: starTotal(), achN: Object.keys(A.got).length });
 }
 /* 关页面时还在做的那一单，记成中途放弃 */
 addEventListener('pagehide', () => { if (G.state === 'play') { TRACK('quit', roundInfo()); achFlush(); } });

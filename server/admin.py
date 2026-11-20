@@ -195,6 +195,35 @@ def intro_funnel(con, where: str = "1=1", args: tuple = ()) -> dict:
     return {"steps": steps, "leave": [{"k": k, "n": n} for k, n in sorted(leave.items(), key=lambda x: -x[1])], "cut_skips": skips}
 
 
+def source_table(q, order, n_adv) -> list[dict]:
+    """按来源标记（链接里的 ?from=）拆开看玩家走多远。来源 = 这个玩家在所选时间里第一次打开时带的标记，没带算「没标记」。
+    玩过 = 冒险模式交过至少一单；10 分钟 = 每次打开的时长加起来；通关 = 交了冒险模式最后一单；回来 = 在两个不同的日子玩过。"""
+    src: dict[str, str] = {}
+    for pid, f in q("SELECT pid, json_extract(data,'$.from') FROM events WHERE {W} AND ev='open' ORDER BY id"):
+        src.setdefault(pid, f or "")
+    for (pid,) in q("SELECT DISTINCT pid FROM events WHERE {W}"):
+        src.setdefault(pid, "")   # 这段时间里没有 open（从更早一直开着）：也算没标记
+    played = {r[0] for r in q("SELECT DISTINCT pid FROM events WHERE {W} AND ev='deliver' AND json_extract(data,'$.mode') IS NULL")}
+    last = order[n_adv - 1] if 0 < n_adv <= len(order) else None
+    cleared = {r[0] for r in q("SELECT DISTINCT pid FROM events WHERE {W} AND ev='deliver' AND json_extract(data,'$.mode') IS NULL "
+                               "AND json_extract(data,'$.order')=?", last)} if last else set()
+    endless = {r[0] for r in q("SELECT DISTINCT pid FROM events WHERE {W} AND ev='endless_start'")}
+    mins: dict[str, float] = {}
+    for pid, ms in q("SELECT pid, MAX(ms) FROM events WHERE {W} AND ms IS NOT NULL GROUP BY pid, sid"):
+        mins[pid] = mins.get(pid, 0) + (ms or 0) / 60000
+    back = {r[0] for r in q("SELECT pid FROM events WHERE {W} GROUP BY pid HAVING COUNT(DISTINCT date(ts,'unixepoch','localtime')) > 1")}
+    rows: dict[str, dict] = {}
+    for pid, f in src.items():
+        r = rows.setdefault(f, {"k": f or "没标记", "players": 0, "played": 0, "ten": 0, "cleared": 0, "endless": 0, "back": 0})
+        r["players"] += 1
+        r["played"] += pid in played
+        r["ten"] += mins.get(pid, 0) >= 10
+        r["cleared"] += pid in cleared
+        r["endless"] += pid in endless
+        r["back"] += pid in back
+    return sorted(rows.values(), key=lambda r: -r["players"])
+
+
 def stats(con, public: Path, days: float, loops: str) -> dict:
     where, args = _where(days, loops)
     q = lambda sql, *extra: con.execute(sql.replace("{W}", where), (*args, *extra)).fetchall()
@@ -250,6 +279,7 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
     far = [{"k": k, "n": n} for k, n in sorted(far_n.items())]
     names = saves.names_by_pid(con)
     named = saves.players(con, order)
+    by_source = source_table(q, order, n_adv)
     iw, ia = _where(days, "all")   # 开场流程的事件不带轮次，不按轮次筛
     recent = [{"ts": r[0], "pid": r[1][:6], "name": names.get(r[1]), "ev": r[2], "country": r[3], "data": json.loads(r[4])}
               for r in q("SELECT ts, pid, ev, country, data FROM events WHERE {W} ORDER BY id DESC LIMIT 40")]
@@ -272,6 +302,7 @@ def stats(con, public: Path, days: float, loops: str) -> dict:
             "ref": split("CASE WHEN COALESCE(json_extract(data,'$.ref'),'')='' THEN '直接打开' ELSE json_extract(data,'$.ref') END"),
         },
         "recent": recent,
+        "sources": by_source,
         "intro": intro_funnel(con, iw, tuple(ia)),
         "extend": dict(zip(["n", "players", "delivered"], q(
             "SELECT SUM(ev='extend'), COUNT(DISTINCT CASE WHEN ev='extend' THEN pid END), "
