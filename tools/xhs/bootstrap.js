@@ -9,6 +9,7 @@
       - 明确低于 9.46：走兼容路径，用浏览器 localStorage（读写都包 try）
    3. 窗口信息（9.49+）：整个游戏放到顶部胶囊 / 安全区下面，底部让出安全区
    4. 振动（9.50+）：vibrateShort 轻 / 中 / 重
+   4b. 云存档（内测，9.51+）：同账号换手机能接着玩。启动时读云上那条，跟本机的按「每单取最好成绩」合并；之后最多一分钟写一次、切到后台时补写
    5. 按原来的顺序一个个加载游戏脚本，好了收起启动画面；失败就提示退出重进 */
 (function () {
   'use strict';
@@ -76,14 +77,15 @@
   var mem = Object.create(null), mode = 'memory', timer = 0, writing = false, dirty = false;
   function own(k) { return Object.prototype.hasOwnProperty.call(mem, k); }
   function legacy(fn, fallback) { try { return fn(window.localStorage); } catch (e) { return fallback; } }
+  var inflight = Promise.resolve();
   function flush() {
     timer = 0;
-    if (mode !== 'xhs') return;
-    if (writing) { dirty = true; return; }
+    if (mode !== 'xhs') return Promise.resolve();
+    if (writing) { dirty = true; return inflight; }
     writing = true; dirty = false;
     var data;
-    try { data = JSON.stringify(mem); } catch (e) { writing = false; return; }
-    withTimeout(miniTool().setStorage({ key: KEY, data: data }), 8000).then(function (r) {
+    try { data = JSON.stringify(mem); } catch (e) { writing = false; return Promise.resolve(); }
+    inflight = withTimeout(miniTool().setStorage({ key: KEY, data: data }), 8000).then(function (r) {
       writing = false;
       if (!r || r.errMsg !== 'setStorage:ok') note('save', '进度这次没存上，下次交货时会再存一次。');
       if (dirty) schedule();
@@ -92,11 +94,103 @@
       note('save', '进度这次没存上，下次交货时会再存一次。');
       if (dirty) schedule();
     });
+    return inflight;
   }
-  function schedule() { dirty = true; if (!timer) timer = setTimeout(flush, 400); }
-  function flushNow() { if (timer) { clearTimeout(timer); flush(); } }
-  document.addEventListener('visibilitychange', function () { if (document.hidden) flushNow(); });
-  window.addEventListener('pagehide', flushNow);
+  function schedule() { dirty = true; cloudDirty = true; if (!timer) timer = setTimeout(flush, 400); cloudSchedule(false); }
+  function flushNow() { if (timer) { clearTimeout(timer); return flush(); } return writing ? inflight : Promise.resolve(); }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { flushNow(); cloudSchedule(true); } });
+  window.addEventListener('pagehide', function () { flushNow(); cloudSchedule(true); });
+
+  /* ---------- 云存档（内测）：一条记录存整份键值，跟本机合并 ---------- */
+  var CLOUD_COL = 'save', cloudOn = false, cloudId = '', cloudTimer = 0, cloudLast = 0, cloudBusy = false, cloudDirty = false, cloudRecheck = false;
+  function parseJSON(t) { try { return JSON.parse(t); } catch (e) { return null; } }
+  function mergeSave(a, b) {   // 每单取最好成绩和最多的星，无尽模式取更高的纪录
+    var x = parseJSON(a) || {}, y = parseJSON(b) || {}, o = { best: {}, stars: {}, endless: { best: 0, n: 0 } };
+    [x, y].forEach(function (s) {
+      var best = s.best || {}, stars = s.stars || {};
+      Object.keys(best).forEach(function (k) { if (+best[k] > (o.best[k] || 0)) o.best[k] = +best[k]; });
+      Object.keys(stars).forEach(function (k) { var v = stars[k] | 0; if (v > (o.stars[k] || 0)) o.stars[k] = v; });
+      if (s.endless && +s.endless.best > o.endless.best) o.endless = { best: +s.endless.best, n: +s.endless.n || 0 };
+    });
+    Object.keys(x).forEach(function (k) { if (!(k in o)) o[k] = x[k]; });
+    return JSON.stringify(o);
+  }
+  function mergeAch(a, b) {   // 成就：拿解锁多的那份做底，另一份多出来的解锁补进去
+    var x = parseJSON(a), y = parseJSON(b);
+    if (!x) return b; if (!y) return a;
+    var base = Object.keys(y.got || {}).length > Object.keys(x.got || {}).length ? y : x, other = base === x ? y : x;
+    base.got = base.got || {};
+    Object.keys(other.got || {}).forEach(function (k) { if (!(k in base.got)) base.got[k] = other.got[k]; });
+    return JSON.stringify(base);
+  }
+  function mergeFlow(a, b) {   // 开场流程：看过 / 签过，哪边是就算是
+    var x = parseJSON(a) || {}, y = parseJSON(b) || {};
+    Object.keys(y).forEach(function (k) { if (y[k] && !x[k]) x[k] = y[k]; });
+    return JSON.stringify(x);
+  }
+  function mergeAll(local, remote) {
+    var out = Object.create(null);
+    Object.keys(local).forEach(function (k) { out[k] = local[k]; });
+    Object.keys(remote).forEach(function (k) {
+      var r = remote[k];
+      if (typeof r !== 'string') return;
+      if (!(k in out)) { out[k] = r; return; }
+      if (/^yuan\.save\./.test(k)) out[k] = mergeSave(out[k], r);
+      else if (/^yuan\.ach\./.test(k)) out[k] = mergeAch(out[k], r);
+      else if (k === 'yuan.flow.v1') out[k] = mergeFlow(out[k], r);
+      // 其他（名字、语言之类）以这台手机为准
+    });
+    return out;
+  }
+  function cloudFail(e) { var c = e && e.errCode; if (c === 1006 || c === 10003) cloudOn = false; }   // 没授权 / 没开通：这次不再用云存档
+  function cloudQuery() {
+    return withTimeout(miniTool().queryCloudStorage({ collection: CLOUD_COL, limit: 5 }), 3000).then(function (r) {
+      var items = (r && r.items) || [];
+      items.sort(function (a, b) { return ((b.content && b.content.at) || 0) - ((a.content && a.content.at) || 0); });
+      var it = items[0];
+      if (it && it.id) cloudId = it.id;
+      return it && it.content && it.content.data && typeof it.content.data === 'object' ? it.content.data : null;
+    });
+  }
+  function cloudRestore() {
+    if (!cloudOn || mode === 'readfail') return Promise.resolve();   // 本机都读不出来时不动，免得合并出不完整的
+    return cloudQuery().then(function (data) {
+      if (!data) return;
+      var before = JSON.stringify(mem), merged = mergeAll(mem, data);
+      if (JSON.stringify(merged) === before) return;
+      mem = merged;
+      if (mode === 'xhs') schedule();
+    }, function (e) { cloudFail(e); });
+  }
+  function cloudWrite() {
+    cloudTimer = 0;
+    if (!cloudOn || !cloudDirty) return Promise.resolve();
+    if (cloudBusy) return Promise.resolve();
+    cloudBusy = true; cloudDirty = false; cloudLast = Date.now();
+    var content = { v: 1, at: Date.now(), data: JSON.parse(JSON.stringify(mem)) };
+    if (JSON.stringify(content).length > 60000) { cloudBusy = false; return Promise.resolve(); }   // 单条上限 64KB
+    var ready = cloudRecheck && !cloudId ? cloudQuery().then(function () { cloudRecheck = false; }, function () {}) : Promise.resolve();
+    return ready.then(function () {
+      var m = miniTool();
+      var p = cloudId
+        ? m.updateCloudStorage({ collection: CLOUD_COL, items: [{ id: cloudId, content: content }] })
+        : m.addCloudStorage({ collection: CLOUD_COL, items: [{ content: content }] });
+      return withTimeout(p, 8000);
+    }).then(function (r) {
+      cloudBusy = false;
+      var it = r && r.data && r.data[0];
+      if (it && it.status === 'SUCCESS' && it.id) cloudId = it.id;
+      else if (it && it.status === 'UNKNOWN' && !cloudId) cloudRecheck = true;   // 结果不确定：下次写之前先查一次，别重复新建
+      else if (!it || it.status !== 'SUCCESS') cloudDirty = true;
+      if (cloudDirty) cloudSchedule(false);
+    }, function (e) { cloudBusy = false; cloudDirty = true; cloudFail(e); if (e && e.errCode === 2004) cloudRecheck = true; });
+  }
+  function cloudSchedule(now) {
+    if (!cloudOn || !cloudDirty) return;
+    if (now) { clearTimeout(cloudTimer); cloudWrite(); return; }
+    if (cloudTimer) return;
+    cloudTimer = setTimeout(cloudWrite, Math.max(3000, 60000 - (Date.now() - cloudLast)));   // 最多一分钟写一次
+  }
 
   var store = {
     getItem: function (k) {
@@ -136,6 +230,11 @@
   window.__yuanNoNet = function () { return Promise.reject(new Error('offline')); };
 
   function prepareStorage(buildVersion) {
+    var c = clientOf(buildVersion);
+    cloudOn = c !== null && c >= 9510 && hasMethods(['addCloudStorage', 'updateCloudStorage', 'queryCloudStorage']);
+    return prepareLocal(buildVersion).then(cloudRestore);
+  }
+  function prepareLocal(buildVersion) {
     var client = clientOf(buildVersion);
     if (client !== null && client < 9460) {   // 明确的旧客户端：兼容路径
       mode = 'legacy';
@@ -196,9 +295,15 @@
   /* ---------- 振动 ---------- */
   function prepareBuzz(buildVersion) {
     var client = clientOf(buildVersion), can = client !== null && client >= 9500 && hasMethods(['vibrateShort']);
+    var at = function (min, names) { return client !== null && client >= min && hasMethods(names); };
     window.YUAN_XHS = {
       build: BUILD, client: client,
       get storage() { return mode; },
+      get cloud() { return cloudOn; },
+      rankOn: at(9510, ['submitScore', 'getRankList', 'getMyRank']),   // 排行榜（内测）；没授权时 social.js 会关掉
+      can: at,
+      note: function (text) { note('x' + Date.now(), text); },
+      flush: function () { cloudSchedule(true); return withTimeout(flushNow(), 1500).catch(function () {}); },
       buzz: function (type) {
         if (!can) return;
         try { Promise.resolve(miniTool().vibrateShort({ type: type })).catch(function () {}); } catch (e) {}

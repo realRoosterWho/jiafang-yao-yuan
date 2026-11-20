@@ -18,7 +18,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) if os.path.ba
 
 
 def game_chars(root):
-    text = ''.join(io.open(os.path.join(root, n), encoding='utf-8').read() for n in ('index.html', 'flow.js'))
+    # 小红书版的按钮文字（tools/xhs/social.js）也用这款字体
+    text = ''.join(io.open(os.path.join(root, n), encoding='utf-8').read() for n in ('index.html', 'flow.js', os.path.join('tools', 'xhs', 'social.js')))
     keep = {c for c in text if ord(c) > 0x7f}
     keep |= {chr(c) for c in range(0x20, 0x7f)}
     # punctuation a player-typed name or a later line of copy is likely to bring in

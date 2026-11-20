@@ -595,7 +595,10 @@ let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0, BOT = 0;   // B
 const midX = () => (WALL_L + WALL_R) / 2;
 // 触屏判断：有的手机浏览器不报 hover:none，所以再看触点数，只要没有精确指针（鼠标）就当触屏
 const mq = q => !!(window.matchMedia && matchMedia(q).matches);
-const TOUCH = mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
+/* 小红书版的钩子：结算、无尽收工、通关、排行榜这几个时刻通知 tools/xhs/social.js（加分享 / 晒笔记 / 关注 / 排行榜），网页版里 XHS 为假，什么都不做 */
+const XHOOK = (ev, d) => { if (!XHS || typeof window.__yuanXhs !== 'function') return; try { window.__yuanXhs(ev, d || {}); } catch (e) { console.error('[xhs]', e); } };
+const XRANK = () => !!(XHS && window.YUAN_XHS && window.YUAN_XHS.rankOn);   // 小红书排行榜（内测）能用
+const TOUCH = XHS || mq('(hover: none) and (pointer: coarse)') || ((navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !mq('(hover: hover) and (pointer: fine)'));
 // 语言：网址里的 ?lang= 优先，其次是上次选的，最后看浏览器语言。L(中文, 英文) 就地取词
 const EN = LANG === 'en', L = (zh, en) => EN ? en : zh, lc = n => n === 'UFO' || n === 'Santa' ? n : n.startsWith('A!') ? 'A!' + n.slice(2).toLowerCase() : n.toLowerCase();
 const N = 144, TAU = Math.PI * 2, DPHI = TAU / N;
@@ -2407,7 +2410,7 @@ function startSync() {
   startUI.innerHTML = `<div class="start-main${eo && !won ? ' with-endless' : ''}">
     ${b('start-go', 'go', won && eo ? L('无尽模式', 'Endless') : at ? L(`接着做第 ${at + 1} / ${ADV_N} 单`, `Continue: order ${at + 1} / ${ADV_N}`) : L('开始', 'Start'), '', ticks)}
     ${eo && !won ? b('ghost start-endless', 'endless', L('无尽模式', 'Endless')) : ''}
-    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
+    <div class="start-more">${b('ghost', 'dex', L('图鉴', 'Catalogue'))}${CLOUD || XRANK() ? b('ghost', 'board', L('排行榜', 'Leaderboard')) : ''}${b('ghost', 'ach', L('成就', 'Achievements'))}${b('ghost', 'menu', L('玩法 · 存档', 'How to play'))}</div>
   </div>
   ${XHS ? '' : b('ghost start-lang', 'lang', EN ? '中文' : 'English', ` lang="${EN ? 'zh' : 'en'}"`)}`;
 }
@@ -2631,6 +2634,7 @@ function showResult() {
     ${endless ? `<p class="note">${L(`这一轮已交 ${G.done} 单，累计`, `${G.done} delivered this run, total`)} <strong>◎ ${G.score}</strong>${L(`。下一单甲方的耐心只剩平时的 ${Math.round(endlessPace(G.done) * 100)}%。`, `. Next order, the Client has ${Math.round(endlessPace(G.done) * 100)}% of the usual patience.`)}</p>` : ''}
     <div class="row"><button class="btn" type="button" data-act="next">${last ? L('看看甲方怎么说', 'Hear the verdict') : L('下一单', 'Next order')}</button>${endless ? `<button class="btn ghost" type="button" data-act="home">${L('收工结算', 'Clock out')}</button>` : `<button class="btn ghost" type="button" data-act="redo">${n < 3 ? L('再来一次', 'Try again') : L('再做一次', 'Again')}</button><button class="btn ghost" type="button" data-act="home">${L('回首页', 'Home')}</button>`}</div>`);
   card.classList.add('win');
+  XHOOK('result', { n, id: ORDER[G.idx], idx: G.idx, mode: G.mode, round: G.round, total: p.total, rec, isNew: !old });
   // 声音的时间线（秒，从卡片出来算）：每颗星砸下来落定时响一声（跟样式里 starin 对齐：第 k 颗在 .17 + .38k 秒开始、再过 .14 秒落定），一颗比一颗高，
   // 三颗全亮再来一个和弦；酬劳往上滚时一路细细地响，滚完“叮”一下（跟某颗星撞上了就往后让一点）；星星都落完以后再依次：破纪录、新物品 / 无尽模式解锁、新成就
   const t00 = performance.now(), starAt = k => REDUCED ? .12 + k * .11 : .17 + (k + 1) * .38 + .14;
@@ -2709,8 +2713,9 @@ function endEndless(why = '') {
     ${items.length ? `<p class="eyebrow">${L(`这一轮收进图鉴的新物品 · ${dexGot()}/${ORDER.length}`, `New in the catalogue this run · ${dexGot()}/${ORDER.length}`)}</p><div class="newitems">${items.map(id => `<span><img src="${dexImg(id, true)}" alt="">${MATS[id].name}</span>`).join('')}</div>` : `<p class="note">${L(`这一轮没有新物品。图鉴 ${dexGot()}/${ORDER.length}。`, `No new items this run. Catalogue: ${dexGot()}/${ORDER.length}.`)}</p>`}
     ${achNewHtml()}
     ${CLOUD && !NAME && G.score ? `<p class="note">${L('回首页起个名字，纪录就能上排行榜。', 'Pick a name on the home screen to put your record on the leaderboard.')}</p>` : ''}
-    <div class="row"><button class="btn" type="button" data-act="endless">${L('再来一轮', 'Another run')}</button>${CLOUD ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+    <div class="row"><button class="btn" type="button" data-act="endless">${L('再来一轮', 'Another run')}</button>${CLOUD || XRANK() ? `<button class="btn ghost" type="button" data-act="board">${L('排行榜', 'Leaderboard')}</button>` : ''}<button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
   card.classList.add('win');
+  XHOOK('endless', { score: G.score, done: G.done, rec, best: Math.max(prev, G.score) });
   sfx.endRun(rec && G.score > 0); if ((G.newAch || []).length) sfx.ach(1);
 }
 function showWin() {
@@ -2728,6 +2733,7 @@ function showWin() {
     <p>${L('所以他们决定不放你走了。累计酬劳', 'So they have decided to keep you. Total pay:')} <strong>◎ ${G.score}</strong>${L('。下一轮每一单的星线都会再高一点。', '. Next round, every star line goes a little higher.')}</p>
     ${achNewHtml()}
     <div class="row"><button class="btn" type="button" data-act="again">${L('继续加班', 'Work overtime')}</button><button class="btn ghost" type="button" data-act="restart">${L('回首页', 'Home')}</button></div>`);
+  if (G.mode !== 'book') XHOOK('win', { score: G.score });
   sfx.clear(); if (G.newAch.length) sfx.ach(1.3);
 }
 /* 卡片和按钮的声音按动作分：开工是一段「开工」，往前走往上跳，回首页往下落，打开一页单响一声；点按和空格 / 回车 / Esc 走的是同一条路，所以一个样 */
@@ -2763,7 +2769,7 @@ function act(a) {
     if (G.state === 'play') { TRACK('quit', roundInfo()); achRound('quit'); }
     if (G.mode === 'endless' && (G.done || G.state === 'play')) endEndless(); else goHome();   // 无尽模式中途回首页 = 收工结算
   }
-  else if (a === 'board') showBoard();
+  else if (a === 'board') { if (XHS) XHOOK('board'); else showBoard(); }
   else if (a === 'wipe') {
     if (NAME || !confirm(L('访客的进度和成就都会清空，确定从头开始？', 'Wipe all guest progress and achievements and start over?'))) return;
     try { localStorage.removeItem('yuan.save.v2'); localStorage.removeItem('yuan.ach.v1'); } catch (e) {}
