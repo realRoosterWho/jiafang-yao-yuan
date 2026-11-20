@@ -740,8 +740,9 @@ const MATS = {
   gpu: { name: '显卡', unit: '张', hard: 32, brittle: 60, loose: 1.2, plastic: 0, smooth: 0, passes: 0, value: 13, hp: 2, rest: .15, fric: .6, accel: 20000, jig: 0, target: .84, time: 150, hot: 2,
     base: '#262a33', outline: '#0e1014', chips: ['#3a3f4a', '#f2c230', '#1f6e3a', '#7de8ff'], over: '显存爆了！', dead: '显卡碎了。做这个游戏的 AI 就是在它上面跑的，没有它，你现在玩的这个游戏根本不存在。续集也没了。', blurb: '做这个游戏的 AI 就跑在它上面。刚陪 AI 熬完夜，<strong>烫手</strong>。只能失手一次。' },
   /* 第九班：特邀嘉宾。Games Now!（阿尔托大学的游戏社区）的吉祥物章鱼熊。像一块软肉：一碰就变形、不掉料，最后拍成一个圆滚滚的球。
+     太难了降过一次：达标 .93→.88（.93 时随便砸圆度卡在 90～93 上不去），疼的力度 52→60，每下多抹两遍（passes 6→8），限时 100→120。
      活的（flee），快圆了放在地上会自己滚正、脸朝前（upright：圆度到多少开始）。会说话：talk 里每种场合几句 [中文, 英文]，头顶冒自己的小气泡；glow 是轮廓外的一圈光 */
-  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 52, loose: 1, plastic: 1, smooth: .5, passes: 6, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .93, time: 100, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
+  octobear: { name: '章鱼熊', unit: '只', hard: 6, brittle: 60, loose: 1, plastic: 1, smooth: .5, passes: 8, value: 10, hp: 3, rest: .12, fric: .9, accel: 24000, jig: .5, target: .88, time: 120, snd: 'octobear', flee: 1, upright: .75, brk: ['疼', 'OUCH'], glow: 'rgba(120,235,210,.22)',
     base: '#76dcd0', outline: '#4cbcae', chips: ['#8ce7dd', '#76dcd0', '#6ce8a8'], over: '章鱼熊疼哭了！', dead: '章鱼熊委屈地爬回 Games Now! 去了，说以后只给 game jam 当吉祥物。', blurb: '<strong>Games Now!</strong> 的吉祥物，戴着耳机来的。软得像肉：拍哪鼓哪，不掉料，最后拍成一个球。耳机不用管。会说话，也会疼。',
     talk: {
       start: [['大家好，我是 Games Now! 的章鱼熊！', "Hi! I'm the Games Now! octo-bear!"], ['听说要把我弄圆？轻一点哦。', 'I hear you want me round? Be gentle.']],
