@@ -137,7 +137,7 @@ let flow = fs.readFileSync(path.join(ROOT, 'flow.js'), 'utf8');
 flow = flow.replace(/(style\.textContent = `)([\s\S]*?)(`;)/, (m, a, body, b) => a + cssFallbacks(body) + b);
 fs.writeFileSync(path.join(OUT, 'flow.js'), await js(flow, 'flow.js'));
 names.push('./flow.js');
-// 小红书专用功能（晒笔记、分享、评论区、关注、排行榜）：最后加载，网页版没有这个文件
+// 小红书专用功能（晒笔记、分享、评论区、赞赏、排行榜）：最后加载，网页版没有这个文件
 fs.writeFileSync(path.join(OUT, 'social.js'), await js(fs.readFileSync(path.join(ROOT, 'tools', 'xhs', 'social.js'), 'utf8'), 'social.js'));
 names.push('./social.js');
 const boot = fs.readFileSync(path.join(ROOT, 'tools', 'xhs', 'bootstrap.js'), 'utf8')

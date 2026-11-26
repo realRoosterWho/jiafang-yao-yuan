@@ -599,7 +599,7 @@ let WALL_L = 0, PORT = false, VW = W, VH = H, CAMX = 0, TOP = 0, BOT = 0;   // B
 const midX = () => (WALL_L + WALL_R) / 2;
 // 触屏判断：有的手机浏览器不报 hover:none，所以再看触点数，只要没有精确指针（鼠标）就当触屏
 const mq = q => !!(window.matchMedia && matchMedia(q).matches);
-/* 小红书版的钩子：结算、无尽收工、通关、排行榜这几个时刻通知 tools/xhs/social.js（加分享 / 晒笔记 / 关注 / 排行榜），网页版里 XHS 为假，什么都不做 */
+/* 小红书版的钩子：结算、无尽收工、通关、排行榜这几个时刻通知 tools/xhs/social.js（加分享 / 晒笔记 / 评论区 / 赞赏 / 排行榜），网页版里 XHS 为假，什么都不做 */
 const XHOOK = (ev, d) => { if (!XHS || typeof window.__yuanXhs !== 'function') return; try { window.__yuanXhs(ev, d || {}); } catch (e) { console.error('[xhs]', e); } };
 const XRANK = () => !!(XHS && window.YUAN_XHS && window.YUAN_XHS.rankOn);   // 小红书排行榜（内测）能用
 const XREWARD = () => !!(XHS && window.YUAN_XHS && window.YUAN_XHS.rewardOn);   // 小红书赞赏（内测，9.53.3+）能用

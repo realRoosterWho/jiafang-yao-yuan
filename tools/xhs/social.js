@@ -1,13 +1,14 @@
-/* 甲方要圆 · 小红书小工具版专用：晒笔记、分享、去评论区、关注作者、赞赏（内测）、无尽模式排行榜（内测）
+/* 甲方要圆 · 小红书小工具版专用：晒笔记、分享、去评论区、赞赏（内测）、无尽模式排行榜（内测）
    只有 tools/build-xhs.mjs 打的包里有这个文件，最后一个加载。游戏在几个时刻调 window.__yuanXhs(事件, 数据)（index.html 里的 XHOOK）：
      result  交货结算卡出来了      → 卡片底下加一行「晒到笔记」「分享给朋友」
-     endless 无尽模式收工          → 提交成绩到排行榜；加「晒到笔记」「分享」「去评论区报成绩」「关注作者」「赞赏一下作者」
+     endless 无尽模式收工          → 提交成绩到排行榜；加「晒到笔记」「分享」「去评论区报成绩」「赞赏一下作者」
      win     冒险模式通关          → 同上（不提交成绩）
      board   点了「排行榜」        → 小红书排行榜卡片（本周 / 总榜）
    每个能力先看客户端版本和方法在不在（bootstrap.js 的 YUAN_XHS.can），不在就不显示按钮；调用失败给一句提示，不影响游戏。
    赞赏：客户端 9.53.3+ 才显示；开没开通只能在创作者平台的发布配置里看，页面查不到，所以点了失败一次就本次不再显示。
    关闭挽留（关掉小工具时客户端可能弹赞赏）只在玩家真玩进去以后才打开：这次交了 3 单、通关或无尽收工。
-   能力说明见小工具在线文档 §3.3 发布笔记、§3.5 临时文件、§3.9 发布评论、§3.15 关注作者、§3.17 排行榜、§3.18 分享、§3.19 赞赏、§3.20 赞赏挽留 */
+   关注作者：旧的关注弹窗（followAuthor / getFollowStatus）官方 2026-11-30 下线，页面里不再放关注按钮，玩家从右上角「更多」关注。
+   能力说明见小工具在线文档 §3.3 发布笔记、§3.5 临时文件、§3.9 发布评论、§3.17 排行榜、§3.18 分享、§3.19 赞赏、§3.20 赞赏挽留 */
 (function () {
   'use strict';
   const Y = window.__yuan, X = window.__yuanFlow, XS = window.YUAN_XHS;
@@ -18,7 +19,6 @@
     note: XS.can(0, ['writeTempFile', 'postNote']),
     share: XS.can(9530, ['share']),
     comment: XS.can(9490, ['writeTempFile', 'interactionOpenApi']),
-    follow: XS.can(9510, ['followAuthor', 'getFollowStatus']),
     reward: !!XS.rewardOn,
     retention: XS.can(9533, ['setCloseRetentionEnabled']),
   };
@@ -186,8 +186,6 @@
   }
 
   /* ---------- 按钮 ---------- */
-  let followState = -1;
-  if (CAN.follow) Promise.resolve(mt().getFollowStatus()).then(r => { followState = r ? r.follow_status : -1; }, () => {});
   function addRow(kind) {
     const old = card.querySelector('.xhs-social'); if (old) old.remove();
     const big = kind !== 'result';
@@ -195,7 +193,6 @@
     if (CAN.note) b.push(['note', '晒到笔记']);
     if (CAN.share) b.push(['share', '分享给朋友']);
     if (big && CAN.comment) b.push(['comment', '去评论区报成绩']);
-    if (big && CAN.follow && followState === 0) b.push(['follow', '关注作者']);
     if (big && CAN.reward) b.push(['reward', '赞赏一下作者']);
     if (!b.length) return;
     card.insertAdjacentHTML('beforeend', `<div class="row xhs-social">${b.map(([k, t]) => `<button class="btn ghost small" type="button" data-xhs="${k}">${t}</button>`).join('')}</div>`);
@@ -220,17 +217,12 @@
         await mt().interactionOpenApi({ payload: { action: 'post_comment', content: last.comment, media_bean: [{ media_type: 'image', cover_image_url: filePath }] }, saveToAlbum: false });
       } else if (k === 'reward') {
         await reward();
-      } else if (k === 'follow') {
-        const r = await mt().followAuthor();
-        followState = r ? r.follow_status : -1;
-        if (followState === 1) { t.textContent = '已关注 ✓'; t.disabled = true; }
       }
     } catch (err) {
       const c = errCode(err);
       if (c === 20002) {}   // 用户自己关掉了
       else if (k === 'share' && c === 15502) say('现在这个模式分享不了，全屏打开小工具再试试。');
       else if (k === 'share' && c === 15503) say('今天分享次数用完了，明天再来。');
-      else if (k === 'follow' && c === 15404) say('今天关注提示弹得太多了，明天再试。');
       else say('没成功，过一会儿再试试。');
     }
     busy = false;
